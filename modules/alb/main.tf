@@ -1,14 +1,40 @@
-#Application Load Balancer module.
+#eks networking module.
+
+data "kubernetes_ingress_v1" "lb_ingress" {
+  metadata {
+    name      = "analyticsapp-lbc-ingress"
+    namespace = "default"
+  }
+}
+
+data "aws_lb" "cluster_lb" {
+  count = length(data.aws_lb.lbs.arn) > 0 ? 1 : 0
+  arn   = data.aws_lb.lbs.arn
+}
+
+data "aws_lb" "lbs" {  
+  tags = {
+    "kubernetes.io/cluster/${var.eksclustername}" = "owned"
+    "elbv2.k8s.aws/ingress-name"                = "analyticsapp-lbc-ingress"
+  }
+}
 
 resource "aws_security_group" "alb-sg" {
-	name = alb-security-group
+	name = "alb-security-group"
 	description = "Inbound web traffic"
-	vpc_id = var.vpc_id
+	vpc_id = var.cluster_vpc_id
+
+	ingress {
+		from_port = 80
+		to_port   = 80
+		protocol  = "tcp"
+		cidr_blocks = ["0.0.0.0/0"]
+	}
 
 	ingress {
 		from_port = 443
 		to_port   = 443
-		protocol  = 'tcp'
+		protocol  = "tcp"
 		cidr_blocks = ["0.0.0.0/0"]
 	}
 
@@ -16,7 +42,7 @@ resource "aws_security_group" "alb-sg" {
 		from_port = 0
 		to_port   = 0
 		protocol  = -1
-		cidr_blocks = [0.0.0.0/0]
+		cidr_blocks = ["0.0.0.0/0"]
 	}
 
 	tags = {
@@ -24,11 +50,13 @@ resource "aws_security_group" "alb-sg" {
 	}
 }
 
-
-resource "aws_acm_certificate" "eks_certificate" {
-	
-	domain_name = "app.tiyeni"
+resource "aws_acm_certificate" "eks_certificate" {	
+	domain_name        = "approute.me"
 	validation_method  = "DNS"
+
+	lifecycle {
+    create_before_destroy = true
+   }
 
 	tags = {
 		Environment = "Dev"
@@ -36,95 +64,39 @@ resource "aws_acm_certificate" "eks_certificate" {
 
 }
 
+resource "aws_route53_zone" "approute" {
+	name  = "approute.me"
+}
+
 resource "aws_route53_record" "cert_validation" {
-	
 	for_each = {
- 		for dvo in aws_acm_certificate.eks_certificate.domain_validation_options :
- 		dvo.domain_name => {
- 			name   = dvo.resource_record_name
- 			record = dvo.resource_record_value
- 			type.  = dvo.resource_record_type
- 		}
-
-	}
-
+	    for dvo in aws_acm_certificate.eks_certificate.domain_validation_options : dvo.domain_name => {
+	      name   = dvo.resource_record_name
+	      type   = dvo.resource_record_type
+	      record = dvo.resource_record_value
+	    }
+   }
+    
+	zone_id = aws_route53_zone.approute.zone_id
 	name    = each.value.name
-	type    = each.value.type
-	zone_id = aws_route53_zone.???.zone_id
-	ttl.    = 300
+    type    = each.value.type
+    records = [each.value.record]
+    ttl     = 60	
 }
 
-
-resource "aws_lb" "web-application-lb" {
-	name = "web-app-lb"
-	internal = false
-	load_balancer_type = "application"
-	security_groups = [aws_security_group.alb-sg.id]
-	subnets = var.subnetIDs 
-
-	enable_deletion_protection = true
-
-	tags = {
-		Environment = "dev"
-		Application = "Stock Analytics"
-	}
-
+resource "aws_acm_certificate_validation" "cert_validation" {
+	certificate_arn         = aws_acm_certificate.eks_certificate.arn
+	validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 }
 
-resource "aws_lb_listener" "eks_https_listener" {
-	load_balancer_arn = aws_lb.web-application-lb.arn
-	port 			  = 443	
-	protocol 		  = "HTTPS"
-
-	ssl_policy 		  = "ELBSecurityPolicy-2016-08"
-	certificate_arn   = "aws_acm_certificate.eks_certificate"
-
-	default_action {
-		type = "forward"
-		target_group_arn = awl_lb_target_group.tiyeniapp_tg.arn
-
-	}		
-}
-
-
-resource "aws_lb_target_group" "tiyeniapp_tg" {
-	name 	 = "tiyeniapp-tg"
-	port 	 = 80
-	protocol = "HTTP"
-	vpc_id 	 = aws_vpc.clustervpc.id
-
-
-	health_check {
-		path 			  = "??"
-		interval 		  = 30
-		timeout  		  = 5
-		healthy_threshold = 3
-		matcher.          = "200"
-	}
+resource "aws_route53_record" "approute-eks" {
+	name    = "approute.me"
+	type    = "A"
+	zone_id = aws_route53_zone.approute.zone_id
 	
+	alias {
+		name = data.kubernetes_ingress_v1.lb_ingress.status[0].load_balancer[0].ingress[0].hostname
+		zone_id = data.aws_lb.cluster_lb[0].zone_id
+		evaluate_target_health = true
+	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

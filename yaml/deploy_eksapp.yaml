@@ -1,0 +1,86 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: eks_analytics
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tiyeni
+  namespace: eks_analytics
+  labels:
+    app: analytics_app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: analytics_app
+  template:
+    metadata:
+      labels:
+        app: analytics_app
+    spec:
+      containers:
+      - image: 998787123729.dkr.ecr.us-east-1.amazonaws.com/eks_python_nginx:01-12-2025-a
+        name: analyticsapp-container
+        ports: 
+        - containerPort: 8080
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "250m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tiyeniapp-service
+  namespace: eks_analytics
+spec:
+  selector:
+    app: tiyeniapp
+  type: ClusterIP  
+  ports:  
+    - protocol: TCP
+      port: 80
+      targetPort: 8080          
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webapp-lbc-ingress
+  namespace: eks_analytics
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/load-balancer-name: "analytics-app-lb"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/certificate-arn: "<your-acm-certificate-arn>"
+    alb.ingress.kubernetes.io/target-type: "ip"
+    alb.ingress.kubernetes.io/group.name: "tiyeniapp"
+    alb.ingress.kubernetes.io/healthcheck-path: "/health"
+spec:
+  rules:
+    - host: approute.me
+      http:
+        paths:
+        - path: /app
+          pathType: Prefix
+          backend:
+            service:
+              name: tiyeniapp-service
+              port:
+                number: 80

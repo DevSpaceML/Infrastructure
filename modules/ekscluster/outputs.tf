@@ -6,3 +6,7 @@ output "cluster_endpoint" {
 output "node_group_arns" {
   value = aws_eks_node_group.analytics_nodes.arn
 }
+
+output "cluster_name" {
+  value = aws_eks_cluster.analytics.name
+}

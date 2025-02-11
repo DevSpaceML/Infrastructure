@@ -6,6 +6,18 @@ variable "k8s_version" {
 	default = "1.29"
 }
 
+variable "environment" {
+	description = "Environment cluster will be deployed in"
+	type = string
+	default = "development"
+}
+
+variable "project" {
+	description = "Project running on cluster"
+	type = string
+	default = "development project"
+}
+
 variable "clustername" {
 	description = "Name of cluster to be provisioned"
 	type = string
@@ -19,6 +31,11 @@ variable "vpcId" {
 
 variable "subnetIDs" {
 	description = "list of subnet Ids available to the cluster"
+	type = list
+}
+
+variable "public_cidr" {
+	description = "Public facing CIDR block"
 	type = list
 }
 
@@ -44,6 +61,12 @@ variable "nodegroupname" {
 	description = "Name of the nodegroup"
 	type = string
 	default = "analytics_nodes"
+}
+
+variable "instancetype" {
+	description = "Default Instance Type"
+	type = string
+	default = "t4g.medium"
 }
 
 variable "desired_node_count" {
