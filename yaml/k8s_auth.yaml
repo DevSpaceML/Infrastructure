@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aws-auth
+  namespace: kube-system
+data:
+  mapUsers: |
+    - userarn: arn:aws:iam::312907937200:user/devopsadmin
+      username: devopsadmin
+      groups:
+        - system:masters
+  mapRoles: |
+    - rolearn: arn:aws:iam::312907937200:role/ClusterAdminRole
+      username: eks-admin
+      groups:
+        - system:masters
