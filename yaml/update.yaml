@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tiyeniapp-service
+  namespace: tiyeni-app
+  annotations:
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:312907937200:certificate/1e0c83a5-ee98-4cc5-b049-08e8496394ce"
+spec:
+  selector:
+    app: tiyeni-app
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080

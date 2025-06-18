@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tiyeni-app
+  annotations:
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:312907937200:certificate/f2f7a16e-0369-42bf-b8c0-9ca15bd1066e"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tiyeni-app
+  namespace: tiyeni-app
+  labels:
+    app: tiyeni-app
+  annotations:
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:312907937200:certificate/f2f7a16e-0369-42bf-b8c0-9ca15bd1066e"
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: tiyeni-app
+  template:
+    metadata:
+      labels:
+        app: tiyeni-app
+    spec:
+      containers:
+        - image: 312907937200.dkr.ecr.us-east-1.amazonaws.com/dev/tiyeni.dev:latest
+          name: tiyeniapp-container
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "250m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tiyeniapp-service
+  namespace: tiyeni-app
+  annotations:
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:312907937200:certificate/f2f7a16e-0369-42bf-b8c0-9ca15bd1066e"
+spec:
+  selector:
+    app: tiyeni-app
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tiyeniapp-lbc-ingress
+  namespace: tiyeni-app
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: "ip"
+    alb.ingress.kubernetes.io/load-balancer-name: "eks-cluster-lb"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:312907937200:certificate/f2f7a16e-0369-42bf-b8c0-9ca15bd1066e"
+    alb.ingress.kubernetes.io/group.name: "tiyeni-app"
+    alb.ingress.kubernetes.io/healthcheck-path: "/"
+spec:
+  ingressClassName: alb
+  rules:
+    - host: approute.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tiyeniapp-service
+                port:
+                  number: 80
