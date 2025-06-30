@@ -42,11 +42,10 @@ check_lbc(){
 }
 
 apply_terraform() {
-	terraformroot="/opt/homebrew/var/infrastructure/eks"
+	terraformroot="/opt/homebrew/var/infrastructure/environments/dev"
 	TF_plan="EKS_$1_$(date "+%Y-%m-%d %H:%M:%S")"
 	echo "name of plan file : $TF_plan"
 	
-    
 	#changing directory 
 	cd $terraformroot
 	curdir=$(pwd)
