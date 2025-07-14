@@ -34,7 +34,7 @@ variable "min_node_count" {
 	default = 2
 }
 
-variable "EksNodeGroupMgrArn" {
+variable "node_group_mgr_arn" {
   description = "Role with node management permissions"
   type = string
 }

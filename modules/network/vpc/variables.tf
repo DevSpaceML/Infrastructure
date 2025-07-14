@@ -1,6 +1,6 @@
 #EKS VPC variables for VPC module
 
-variable "name" {
+variable "vpcname" {
 	description = "Name of VPC"
 	type = string
 }

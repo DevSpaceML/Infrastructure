@@ -3,19 +3,70 @@ variable "clustername" {
   type = string
 }
 
-variable "vpc_name" {
+variable "k8s_version" {
+	description = "Version to be used with the cluster"
+	type = string
+}
+
+variable "region" {
+	description = "aws region"
+	type = string
+}
+
+variable "instancetype" {
+	description = "Default Instance Type"
+	type = string
+}
+
+variable "vpcname" {
   description = "name of vpc used by dev cluster"
   type        = string
 }
 
 variable "dev_cidr" {
-	description = "Default cidr for VPC cluster"
+	description = "Default cidr block for VPC cluster"
 	type = string
-	default = "10.0.0.0/16"
 }
 
 variable "nodegroupname" {
 	description = "Name of the nodegroup"
 	type = string
-    default = ""
+  default = ""
+}
+
+variable "desired_node_count" {
+	description = "number of nodes requested by user"
+	type = number
+}
+
+variable "max_node_count" {
+	description = "max nodes allowed"
+	type = number
+}
+
+variable "min_node_count" {
+	description = "minimum nodes for any deployment"
+	type = number
+}
+
+variable "kubeadmin-arn" {
+  description = "ARN of the Kubernetes admin user/role"
+  type        = string
+}
+
+variable "devops_user" {
+  description = "DevOps user account running terraform"
+  type        = string
+}
+
+
+variable "access_entries" {
+  description = "Map of access entries to create"
+  type        = map(object({
+	principal_arn = string
+	kubernetes_groups = optional(list(string), [])
+	type              = optional(string, "STANDARD")
+	user_name         = optional(string)
+	tags = optional(map(string), {})
+  }))
 }

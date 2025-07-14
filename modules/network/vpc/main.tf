@@ -9,7 +9,7 @@ data "aws_vpc" "clustervpcdata" {
 	
 	filter {
 		name = "tag:Name"
-		values = [var.name]
+		values = [var.vpcname]
 	}
 
 }
@@ -26,8 +26,8 @@ resource "aws_vpc" "cluster_vpc" {
 	instance_tenancy = var.instance_tenancy
 
 	tags = {
-		Name = var.name
-		"kubernetes.io/cluster/${var.name}" = "shared"
+		Name = var.vpcname
+		"kubernetes.io/cluster/${var.vpcname}" = "shared"
 	}
 }
 
@@ -53,7 +53,7 @@ resource "aws_subnet" "private_subnet_eks" {
 
 	tags = {
 		Name = "eks-private-subnet-${count.index + 1}"
-		"kubernetes.io/cluster/${var.name}" = "owned"
+		"kubernetes.io/cluster/${var.vpcname}" = "owned"
 	}	
 }
 
@@ -124,7 +124,7 @@ resource "aws_route_table_association" "eks_private_route_association" {
 
 /*
 resource "aws_flow_log" "eks-vpc-flow-log" {
-	log_destination = "${var.name}-vpc-flow-logs"
+	log_destination = "${var.vpcname}-vpc-flow-logs"
 	vpc_id = aws_vpc.cluster_vpc.id
 	traffic_type = "ALL"
 	destination_options {
@@ -132,7 +132,7 @@ resource "aws_flow_log" "eks-vpc-flow-log" {
 	}
 
 	tags = {
-		Name = "VPC-Flow-Logs-${var.name}"
+		Name = "VPC-Flow-Logs-${var.vpcname}"
 	}
 }
 */

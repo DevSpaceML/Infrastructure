@@ -1,12 +1,12 @@
-resource "aws_db_instance" "mysqleast"{
+resource "aws_db_instance" "appdata_mysql"{
 	allocated_storage 		 = 10
-	db_name			  		 = "customers"
+	db_name			  		 = "tiyeni"
 	identifier				 = "dataeast"
 	engine 			  		 = "mysql"
 	engine_version 	  		 = "8.0"
 	instance_class    		 = "db.t3.micro"
-	username		  		 = "inkeymgmtstore"
-	password 		  		 = "pwinkeymgmtstore"
+	username		  		 = "root"
+	password 		  		 = ""
 	parameter_group_name     = "default.MySql8.0"
 	skip_final_snapshot		 = true
 	backup_retention_period  = 7
@@ -15,21 +15,21 @@ resource "aws_db_instance" "mysqleast"{
 	iam_database_authentication_enabled = true					
 }
 
-resource "aws_db_instance" "replica-mysqleast"{
-	replicate_source_db     = aws_db_instance.mysqleast.identifier
+resource "aws_db_instance" "replica-appdata_mysql"{
+	replicate_source_db     = aws_db_instance.appdata_mysql.identifier
 	instance_class          = "db.t3.micro"
 	skip_final_snapshot     = true
 	backup_retention_period = 7
 }
 
-resource "aws_db_snapshot" "mysqleast"{
-	db_instance_identifier = aws_db_instance.mysqleast.identifier
-	db_snapshot_identifier = "snapshot-mysqleast"
+resource "aws_db_snapshot" "appdata_mysql"{
+	db_instance_identifier = aws_db_instance.appdata_mysql.identifier
+	db_snapshot_identifier = "snapshot-appdata_mysql"
 }
 
 resource "aws_iam_policy" "policy_dbEast_Readonly"{
 	name = "dbEastReadOnly"
-	description = "IAM policy granting read access to mysqleast"
+	description = "IAM policy granting read access to appdata_mysql"
 	policy = jsonencode({
 	  Version = "2012-10-17"	
 	  Statement = [
@@ -46,7 +46,7 @@ resource "aws_iam_policy" "policy_dbEast_Readonly"{
 }
 
 resource "aws_iam_role" "role_dbeastreadonly"{
-	name = "MySQlEastReadOnly"
+	name = "appdata_mysqlReadOnly"
 	assume_role_policy = jsonencode({
 			  Version = "2012-10-17"
 			  Statement = [

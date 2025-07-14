@@ -1,5 +1,10 @@
 #eks variables
 
+variable "clustername" {
+	description = "Name of cluster to be provisioned"
+	type = string
+}
+
 variable "k8s_version" {
 	description = "Version to be used with the cluster"
 	type = string
@@ -18,14 +23,21 @@ variable "project" {
 	default = "development project"
 }
 
-variable "clustername" {
-	description = "Name of cluster to be provisioned"
-	type = string
-}
-
 variable "vpcId" {
 	description = "ID of the VPC containing the cluster"
 	type = string	
+}
+
+variable "endpoint_private_access" {
+  description = "enable public server endpoint"
+  type        = string
+  default     = false
+}
+
+variable "endpoint_public_access" {
+  description = "enable public server endpoint"
+  type        = string
+  default     = false
 }
 
 variable "public_subnet_ids" {
@@ -38,13 +50,35 @@ variable "public_cidr" {
 	type = list
 }
 
+variable "additional_security_group_ids" {
+    description = "list of additional security group Ids to attach to the cluster"
+	type        = list(string)
+	default     = [ ]
+}
+
+variable "authentication_mode" {
+  description = "Authentication mode for the cluster"
+  type        = string
+  default     = "API_AND_CONFIG_MAP"
+  validation {
+	condition     = contains(["CONFIG_MAP", "API", "API_AND_CONFIG_MAP"], var.authentication_mode)
+	error_message = "Authentication mode must be one of CONFIG_MAP, API, API_AND_CONFIG_MAP."
+  } 
+}
+
+variable "enabled_cluster_log_types" {
+  description = "List of cluster log types to enable"
+  type        = list(string)
+  default     = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+}
+
 variable "region" {
 	description = "region to be deployed"
 	type = string
 	default = "us-east-1"
 }
 
-variable "EksClusterRole-arn" {
+variable "cluster_role_arn" {
 	description = "Role with eks permissions"
 	type = string
 }
@@ -52,11 +86,33 @@ variable "EksClusterRole-arn" {
 variable "kubeadmin-arn" {
   description = "Role with eks permissions"
   type = string
-  default = "arn:aws:iam::312907937200:role/ClusterAdminRole"
 }
 
 variable "devops_user" {
    description = "DevOps user account running terraform"
    type        = string
-   default     = "arn:aws:iam::312907937200:user/devopsadmin"
+}
+
+variable "cluster_encryption_config" {
+  description = "Configuration block for encrypting Kubernetes secrets"
+  type        = list(object(
+		{
+			provider_key_arn = string
+			resources        = list(string)
+		}
+	)
+  )
+
+  default = []
+}
+
+variable "access_entries" {
+  description = "Map of access entries to create"
+  type        = map(object({
+	principal_arn = string
+	kubernetes_groups = optional(list(string), [])
+	type              = optional(string, "STANDARD")
+	user_name         = optional(string)
+	tags = optional(map(string), {})
+  }))
 }

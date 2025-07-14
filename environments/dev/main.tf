@@ -23,9 +23,9 @@ provider "helm" {
 }
 
 module dev_vpc {
-    source = "../../modules/network/vpc"
-    name = var.vpc_name
-    cidr = var.dev_cidr
+    source   = "../../modules/network/vpc"
+    cidr     = var.dev_cidr
+    vpcname  = var.vpcname
 }
 
 module "iam" {
@@ -33,23 +33,25 @@ module "iam" {
 }
 
 module "dev_cluster" {
-  depends_on = [ module.dev_vpc ]
-
+  depends_on         = [ module.dev_vpc ]
   source             = "../../modules/compute/eks/cluster"
+  kubeadmin-arn      = var.kubeadmin-arn
+  devops_user        = var.devops_user 
   clustername        = var.clustername
   vpcId              = module.dev_vpc.eks_vpc_id
   public_subnet_ids  = module.dev_vpc.public_subnets
   public_cidr        = module.dev_vpc.public_cidr
-  EksClusterRole-arn = module.iam.EKS_Cluster_Role_Arn
-}
+  cluster_role_arn   = module.iam.cluster_role_arn  
+  access_entries     = var.access_entries
+
+ }
 
 module "dev_nodes" {
-  depends_on = [ module.dev_cluster ]
-
+  depends_on         = [ module.dev_cluster, module.iam ]
   source             = "../../modules/compute/eks/nodegroups"
+  node_group_mgr_arn = module.iam.node_manager_role_arn.arn
   nodegroupname      = var.nodegroupname
   eksclustername     = module.dev_cluster.cluster_name
-  EksNodeGroupMgrArn = module.iam.Node_Manager_Role_Arn 
   private_subnet_Ids = module.dev_vpc.private_subnets
 }
 
@@ -70,7 +72,7 @@ module "auth" {
 
   source          = "../../modules/security/auth"
   eksclustername  = module.dev_cluster.cluster_name
-  noderolearn     = module.iam.Node_Manager_Role_Arn 
+  noderolearn     = module.iam.node_manager_role_arn.arn
   hosturl         = module.dev_cluster.cluster_endpoint
 
   providers = {

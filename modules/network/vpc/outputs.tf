@@ -1,8 +1,4 @@
 
-output "cluster_name" {
-  value = var.name
-}
-
 output "eks_vpc_id" {
   value = aws_vpc.cluster_vpc.id
 }
