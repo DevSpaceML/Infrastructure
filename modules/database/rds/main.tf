@@ -1,4 +1,15 @@
+
+resource "aws_db_subnet_group" "k8_db_subnet_group" {
+    name = "k8_db_subnets"
+	subnet_ids = var.private_subnet_Ids
+	tags = {
+		Name = "k8_db_subnets"
+	}
+}
+
 resource "aws_db_instance" "appdata_mysql"{
+	depends_on = [ aws_db_subnet_group.k8_db_subnet_group ]
+
 	allocated_storage 		 = 10
 	db_name			  		 = "tiyeni"
 	identifier				 = "dataeast"
@@ -10,8 +21,8 @@ resource "aws_db_instance" "appdata_mysql"{
 	parameter_group_name     = "default.MySql8.0"
 	skip_final_snapshot		 = true
 	backup_retention_period  = 7
-	db_subnet_group_name	 = var.db_subnet_group_name
-	multi_az				 = true	
+	db_subnet_group_name	 = aws_db_subnet_group.k8_db_subnet_group.name
+	multi_az				 = true
 	iam_database_authentication_enabled = true					
 }
 

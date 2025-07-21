@@ -59,6 +59,10 @@ variable "devops_user" {
   type        = string
 }
 
+variable "private_subnet_Ids" {
+  description = "list of private subnet ids"
+  type        = list
+}
 
 variable "access_entries" {
   description = "Map of access entries to create"

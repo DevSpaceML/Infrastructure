@@ -9,3 +9,8 @@ variable "iamaccountid"{
 	type = string
 	default = ""
 }
+
+variable "private_subnet_Ids" {
+  description = "list of private subnet ids"
+  type        = list()
+}

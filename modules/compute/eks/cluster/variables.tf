@@ -11,6 +11,12 @@ variable "k8s_version" {
 	default = "1.29"
 }
 
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
+}
+
 variable "environment" {
 	description = "Environment cluster will be deployed in"
 	type = string
@@ -31,7 +37,7 @@ variable "vpcId" {
 variable "endpoint_private_access" {
   description = "enable public server endpoint"
   type        = string
-  default     = false
+  default     = true
 }
 
 variable "endpoint_public_access" {

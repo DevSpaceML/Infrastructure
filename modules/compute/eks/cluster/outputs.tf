@@ -13,6 +13,6 @@ output "cluster_token" {
   sensitive   = true  # Mark it as sensitive to avoid showing it in logs
 }
 
-output "clustercertificate" {
+output "cluster_certificate" {
   value = base64decode(aws_eks_cluster.this.certificate_authority[0].data)
 }

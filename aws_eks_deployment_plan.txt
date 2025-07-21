@@ -1,0 +1,8 @@
+# deployment sequence - local
+  # 1. terraform plan / apply to deploy cluster
+  # 2. On cluster creation - local kubeconfig update required for cluster mgmt via kubectl
+  # 3. Certificate deployment and dns validation requires dns updates on public hosted domains
+  # 4. Once cert validation is complete, 
+
+
+# deployment sequence - GitHub Actions

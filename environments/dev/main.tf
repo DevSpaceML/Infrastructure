@@ -63,12 +63,12 @@ data "aws_eks_cluster_auth" "devcluster" {
 provider "kubernetes" {
   alias = "this"
   host                   = module.dev_cluster.cluster_endpoint
-  cluster_ca_certificate = module.dev_cluster.clustercertificate
+  cluster_ca_certificate = module.dev_cluster.cluster_certificate
   token                  = data.aws_eks_cluster_auth.devcluster.token
 }
 
 module "auth" {
-  depends_on = [ module.dev_cluster ]
+  depends_on = [ module.dev_cluster, module.dev_nodes ]
 
   source          = "../../modules/security/auth"
   eksclustername  = module.dev_cluster.cluster_name
@@ -81,7 +81,7 @@ module "auth" {
 }
 
 module "certs" {
-  depends_on = [ module.dev_cluster, module.auth ]
+  depends_on = [ module.dev_cluster, module.auth, module.dev_nodes ]
 
   source = "../../modules/security/certs"
   security-groups     = module.dev_vpc.eks_security_group_id
@@ -104,5 +104,7 @@ module "route53" {
 }
 
 module "rds_appdata" {
-  source = "../../modules/database/rds"
+  depends_on = [ module.dev_vpc ]
+  source             = "../../modules/database/rds"
+  private_subnet_Ids = module.dev_vpc.private_subnets
 }
