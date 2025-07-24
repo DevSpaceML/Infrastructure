@@ -13,3 +13,4 @@ terraform.lock.hcl
 .idea
 *.swp
 *.swo
+aws_eks_deployment_plan.txt

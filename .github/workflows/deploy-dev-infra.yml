@@ -1,0 +1,112 @@
+name: Dev Infrastructure
+
+on:
+  push:
+    branches: main
+    paths:
+      - 'Infrastructure/**'
+      - '.github/workflows/deploy-dev-infra.yml'
+
+env:
+  TF_VERSION: "1.5.0"
+  AWS_REGION: "us-east-1"
+  EKS_CLUSTER_NAME: ${{ env.CLUSTER_NAME }}
+
+jobs:
+  deploy-cluster:
+    name: deploy-eks-cluster
+    runs-on: ubuntu-latest
+    outputs:
+      cluster-endpoint: ${{ steps.cluster-info.outputs.endpoint }}
+      cluster-ca: ${{ steps.cluster-info.outputs.certificate_authority }}
+      cluster-arn: ${{ steps.cluster-info.outputs.arn }}
+
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: |
+          cd Infrastructure/environments/dev
+          Terraform init
+
+      - name: Terraform Plan
+        run: |
+          cd Infrastructure/environments/dev
+          terraform plan -out=deploy-dev-eks.tfplan
+
+      - name: Terraform Apply
+        run: |
+          cd Infrastructure/environments/dev
+          terraform apply -auto-apply deploy-dev-eks.tfplan
+
+      - name: Check Cluster Readiness
+          echo "Waiting for Cluster readiness..."
+          aws eks wait cluster-active --name ${{ env.CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+          echo "Cluster now available"    
+          
+      - name: Get Cluster Info
+        if: github.ref == 'refs/head/main'
+        id: cluster-info
+        run: |
+          cd Infrastructure/environments/dev
+          ENDPOINT=$(terraform output -raw cluster-endpoint)
+          CA_DATA=$(terraform output -raw cluster_certificate_authority_data)
+          CLUSTER_ARN=$(terraform output -raw cluster_arn)
+
+          echo "endpoint=$ENDPOINT" >> $GITHUB_OUTPUT
+          echo "certificate_authority=$CA_DATA" >> $GITHUB_OUTPUT
+          echo "arn=$CLUSTER_ARN" >> $GITHUB_OUTPUT
+
+  update-dns-kubeconfig:
+    name: update-dns-kubeconfig
+    runs-on: ubuntu-latest
+    needs: deploy-cluster
+    if: github.ref == 'refs/head/main'
+
+    steps:
+    - name: checkout-code
+        uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+    - name: Setup kubectl
+      uses: azure/setup-kubectl@v3
+      with:
+        version: 'latest'
+
+    - name: kubeconfig update
+      run: |
+        aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+
+        # Store kubeconfig as artifact for debugging
+        mkdir -p ~/.kube-backup
+        cp ~/.kube/config ~/.kube-backup/config
+
+        # test kubectl connection to cluster
+        kubectl cluster-info
+        kubectl get nodes
+
+
+
+
+
+
