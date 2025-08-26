@@ -28,8 +28,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          role-session-name: GitHub-Actions-OIDC-Session
           aws-region: ${{ env.AWS_REGION }}
       
       - name: Prepare Terraform
@@ -41,7 +41,7 @@ jobs:
       - name: Terraform Init
         run: |
           cd Infrastructure/environments/dev
-          Terraform init
+          terraform init
 
       - name: Terraform Plan
         run: |
@@ -54,12 +54,13 @@ jobs:
           terraform apply -auto-apply deploy-dev-eks.tfplan
 
       - name: Check Cluster Readiness
+        run: |
           echo "Waiting for Cluster readiness..."
           aws eks wait cluster-active --name ${{ env.CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
           echo "Cluster now available"    
           
       - name: Get Cluster Info
-        if: github.ref == 'refs/head/main'
+        if: github.ref == 'refs/heads/main'
         id: cluster-info
         run: |
           cd Infrastructure/environments/dev
@@ -71,21 +72,21 @@ jobs:
           echo "certificate_authority=$CA_DATA" >> $GITHUB_OUTPUT
           echo "arn=$CLUSTER_ARN" >> $GITHUB_OUTPUT
 
-  update-dns-kubeconfig:
-    name: update-dns-kubeconfig
+  update-kubeconfig:
+    name: update-kubeconfig
     runs-on: ubuntu-latest
     needs: deploy-cluster
-    if: github.ref == 'refs/head/main'
+    if: github.ref == 'refs/heads/main'
 
     steps:
     - name: checkout-code
-        uses: actions/checkout@v4
+      uses: actions/checkout@v4
 
     - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          role-session-name: GitHub-Actions-OIDC-Session
           aws-region: ${{ env.AWS_REGION }}
 
     - name: Setup kubectl
@@ -105,6 +106,22 @@ jobs:
         kubectl cluster-info
         kubectl get nodes
 
+  domain-dns-update:
+    - name: domain-dns-update
+      run: |
+        echo "Pausing 3 minutes to allow manual dns updates"
+        sleep 180
+        echo "*** Resuming deployment ****"
+
+  deploy-remaining:
+    - name: deploy-remaining-resources
+      runs-on: ubuntu-latest
+      needs: [deploy-cluster, domain-dns-update]
+
+      steps:
+      - name: Checkout code
+        uses: actions/cehckout@v4
+        
 
 
 
