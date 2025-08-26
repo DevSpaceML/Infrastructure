@@ -2,9 +2,9 @@ name: Dev Infrastructure
 
 on:
   push:
-    branches: main
+    branches: Developmment
     paths:
-      - 'Infrastructure/**'
+      - 'Infrastructure/dev/**'
       - '.github/workflows/deploy-dev-infra.yml'
 
 env:

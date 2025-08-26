@@ -1,0 +1,8 @@
+name: Staging Infrastructure
+
+on:
+  merge:
+    branches: Staging
+    paths:
+      - 'Infrastructure/staging'
+      - '.github/workflows/deploy-staging-infra.yml'

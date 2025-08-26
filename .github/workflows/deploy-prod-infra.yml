@@ -1,0 +1,8 @@
+name: Dev Infrastructure
+
+on:
+  merge:
+    branches: main
+    paths:
+      - 'Infrastructure/prod'
+      - '.github/workflows/deploy-prod-infra.yml'
