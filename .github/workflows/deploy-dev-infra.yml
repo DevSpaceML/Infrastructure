@@ -14,6 +14,7 @@ env:
 
 jobs:
   deploy-cluster:
+    if: github.ref ==  'refs/heads/Developmment'
     name: deploy-eks-cluster
     runs-on: ubuntu-latest
     outputs:
@@ -21,7 +22,7 @@ jobs:
       cluster-ca: ${{ steps.cluster-info.outputs.certificate_authority }}
       cluster-arn: ${{ steps.cluster-info.outputs.arn }}
 
-    steps:
+    steps:  
       - name: checkout-code
         uses: actions/checkout@v4
 

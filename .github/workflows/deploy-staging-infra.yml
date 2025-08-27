@@ -4,5 +4,11 @@ on:
   merge:
     branches: Staging
     paths:
-      - 'Infrastructure/staging'
+      - 'Infrastructure/staging/**'
       - '.github/workflows/deploy-staging-infra.yml'
+
+jobs:
+  deploy-cluster:
+    if: github.ref ==  'refs/heads/staging'
+    name: deploy-eks-cluster
+    runs-on: ubuntu-latest

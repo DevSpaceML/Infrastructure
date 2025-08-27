@@ -4,5 +4,11 @@ on:
   merge:
     branches: main
     paths:
-      - 'Infrastructure/prod'
+      - 'Infrastructure/prod/**'
       - '.github/workflows/deploy-prod-infra.yml'
+
+jobs:
+  deploy-cluster:
+    if: github.ref ==  'refs/heads/prod'
+    name: deploy-eks-cluster
+    runs-on: ubuntu-latest
