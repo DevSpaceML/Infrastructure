@@ -1,14 +1,19 @@
 name: Staging Infrastructure
 
 on:
-  merge:
+  pull_request:
+    types: 
+      - closed
     branches: Staging
     paths:
-      - 'Infrastructure/staging/**'
-      - '.github/workflows/deploy-staging-infra.yml'
+      - 'Infrastructure/staging/**'      
+    paths-ignore:
+      - '.github/workflows/**'
 
 jobs:
   deploy-cluster:
-    if: github.ref ==  'refs/heads/staging'
-    name: deploy-eks-cluster
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    steps:
+    - run: |
+        echo The PR was merged

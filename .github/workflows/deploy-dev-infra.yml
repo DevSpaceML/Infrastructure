@@ -2,19 +2,21 @@ name: Dev Infrastructure
 
 on:
   push:
-    branches: Developmment
+    branches:
+      - develop
     paths:
       - 'Infrastructure/dev/**'
-      - '.github/workflows/deploy-dev-infra.yml'
+    paths-ignore:  
+      - '.github/workflows/**'
 
 env:
   TF_VERSION: "1.5.0"
   AWS_REGION: "us-east-1"
+  CLUSTER_NAME: "dev-cluster"
   EKS_CLUSTER_NAME: ${{ env.CLUSTER_NAME }}
 
 jobs:
   deploy-cluster:
-    if: github.ref ==  'refs/heads/Developmment'
     name: deploy-eks-cluster
     runs-on: ubuntu-latest
     outputs:
@@ -52,7 +54,7 @@ jobs:
       - name: Terraform Apply
         run: |
           cd Infrastructure/environments/dev
-          terraform apply -auto-apply deploy-dev-eks.tfplan
+          terraform apply -auto-approve deploy-dev-eks.tfplan
 
       - name: Check Cluster Readiness
         run: |
@@ -61,7 +63,6 @@ jobs:
           echo "Cluster now available"    
           
       - name: Get Cluster Info
-        if: github.ref == 'refs/heads/main'
         id: cluster-info
         run: |
           cd Infrastructure/environments/dev
@@ -77,54 +78,53 @@ jobs:
     name: update-kubeconfig
     runs-on: ubuntu-latest
     needs: deploy-cluster
-    if: github.ref == 'refs/heads/main'
 
     steps:
-    - name: checkout-code
-      uses: actions/checkout@v4
+      - name: checkout-code
+        uses: actions/checkout@v4
 
-    - name: Configure AWS Credentials
-      uses: aws-actions/configure-aws-credentials@v4
-      with:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
           role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
           role-session-name: GitHub-Actions-OIDC-Session
           aws-region: ${{ env.AWS_REGION }}
 
-    - name: Setup kubectl
-      uses: azure/setup-kubectl@v3
-      with:
-        version: 'latest'
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
 
-    - name: kubeconfig update
-      run: |
-        aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
-
-        # Store kubeconfig as artifact for debugging
-        mkdir -p ~/.kube-backup
-        cp ~/.kube/config ~/.kube-backup/config
-
-        # test kubectl connection to cluster
-        kubectl cluster-info
-        kubectl get nodes
+      - name: kubeconfig update
+        run: |
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.EKS_CLUSTER_NAME }}
+          mkdir -p ~/.kube-backup
+          cp ~/.kube/config ~/.kube-backup/config
+          kubectl cluster-info
+          kubectl get nodes
 
   domain-dns-update:
-    - name: domain-dns-update
-      run: |
-        echo "Pausing 3 minutes to allow manual dns updates"
-        sleep 180
-        echo "*** Resuming deployment ****"
+    name: domain-dns-update
+    needs: update-kubeconfig
+    run: |
+      echo "Pausing 3 minutes to allow manual dns updates"
+      sleep 180
+      echo "*** Resuming deployment ****"
 
   deploy-remaining:
-    - name: deploy-remaining-resources
-      runs-on: ubuntu-latest
-      needs: [deploy-cluster, domain-dns-update]
+    runs-on: ubuntu-latest
+    needs: [deploy-cluster, domain-dns-update]
 
-      steps:
+    steps:
       - name: Checkout code
-        uses: actions/cehckout@v4
-        
+        uses: actions/checkout@v4
 
+      - name: Terraform plan
+        run: |
+          cd Infrastructure/environments/dev
+          terraform plan complete--dev-eks.tfplan
 
-
-
-
+      - name: Terraform Apply
+        run: |
+          cd Infrastructure/environments/dev
+          terraform apply -auto-approve complete--dev-eks.tfplan
