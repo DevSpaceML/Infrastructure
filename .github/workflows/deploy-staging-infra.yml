@@ -7,8 +7,6 @@ on:
     branches: Staging
     paths:
       - 'Infrastructure/staging/**'      
-    paths-ignore:
-      - '.github/workflows/**'
 
 jobs:
   deploy-cluster:

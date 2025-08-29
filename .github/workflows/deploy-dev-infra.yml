@@ -6,8 +6,6 @@ on:
       - develop
     paths:
       - 'Infrastructure/dev/**'
-    paths-ignore:  
-      - '.github/workflows/**'
 
 env:
   TF_VERSION: "1.5.0"
@@ -42,18 +40,18 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init
+        working-directory: Infrastructure/environments/dev
         run: |
-          cd Infrastructure/environments/dev
           terraform init
 
       - name: Terraform Plan
+        working-directory: Infrastructure/environments/dev
         run: |
-          cd Infrastructure/environments/dev
           terraform plan -out=deploy-dev-eks.tfplan
 
       - name: Terraform Apply
+        working-directory: Infrastructure/environments/dev
         run: |
-          cd Infrastructure/environments/dev
           terraform apply -auto-approve deploy-dev-eks.tfplan
 
       - name: Check Cluster Readiness
@@ -64,8 +62,8 @@ jobs:
           
       - name: Get Cluster Info
         id: cluster-info
+        working-directory: Infrastructure/environments/dev
         run: |
-          cd Infrastructure/environments/dev
           ENDPOINT=$(terraform output -raw cluster-endpoint)
           CA_DATA=$(terraform output -raw cluster_certificate_authority_data)
           CLUSTER_ARN=$(terraform output -raw cluster_arn)
@@ -119,12 +117,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Terraform plan
+      - name: Terraform Init
+        working-directory: Infrastructure/environments/dev
         run: |
-          cd Infrastructure/environments/dev
+          terraform init
+
+      - name: Terraform plan
+        working-directory: Infrastructure/environments/dev
+        run: |
           terraform plan complete--dev-eks.tfplan
 
       - name: Terraform Apply
+        working-directory: Infrastructure/environments/dev
         run: |
-          cd Infrastructure/environments/dev
           terraform apply -auto-approve complete--dev-eks.tfplan
