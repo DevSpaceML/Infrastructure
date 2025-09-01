@@ -12,5 +12,6 @@ variable "iamaccountid"{
 
 variable "private_subnet_Ids" {
   description = "list of private subnet ids"
-  type        = list()
+  type        = list(string)
+  default = []
 }

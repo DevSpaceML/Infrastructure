@@ -47,7 +47,7 @@ jobs:
       - name: Terraform Plan
         working-directory: Infrastructure/environments/dev
         run: |
-          terraform plan -out=deploy-dev-eks.tfplan
+          terraform plan -var-file="dev.tfvars" -out=deploy-dev-eks.tfplan
 
       - name: Terraform Apply
         working-directory: Infrastructure/environments/dev
@@ -125,7 +125,7 @@ jobs:
       - name: Terraform plan
         working-directory: Infrastructure/environments/dev
         run: |
-          terraform plan complete--dev-eks.tfplan
+          terraform plan -var-file="dev.tfvars" -out=complete--dev-eks.tfplan
 
       - name: Terraform Apply
         working-directory: Infrastructure/environments/dev
