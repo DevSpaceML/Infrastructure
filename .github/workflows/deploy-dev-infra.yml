@@ -6,6 +6,13 @@ on:
       - develop
     paths:
       - 'Infrastructure/dev/**'
+on:
+  workflow_dispatch:
+     inputs:
+       environments:
+         description: 'Environments to display'
+         required: false
+         default: dev
 
 env:
   TF_VERSION: "1.5.0"
@@ -43,6 +50,14 @@ jobs:
         working-directory: Infrastructure/environments/dev
         run: |
           terraform init
+
+      - name: Terraform Validate
+        working-directory: Infrastructure/environments/dev
+        run: terraform validate
+
+      - name: Terraform Format Check
+        working-directory: Infrastructure/environments/dev
+        run: terraform fmt -check
 
       - name: Terraform Plan
         working-directory: Infrastructure/environments/dev
@@ -104,10 +119,12 @@ jobs:
   domain-dns-update:
     name: domain-dns-update
     needs: update-kubeconfig
-    run: |
-      echo "Pausing 3 minutes to allow manual dns updates"
-      sleep 180
-      echo "*** Resuming deployment ****"
+    steps:
+      name: wait for manual dns updates
+      run: |
+        echo "Pausing 3 minutes to allow manual dns updates"
+        sleep 180
+        echo "*** Resuming deployment ****"
 
   deploy-remaining:
     runs-on: ubuntu-latest
@@ -117,17 +134,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Terraform Init
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.AWS_REGION }}  
+
+      - name: Terraform Init 
         working-directory: Infrastructure/environments/dev
         run: |
           terraform init
 
+      - name: Terraform Validate
+        working-directory: Infrastructure/environments/dev
+        run: terraform validate
+
+      - name: Terraform Format Check
+        working-directory: Infrastructure/environments/dev
+        run: terraform fmt -check
+
       - name: Terraform plan
         working-directory: Infrastructure/environments/dev
         run: |
-          terraform plan -var-file="dev.tfvars" -out=complete--dev-eks.tfplan
+          terraform plan -var-file="dev.tfvars" -out=complete-dev-eks.tfplan
 
       - name: Terraform Apply
         working-directory: Infrastructure/environments/dev
         run: |
-          terraform apply -auto-approve complete--dev-eks.tfplan
+          terraform apply -auto-approve complete-dev-eks.tfplan
