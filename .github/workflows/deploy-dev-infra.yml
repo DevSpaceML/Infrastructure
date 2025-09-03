@@ -6,13 +6,13 @@ on:
       - develop
     paths:
       - 'Infrastructure/dev/**'
-on:
   workflow_dispatch:
      inputs:
        environments:
          description: 'Environments to display'
          required: false
          default: dev
+         type: choice
 
 env:
   TF_VERSION: "1.5.0"
