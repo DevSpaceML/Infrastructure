@@ -18,6 +18,10 @@ env:
   CLUSTER_NAME: "dev-cluster"
   EKS_CLUSTER_NAME: "dev-cluster"
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   deploy-cluster:
     name: deploy-eks-cluster
