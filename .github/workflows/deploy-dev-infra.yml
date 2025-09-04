@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
      inputs:
        environments:
-         description: 'Environments to display'
+         description: 'Environments To Display'
          required: false
          default: dev
          type: string
