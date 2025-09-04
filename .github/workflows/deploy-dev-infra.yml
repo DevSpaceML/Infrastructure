@@ -118,6 +118,7 @@ jobs:
 
   domain-dns-update:
     name: domain-dns-update
+    runs-on: ubuntu-latest
     needs: update-kubeconfig
     steps:
       name: wait for manual dns updates
