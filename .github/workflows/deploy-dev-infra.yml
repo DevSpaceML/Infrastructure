@@ -2,10 +2,8 @@ name: Dev Infrastructure
 
 on:
   push:
-    branches:
-      - develop
-    paths:
-      - 'Infrastructure/dev/**'
+    branches: [develop]
+    paths: ['Infrastructure/dev/**']
   workflow_dispatch:
      inputs:
        environments:
