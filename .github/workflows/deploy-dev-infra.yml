@@ -92,6 +92,12 @@ jobs:
           echo "endpoint=$ENDPOINT" >> $GITHUB_OUTPUT
           echo "certificate_authority=$CA_DATA" >> $GITHUB_OUTPUT
           echo "arn=$CLUSTER_ARN" >> $GITHUB_OUTPUT
+          
+      - name: Cleanup on failure
+        if: failure()
+        run: |
+          echo "Deployment failed, cleaning up..."
+          terraform destroy -auto-approve    
 
   update-kubeconfig:
     name: update-kubeconfig
