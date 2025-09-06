@@ -35,11 +35,12 @@ jobs:
       - name: checkout-code
         uses: actions/checkout@v4
       
-      - name: Debug OIDC Token
+      - name: Debug GitHub Context  
         run: |
           echo "Repository: ${{ github.repository }}"
           echo "Ref: ${{ github.ref }}"
-          echo "Actor: ${{ github.actor }}"  
+          echo "Branch: ${GITHUB_REF#refs/heads/}"
+          echo "Expected sub claim: repo:${{ github.repository }}:ref:${{ github.ref }}" 
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -56,25 +57,25 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init
-        working-directory: Infrastructure/environments/dev
+        working-directory: ./Infrastructure/./Infrastructure/environments/dev
         run: |
           terraform init
 
       - name: Terraform Validate
-        working-directory: Infrastructure/environments/dev
+        working-directory: ./Infrastructure/environments/dev
         run: terraform validate
 
       - name: Terraform Format Check
-        working-directory: Infrastructure/environments/dev
+        working-directory: ./Infrastructure/environments/dev
         run: terraform fmt -check
 
       - name: Terraform Plan
-        working-directory: Infrastructure/environments/dev
+        working-directory: ./Infrastructure/environments/dev
         run: |
           terraform plan -var-file="dev.tfvars" -out=deploy-dev-eks.tfplan
 
       - name: Terraform Apply
-        working-directory: Infrastructure/environments/dev
+        working-directory: ./Infrastructure/environments/dev
         run: |
           terraform apply -auto-approve deploy-dev-eks.tfplan
 
@@ -86,7 +87,7 @@ jobs:
           
       - name: Get Cluster Info
         id: cluster-info
-        working-directory: Infrastructure/environments/dev
+        working-directory: ./Infrastructure/environments/dev
         run: |
           ENDPOINT=$(terraform output -raw cluster-endpoint)
           CA_DATA=$(terraform output -raw cluster_certificate_authority_data)
@@ -153,24 +154,24 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}  
 
       - name: Terraform Init 
-        working-directory: Infrastructure/environments/dev
+        working-directory: ./Infrastructure/environments/dev
         run: |
           terraform init
 
       - name: Terraform Validate
-        working-directory: Infrastructure/environments/dev
+        working-directory: ./Infrastructure/environments/dev
         run: terraform validate
 
       - name: Terraform Format Check
-        working-directory: Infrastructure/environments/dev
+        working-directory: ./Infrastructure/environments/dev
         run: terraform fmt -check
 
       - name: Terraform plan
-        working-directory: Infrastructure/environments/dev
+        working-directory: ./Infrastructure/environments/dev
         run: |
           terraform plan -var-file="dev.tfvars" -out=complete-dev-eks.tfplan
 
       - name: Terraform Apply
-        working-directory: Infrastructure/environments/dev
+        working-directory: ./Infrastructure/environments/dev
         run: |
           terraform apply -auto-approve complete-dev-eks.tfplan
