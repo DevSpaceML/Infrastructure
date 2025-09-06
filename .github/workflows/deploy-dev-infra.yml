@@ -68,12 +68,12 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/dev
         run: |
-          terraform plan -var-file="dev.tfvars" -out=deploy-dev-eks.tfplan
+          terraform plan -var-file="./environments/dev/dev.tfvars" -out=./environments/dev/deploy-dev-eks.tfplan
 
       - name: Terraform Apply
         working-directory: ./environments/dev
         run: |
-          terraform apply -auto-approve deploy-dev-eks.tfplan
+          terraform apply -auto-approve ./environments/dev/deploy-dev-eks.tfplan
 
       - name: Check Cluster Readiness
         run: |
@@ -161,9 +161,9 @@ jobs:
       - name: Terraform plan
         working-directory: ./environments/dev
         run: |
-          terraform plan -var-file="dev.tfvars" -out=complete-dev-eks.tfplan
+          terraform plan -var-file="./environments/dev/dev.tfvars" -out=./environments/dev/complete-dev-eks.tfplan
 
       - name: Terraform Apply
         working-directory: ./environments/dev
         run: |
-          terraform apply -auto-approve complete-dev-eks.tfplan
+          terraform apply -auto-approve ./environments/dev/complete-dev-eks.tfplan
