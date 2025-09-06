@@ -34,6 +34,12 @@ jobs:
     steps:  
       - name: checkout-code
         uses: actions/checkout@v4
+      
+      - name: Debug OIDC Token
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Actor: ${{ github.actor }}"  
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -41,6 +47,7 @@ jobs:
           role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
           role-session-name: GitHub-Actions-OIDC-Session
           aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: false
       
       - name: Prepare Terraform
         uses: hashicorp/setup-terraform@v3
