@@ -52,39 +52,3 @@ resource "kubernetes_cluster_role_binding_v1" "K8_cluster_role_Binding" {
     }
   
 }
-
-resource "aws_iam_user" "developer" {
-  name = "LeadDeveloper"
-}
-
-resource "aws_iam_policy" "tech_lead_policy" {
-  depends_on = [ aws_iam_user.developer ]
-  name = "techleadpolicy"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = [
-          "sts:AssumeRole",
-          "eks:DescribeCluster"
-        ]
-        Resource = aws_iam_user.developer.arn
-      }
-    ]
-  })
-}
-
-resource "aws_iam_user_policy_attachment" "techlead" {
-  depends_on = [ aws_iam_policy.tech_lead_policy ]
-  user = aws_iam_user.developer.name
-  policy_arn = aws_iam_policy.tech_lead_policy.arn 
-}
-
-resource "aws_eks_access_entry" "name" {
-  cluster_name      = var.eksclustername
-  principal_arn     = "${aws_iam_user.developer.arn}"
-  kubernetes_groups = ["eks-admins"]
-}
-

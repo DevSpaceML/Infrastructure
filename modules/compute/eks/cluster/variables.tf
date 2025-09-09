@@ -89,11 +89,6 @@ variable "cluster_role_arn" {
 	type = string
 }
 
-variable "kubeadmin-arn" {
-  description = "Role with eks permissions"
-  type = string
-}
-
 variable "devops_user" {
    description = "DevOps user account running terraform"
    type        = string
@@ -110,15 +105,4 @@ variable "cluster_encryption_config" {
   )
 
   default = []
-}
-
-variable "access_entries" {
-  description = "Map of access entries to create"
-  type        = map(object({
-	principal_arn = string
-	kubernetes_groups = optional(list(string), [])
-	type              = optional(string, "STANDARD")
-	user_name         = optional(string)
-	tags = optional(map(string), {})
-  }))
 }
