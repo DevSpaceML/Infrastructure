@@ -89,11 +89,6 @@ variable "cluster_role_arn" {
 	type = string
 }
 
-variable "devops_user" {
-   description = "DevOps user account running terraform"
-   type        = string
-}
-
 variable "cluster_encryption_config" {
   description = "Configuration block for encrypting Kubernetes secrets"
   type        = list(object(
@@ -106,3 +101,15 @@ variable "cluster_encryption_config" {
 
   default = []
 }
+
+variable "access_entries" {
+  description = "Access entries for EKS cluster"
+  type = map(object({
+    principal_arn      = string
+    kubernetes_groups  = list(string)
+    type              = string
+    user_name         = optional(string)
+  }))
+  default = {}
+}
+

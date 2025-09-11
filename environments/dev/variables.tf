@@ -49,16 +49,6 @@ variable "min_node_count" {
   type        = number
 }
 
-variable "kubeadmin-arn" {
-  description = "ARN of the Kubernetes admin user/role"
-  type        = string
-}
-
-variable "devops_user" {
-  description = "DevOps user account running terraform"
-  type        = string
-}
-
 variable "private_subnet_Ids" {
   description = "list of private subnet ids"
   type        = list(string)
@@ -66,12 +56,12 @@ variable "private_subnet_Ids" {
 }
 
 variable "access_entries" {
-  description = "Map of access entries to create"
+  description = "Access entries for EKS cluster"
   type = map(object({
-    principal_arn     = string
-    kubernetes_groups = optional(list(string), [])
-    type              = optional(string, "STANDARD")
+    principal_arn      = string
+    kubernetes_groups  = list(string)
+    type              = string
     user_name         = optional(string)
-    tags              = optional(map(string), {})
   }))
+  default = {}
 }

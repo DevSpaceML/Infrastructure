@@ -9,17 +9,21 @@ terraform {
       source  = "hashicorp/kubernetes"
       version = ">= 2.36.0"
     }
+    helm = {
+      source  = "hashicorp/helm"
+      version = ">= 2.0.0"
+    }
+  }
+  backend "s3" {
+    bucket         = "dev-terraform-state-586098609239"
+    key            = "dev/terraform.tfstate"
+    region         = "us-east-1"
+    encrypt        = true
   }
 }
 
 provider "aws" {
   region = "us-east-1"
-}
-
-provider "helm" {
-  kubernetes {
-    config_path = "~/.kube/config"
-  }
 }
 
 module "dev_vpc" {
@@ -33,14 +37,14 @@ module "iam" {
 }
 
 module "dev_cluster" {
-  depends_on        = [module.dev_vpc]
+  depends_on        = [module.dev_vpc, module.iam]
   source            = "../../modules/compute/eks/cluster"
-  devops_user       = var.devops_user
   clustername       = var.clustername
   vpcId             = module.dev_vpc.eks_vpc_id
   public_subnet_ids = module.dev_vpc.public_subnets
   public_cidr       = module.dev_vpc.public_cidr
   cluster_role_arn  = module.iam.cluster_role_arn
+  access_entries    = module.iam.access_entries
 }
 
 module "dev_nodes" {
