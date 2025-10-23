@@ -20,7 +20,13 @@ variable "aws_region" {
 variable "environment" {
 	description = "Environment cluster will be deployed in"
 	type = string
-	default = "development"
+	default = "dev"
+}
+
+variable "namespace" {
+  description = "deployment namespace"
+  type = string
+  default = "development"
 }
 
 variable "project" {

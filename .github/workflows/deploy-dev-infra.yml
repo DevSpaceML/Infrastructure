@@ -79,7 +79,7 @@ jobs:
         run: |
           echo "Waiting for Cluster readiness..."
           aws eks wait cluster-active --name ${{ env.CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
-          echo "Cluster now available"    
+          echo "Cluster now available"   
           
       - name: Get Cluster Info
         id: cluster-info

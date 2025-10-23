@@ -13,6 +13,29 @@ data "aws_iam_role" "eks_cluster_Role" {
   name = "eks-cluster-role"
 }
 
+resource "helm_release" "env_dev" {
+  name = "gemapp"
+  chart = "/helm-charts/gem-app"
+  namespace = var.namespace
+  values = [file("/helm-charts/gem-app/values-${var.environment}.yaml")]
+
+  set {
+    name = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/certificate-arn"
+    value = aws_acm_certificate.eks_certificate.arn
+  }
+  
+  set {
+      name = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/security-groups"
+      value = ""
+  }
+  
+  set {
+      name = "ingress.annotations.alb\\.ingress\\.kubernetes\\.io/subnets"
+      value = ""
+  }
+
+}
+
 resource "aws_eks_cluster" "this" {
 	name     = var.clustername
 	role_arn = var.cluster_role_arn
