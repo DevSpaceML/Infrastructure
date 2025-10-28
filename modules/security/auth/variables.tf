@@ -16,5 +16,4 @@ variable "noderolearn" {
 variable "clusteradminrole" {
   description = "role for cluster administration"
   type        = string
-  default     = "arn:aws:iam::312907937200:role/ClusterAdminRole"
 }

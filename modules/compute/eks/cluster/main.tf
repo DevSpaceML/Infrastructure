@@ -4,8 +4,13 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current_region" {}
 
-data "aws_iam_role" "clusteradminrole" {
-  name = "ClusterAdminRole"
+
+data "aws_iam_user" "DevOpsAdmin" {
+	user_name = "DevOpsAdmin"
+}
+
+data "aws_iam_role" "eks_cluster_Role" {
+  name = "eks-cluster-role"
 }
 
 resource "aws_eks_cluster" "this" {
@@ -56,7 +61,7 @@ resource "aws_eks_access_entry" "eks_access" {
 resource "aws_eks_access_policy_association" "eks_cluster_admin_policy" {
   depends_on    = [ aws_eks_access_entry.eks_access ]
   cluster_name  = aws_eks_cluster.this.name
-  principal_arn = var.kubeadmin-arn
+  principal_arn = data.aws_iam_role.eks_cluster_Role.arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
 
   access_scope {
@@ -68,7 +73,7 @@ resource "aws_eks_access_policy_association" "eks_cluster_admin_policy" {
 resource "aws_eks_access_policy_association" "eks_eks_admin_policy" {
   depends_on    = [ aws_eks_access_entry.eks_access ]
   cluster_name  = aws_eks_cluster.this.name
-  principal_arn = var.kubeadmin-arn
+  principal_arn = data.aws_iam_user.DevOpsAdmin.arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
 
   access_scope {

@@ -20,7 +20,13 @@ variable "aws_region" {
 variable "environment" {
 	description = "Environment cluster will be deployed in"
 	type = string
-	default = "development"
+	default = "dev"
+}
+
+variable "namespace" {
+  description = "deployment namespace"
+  type = string
+  default = "development"
 }
 
 variable "project" {
@@ -89,16 +95,6 @@ variable "cluster_role_arn" {
 	type = string
 }
 
-variable "kubeadmin-arn" {
-  description = "Role with eks permissions"
-  type = string
-}
-
-variable "devops_user" {
-   description = "DevOps user account running terraform"
-   type        = string
-}
-
 variable "cluster_encryption_config" {
   description = "Configuration block for encrypting Kubernetes secrets"
   type        = list(object(
@@ -113,12 +109,13 @@ variable "cluster_encryption_config" {
 }
 
 variable "access_entries" {
-  description = "Map of access entries to create"
-  type        = map(object({
-	principal_arn = string
-	kubernetes_groups = optional(list(string), [])
-	type              = optional(string, "STANDARD")
-	user_name         = optional(string)
-	tags = optional(map(string), {})
+  description = "Access entries for EKS cluster"
+  type = map(object({
+    principal_arn      = string
+    kubernetes_groups  = list(string)
+    type              = string
+    user_name         = optional(string)
   }))
+  default = {}
 }
+

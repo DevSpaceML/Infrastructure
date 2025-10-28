@@ -1,3 +1,5 @@
+# Create RBAC Roles and bind to required IAM users / IAM Roles / K8 Service Accounts 
+
 terraform {
   required_version = ">= 1.4.0"
   required_providers {
@@ -8,6 +10,7 @@ terraform {
   }
 }
 
+# ClusterRole and Binding
 resource "kubernetes_cluster_role_v1" "k8_cluster_role" {
 	metadata {
 	  name = "K8ClusterAdminRole"	  
@@ -53,38 +56,103 @@ resource "kubernetes_cluster_role_binding_v1" "K8_cluster_role_Binding" {
   
 }
 
-resource "aws_iam_user" "developer" {
-  name = "LeadDeveloper"
+# Developer Role
+
+resource "kubernetes_role" "Developer" {
+
+  metadata {
+	name = "app-developer"
+	namespace = "development"
+  }
+
+  rule {
+	api_groups = [""]
+	resources = ["pods","pods/logs"]
+	verbs = ["get","list","watch"]
+  }
+
+  rule {
+	api_groups = [""]
+	resources = ["services"]
+	verbs = ["get","list","watch","create","update","patch"]
+  }
+
+  rule {
+	api_groups = ["apps"]
+	resources = ["deployments"]
+	verbs = ["get","list","watch","create","update","patch","delete"]
+  }
+
+  rule {
+	api_groups = [""]
+	resources = ["configmaps"]
+	verbs = ["get","list","watch","create","update","patch"]
+  }
+
+  rule {
+	api_groups = [""]
+	resources = ["secrets"]
+	verbs = ["get","list"]
+  }
 }
 
-resource "aws_iam_policy" "tech_lead_policy" {
-  depends_on = [ aws_iam_user.developer ]
-  name = "techleadpolicy"
+resource "kubernetes_role" "Devops-SRE" {
+  metadata {
+	name = "DevopsSRE"
+  }
 
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = [
-          "sts:AssumeRole",
-          "eks:DescribeCluster"
-        ]
-        Resource = aws_iam_user.developer.arn
-      }
-    ]
-  })
+  rule {
+	api_groups = ["apps"]
+	resources = ["deployments","statefulsets","daemonsets","replicasets"]
+	verbs = ["*"]
+  }
+
+  rule {
+	api_groups = [""]
+	resources = ["pods","pods/log","pods/exec"]
+	verbs = ["*"]
+  }
+
+  rule {
+	api_groups = [""]
+	resources = ["configmaps","services","consistentvolumeclaims"]
+	verbs = ["*"]
+  }
+
+  rule {
+	api_groups = [""]
+	resources = ["secrets"]
+	verbs = ["get","list"]
+  }
+
+  rule {
+	api_groups = ["batch"]
+	resources = ["jobs","cronjobs"]
+	verbs = ["*"]
+  }
+
+  rule {
+	api_groups = [""]
+	resources = ["events"]
+	verbs = ["get","list","watch"]
+  }
 }
 
-resource "aws_iam_user_policy_attachment" "techlead" {
-  depends_on = [ aws_iam_policy.tech_lead_policy ]
-  user = aws_iam_user.developer.name
-  policy_arn = aws_iam_policy.tech_lead_policy.arn 
-}
+resource "kubernetes_cluster_role" "K8_monitor" {
+  metadata {
+	name = "k8_monitor"
+  }
 
-resource "aws_eks_access_entry" "name" {
-  cluster_name      = var.eksclustername
-  principal_arn     = "${aws_iam_user.developer.arn}"
-  kubernetes_groups = ["eks-admins"]
-}
+  rule {
+	api_groups = [""]
+	resources = ["nodes","nodes/metrics","nodes/stats","nodes/proxy","pods","services","endpoints"]
+	verbs = ["get","list","watch"]
+  }
 
+  rule {
+	api_groups = ["apps"]
+	resources = ["deployments","statefulsets","daemonsets"]
+	verbs = ["get","list","watch"]
+  }
+
+}

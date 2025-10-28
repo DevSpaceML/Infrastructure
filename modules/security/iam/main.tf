@@ -3,6 +3,39 @@
 # IAM Role for worker Nodes. Policies - AmazonEKSWorkerNodePolicy, AmazonEC2ContainerRegistryReadOnly, AmazonEKS_CNI_Policy
 # --------------------------
 
+# data of existing DevOpsAdmin Account
+
+resource "aws_iam_user" "developer" {
+  name = "LeadDeveloper"
+}
+
+resource "aws_iam_policy" "tech_lead_policy" {
+  depends_on = [ aws_iam_user.developer ]
+  name = "techleadpolicy"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = [
+          "sts:AssumeRole",
+          "eks:DescribeCluster"
+        ]
+        Resource = aws_iam_user.developer.arn
+      }
+    ]
+  })
+}
+
+
+resource "aws_iam_user_policy_attachment" "techlead" {
+  depends_on = [ aws_iam_policy.tech_lead_policy ]
+  user = aws_iam_user.developer.name
+  policy_arn = aws_iam_policy.tech_lead_policy.arn 
+}
+
+
 # IAM Cluster Role
 resource "aws_iam_role" "eks_cluster_Role" {
 	name = "eks-cluster-role"
@@ -26,6 +59,7 @@ resource "aws_iam_role" "eks_cluster_Role" {
 		}
 	)  
 }
+
 
 #IAM Node Manager Role
 resource "aws_iam_role" "eks_node_manager_role" {
