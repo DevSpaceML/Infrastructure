@@ -53,7 +53,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: tiyeniapp-service
+  name: tiyeniapp-nginx-service
   namespace: tiyeni-app
   annotations:
     alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:312907937200:certificate/f2f7a16e-0369-42bf-b8c0-9ca15bd1066e"
@@ -89,6 +89,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: tiyeniapp-service
+                name: tiyeniapp-nginx-service
                 port:
                   number: 80
