@@ -171,4 +171,4 @@ jobs:
       - name: Terraform Apply
         working-directory: ./environments/dev
         run: |
-          terraform apply -auto-approve complete-dev-eks.tfplan
+          terraform apply -auto-approve completion-dev-eks.tfplan
