@@ -56,21 +56,21 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init
-        working-directory: /infrastructure/environments/dev
+        working-directory: ./environments/dev
         run: |
           terraform init
 
       - name: Terraform Validate
-        working-directory: /infrastructure/environments/dev
+        working-directory: ./environments/dev
         run: terraform validate
 
       - name: Terraform Plan
-        working-directory: /infrastructure/environments/dev
+        working-directory: ./environments/dev
         run: |
           terraform plan -var-file=dev.auto.tfvars -out=deploy-dev-eks.tfplan
 
       - name: Terraform Apply
-        working-directory: /infrastructure/environments/dev
+        working-directory: ./environments/dev
         run: |
           terraform apply -auto-approve deploy-dev-eks.tfplan
 
@@ -82,7 +82,7 @@ jobs:
           
       - name: Get Cluster Info
         id: cluster-info
-        working-directory: /infrastructure/environments/dev
+        working-directory: ./environments/dev
         run: |
           ENDPOINT=$(terraform output -raw cluster-endpoint)
           CA_DATA=$(terraform output -raw cluster_certificate_authority_data)
@@ -155,20 +155,20 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}  
 
       - name: Terraform Init 
-        working-directory: /infrastructure/environments/dev
+        working-directory: ./environments/dev
         run: |
           terraform init
 
       - name: Terraform Validate
-        working-directory: /infrastructure/environments/dev
+        working-directory: ./environments/dev
         run: terraform validate
 
       - name: Terraform plan
-        working-directory: /infrastructure/environments/dev
+        working-directory: ./environments/dev
         run: |
           terraform plan -var-file=dev.auto.tfvars -out=completion-dev-eks.tfplan
 
       - name: Terraform Apply
-        working-directory: /infrastructure/environments/dev
+        working-directory: ./environments/dev
         run: |
           terraform apply -auto-approve complete-dev-eks.tfplan
