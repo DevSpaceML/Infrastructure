@@ -1,4 +1,4 @@
-/*
+
 output "alb_arn" {
   value = data.aws_lb.eks-lb.arn
 }
@@ -22,5 +22,3 @@ output "alb_target_group_arns" {
 output "svc_acc_name" {
   value = kubernetes_service_account.svc_acc_lbController.metadata[0].name
 }
-
-*/

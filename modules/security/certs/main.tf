@@ -7,13 +7,13 @@ data "aws_eks_cluster" "ekscluster" {
 }
 
 resource "aws_route53_zone" "approute" {
-	name  = "approute.me"
+	name  = "gemmapp.com"
 }
 
 resource "aws_acm_certificate" "eks_certificate" {
   depends_on = [ aws_route53_zone.approute ]
 
-	domain_name        = "approute.me"
+	domain_name        = "gemmapp.com"
 	validation_method  = "DNS"
 	subject_alternative_names = []
 
@@ -30,42 +30,7 @@ resource "aws_acm_certificate" "eks_certificate" {
 	}
 }
 
-#  Update cert_arn in ingress yaml
-resource "null_resource" "apply_certinfo_yaml" {
-    depends_on = [ aws_acm_certificate.eks_certificate ]
-
-    provisioner "local-exec" {
-      command = <<EOT
-      set -euo pipefail
-      set -v
-	    echo "Available Certificates:"
-	    aws acm list-certificates
-      echo "Updating Yaml Cert Variables"
-      /bin/bash /opt/homebrew/var/infrastructure/eks/bash/update_yaml_vars.sh
-      exit 0 
-      EOT
-      interpreter = ["/bin/bash", "-c"]
-    }
- }
-
-
-# update DNS Records at GoDaddy. Required for Cert Validation
- resource "null_resource" "Update_GoDaddyDNS" {
-  depends_on = [ null_resource.apply_certinfo_yaml ]
-
-	provisioner "local-exec" {
-      command = <<EOT
-      echo "Connect to GoDaddy and update dns records. Waiting 3 mins"
-      sleep 180
-	    #/bin/bash /opt/homebrew/var/infrastructure/eks/bash/update_dns.sh
-      exit 0
-      EOT
-      interpreter = ["/bin/bash", "-c"]
-    } 
- }
- 
-
-# perform eks cert validation. ingress apply fails without cert validation
+# perform eks cert validation. ingress creation fails without cert validation
 
 resource "aws_route53_record" "certvalidation_r53_record" {
 	depends_on = [null_resource.Update_GoDaddyDNS]	
@@ -77,8 +42,8 @@ resource "aws_route53_record" "certvalidation_r53_record" {
 	    }
    }
     
-	zone_id   = aws_route53_zone.approute.zone_id
-	name      = each.value.name
+	 zone_id   = aws_route53_zone.approute.zone_id
+	 name      =  each.value.name
     type      = each.value.type
     records   = [each.value.record]
     ttl       = 60
@@ -90,21 +55,3 @@ resource "aws_acm_certificate_validation" "cert_validation" {
 	certificate_arn         = aws_acm_certificate.eks_certificate.arn
 	validation_record_fqdns = [for record in aws_route53_record.certvalidation_r53_record : record.fqdn]
 }
-
-# #Application loadbalancer installed by ingress yaml.data aws_lb in cert module dependent on loadbalancer being active.
- resource "null_resource" "apply_ingress_yaml" {
-    depends_on = [ aws_acm_certificate_validation.cert_validation ]
-    provisioner "local-exec" {
-      command = <<EOT
-      set -euo pipefail
-      set -v
-      echo "Applying Ingress and Application Yaml manifests"
-      /usr/local/bin/kubectl apply -f /opt/homebrew/var/infrastructure/eks/yaml/deploy_eksapp.yaml
-      echo "waiting for loadbalancer to be ready"
-      sleep 60
-      aws elbv2 describe-load-balancers
-      EOT
-      interpreter = ["/bin/bash", "-c"]
-    }
- } 
-
