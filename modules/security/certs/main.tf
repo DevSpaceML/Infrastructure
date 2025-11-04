@@ -33,7 +33,7 @@ resource "aws_acm_certificate" "eks_certificate" {
 # perform eks cert validation. ingress creation fails without cert validation
 
 resource "aws_route53_record" "certvalidation_r53_record" {
-	depends_on = [null_resource.Update_GoDaddyDNS]	
+  depends_on = [ aws_acm_certificate.eks_certificate ]
 	for_each = {
 	    for dvo in aws_acm_certificate.eks_certificate.domain_validation_options : dvo.domain_name => {
 	      name   = dvo.resource_record_name
