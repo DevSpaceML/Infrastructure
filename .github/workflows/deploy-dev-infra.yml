@@ -58,7 +58,7 @@ jobs:
       - name: Terraform Init
         working-directory: ./environments/dev
         run: |
-          terraform init
+          terraform init -upgrade
 
       - name: Terraform Validate
         working-directory: ./environments/dev
@@ -157,7 +157,7 @@ jobs:
       - name: Terraform Init 
         working-directory: ./environments/dev
         run: |
-          terraform init
+          terraform init -upgrade
 
       - name: Terraform Validate
         working-directory: ./environments/dev
