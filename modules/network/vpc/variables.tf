@@ -19,7 +19,7 @@ variable "cidr" {
 variable "public_subnet_cidr_blocks" {
   description = "A list of CIDR blocks for the subnets"
   type        = list(string)
-  default     = ["172.31.0.0/24", "172.31.1.0/24"]
+  default     = ["172.20.0.0/24", "172.20.1.0/24"]
 }
 
 variable "private_subnet_cidr_blocks" {

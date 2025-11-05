@@ -33,7 +33,7 @@ resource "aws_vpc" "cluster_vpc" {
 
 resource "aws_vpc_ipv4_cidr_block_association" "secondary_cidr" {
     vpc_id = aws_vpc.cluster_vpc.id
-	cidr_block = "172.31.0.0/16"
+	cidr_block = "172.20.0.0/16"
 }
 
 resource "aws_subnet" "public_subnet_eks" {
