@@ -3,8 +3,8 @@ resource "aws_s3_bucket" "tfStateFiles" {
   bucket = "dev-terraform-state-586098609239"
 
   tags = {
-    Environment = var.environment
-    Project = var.projectname 
+    Environment = "dev"
+    Project = "gemmapp"
   }
 }
 
