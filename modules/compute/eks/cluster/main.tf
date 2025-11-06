@@ -55,6 +55,10 @@ resource "aws_eks_access_entry" "eks_access" {
 	kubernetes_groups = each.value.kubernetes_groups
 	type              = each.value.type
   user_name         = try(each.value.user_name, null)
+
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
 resource "aws_eks_access_policy_association" "eks_cluster_admin_policy" {
