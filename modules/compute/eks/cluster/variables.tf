@@ -49,7 +49,7 @@ variable "endpoint_private_access" {
 variable "endpoint_public_access" {
   description = "enable public server endpoint"
   type        = string
-  default     = false
+  default     = true
 }
 
 variable "public_subnet_ids" {
