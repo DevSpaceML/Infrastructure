@@ -35,7 +35,7 @@ resource "aws_db_instance" "replica-appdata_mysql"{
 
 resource "aws_db_snapshot" "appdata_mysql"{
 	db_instance_identifier = aws_db_instance.appdata_mysql.identifier
-	db_snapshot_identifier = "snapshot-appdata_mysql"
+	db_snapshot_identifier = "snapshot-appdata-mysql"
 }
 
 resource "aws_iam_policy" "policy_dbEast_Readonly"{
