@@ -17,7 +17,7 @@ resource "aws_db_instance" "appdata_mysql"{
 	engine_version 	  		 = "8.0"
 	instance_class    		 = "db.t3.micro"
 	username		  		 = "root"
-	password 		  		 = "F@lc0nC0ll3g3!"
+	password 		  		 = "Falc0nC0ll3g3!"
 	parameter_group_name     = "default.MySql8.0"
 	skip_final_snapshot		 = true
 	backup_retention_period  = 7
