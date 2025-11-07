@@ -5,6 +5,10 @@
 
 # data of existing DevOpsAdmin Account
 
+data "aws_iam_user" "DevOpsAdmin" {
+  user_name = "DevOpsAdmin"
+}
+
 resource "aws_iam_user" "developer" {
   name = "LeadDeveloper"
 }

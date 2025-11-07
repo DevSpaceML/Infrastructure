@@ -9,6 +9,12 @@ output "node_manager_role_arn" {
 output "access_entries" {
   description = "Map of access entries to create"
   value = {
+    devops_admin = {
+      principal_arn = data.aws_iam_user.DevOpsAdmin.arn
+      type = "STANDARD"
+      kubernetes_groups = ["system:masters"]
+    }
+    
     cluster_admin = {
       principal_arn = aws_iam_role.eks_cluster_Role.arn
       type = "STANDARD"
