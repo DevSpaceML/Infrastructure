@@ -12,7 +12,7 @@ output "access_entries" {
     devops_admin = {
       principal_arn = data.aws_iam_user.DevOpsAdmin.arn
       type = "STANDARD"
-      kubernetes_groups = ["system:masters"]
+      kubernetes_groups = ["cluster-admin"]
     }
     
     cluster_admin = {
