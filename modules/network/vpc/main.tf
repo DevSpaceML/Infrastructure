@@ -57,7 +57,7 @@ resource "aws_subnet" "private_subnet_eks" {
 	}	
 }
 
-resource "aws_internet_gateway" "igw_internal_eks" {
+resource "aws_internet_gateway" "igw_public_eks" {
 	vpc_id = aws_vpc.cluster_vpc.id
 
 	tags = {
@@ -66,7 +66,7 @@ resource "aws_internet_gateway" "igw_internal_eks" {
 }
 
 resource "aws_eip" "nat-eip" {
-	count    = length(aws_subnet.public_subnet_eks)
+	count    = length(aws_subnet.private_subnet_eks)
 	domain   = "vpc"
 
 	tags = {
@@ -76,9 +76,9 @@ resource "aws_eip" "nat-eip" {
 }
 
 resource "aws_nat_gateway" "eks_nat_gw" {
-	count = length(aws_subnet.public_subnet_eks)
+	count = length(aws_subnet.private_subnet_eks)
 	allocation_id = aws_eip.nat-eip[count.index].id
-	subnet_id = aws_subnet.public_subnet_eks[count.index].id
+	subnet_id = aws_subnet.private_subnet_eks[count.index].id
 
 	tags = {
 		Name = "EKS-NAT-Gateway-${count.index+1}"
@@ -90,7 +90,7 @@ resource "aws_route_table" "eks_public_routetable" {
 
 	route {
 		cidr_block = "0.0.0.0/0"
-		gateway_id = aws_internet_gateway.igw_internal_eks.id
+		gateway_id = aws_internet_gateway.igw_public_eks.id
 	}	
 }
 
@@ -108,7 +108,7 @@ resource "aws_route_table" "eks_private_routetable" {
 
 	route {
 		cidr_block = "0.0.0.0/0"
-		nat_gateway_id = aws_nat_gateway.eks_nat_gw[count.index % length(aws_nat_gateway.eks_nat_gw)].id
+		nat_gateway_id = aws_nat_gateway.eks_nat_gw[count.index].id
 	}
 
 	tags = {
