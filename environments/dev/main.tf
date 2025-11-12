@@ -35,6 +35,7 @@ module "dev_cluster" {
   source            = "../../modules/compute/eks/cluster"
   clustername       = var.clustername
   vpcId             = module.dev_vpc.eks_vpc_id
+  subnetIdlist      = module.dev_vpc.subnet_id_list
   public_subnet_ids = module.dev_vpc.public_subnets
   private_subnet_ids = module.dev_vpc.private_subnets
   public_cidr       = module.dev_vpc.public_cidr
