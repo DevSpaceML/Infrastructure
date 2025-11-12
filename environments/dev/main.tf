@@ -70,7 +70,9 @@ module "auth" {
   eksclustername = module.dev_cluster.cluster_name
   noderolearn    = module.iam.node_manager_role_arn.arn
   clusteradminrole = module.iam.cluster_role_arn
-  hosturl        = module.dev_cluster.cluster_endpoint
+  DevOpsAdminSre   = module.iam.DevOps-SRE-Admin.arn
+  techlead         = module.iam.techlead_developer.arn
+  hosturl          = module.dev_cluster.cluster_endpoint
 
   providers = {
     kubernetes = kubernetes.this
