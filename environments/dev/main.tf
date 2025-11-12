@@ -36,6 +36,7 @@ module "dev_cluster" {
   clustername       = var.clustername
   vpcId             = module.dev_vpc.eks_vpc_id
   public_subnet_ids = module.dev_vpc.public_subnets
+  private_subnet_ids = module.dev_vpc.private_subnets
   public_cidr       = module.dev_vpc.public_cidr
   cluster_role_arn  = module.iam.cluster_role_arn
   access_entries    = module.iam.access_entries

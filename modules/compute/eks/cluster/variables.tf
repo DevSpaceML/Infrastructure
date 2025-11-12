@@ -53,8 +53,13 @@ variable "endpoint_public_access" {
 }
 
 variable "public_subnet_ids" {
-  	description = "list of subnet Ids available to the cluster"
+  description = "list of public subnet Ids available to the cluster"
 	type = list
+}
+
+variable "private_subnet_ids" {
+  description = "list of private subnet Ids available to the cluster"
+  type = list
 }
 
 variable "public_cidr" {
@@ -63,7 +68,7 @@ variable "public_cidr" {
 }
 
 variable "additional_security_group_ids" {
-    description = "list of additional security group Ids to attach to the cluster"
+  description = "list of additional security group Ids to attach to the cluster"
 	type        = list(string)
 	default     = [ ]
 }
