@@ -49,7 +49,7 @@ module "dev_nodes" {
   node_group_mgr_arn = module.iam.node_manager_role_arn.arn
   nodegroupname      = var.nodegroupname
   eksclustername     = module.dev_cluster.cluster_name
-  private_subnet_Ids = module.dev_vpc.private_subnets
+  subnet_id_list     = module.dev_vpc.subnet_id_list
 }
 
 data "aws_eks_cluster_auth" "devcluster" {

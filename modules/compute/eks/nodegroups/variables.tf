@@ -39,7 +39,7 @@ variable "node_group_mgr_arn" {
   type = string
 }
 
-variable "private_subnet_Ids" {
+variable "subnet_id_list" {
 	description = "list of subnet Ids available to the cluster"
 	type = list
 }
