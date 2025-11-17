@@ -17,15 +17,21 @@ variable "cidr" {
 }
 
 variable "public_subnet_cidr_blocks" {
-  description = "A list of CIDR blocks for the subnets"
+  description = "Public Cidr blocks for NAT gateways, ALB, etc"
   type        = list(string)
-  default     = ["10.0.3.0/24", "10.0.4.0/24"]
+  default     = ["10.0.11.0/24", "10.0.12.0/24"]
 }
 
 variable "private_subnet_cidr_blocks" {
   description = "A list of CIDR blocks for the subnets"
   type        = list(string)
   default     = ["10.0.1.0/24", "10.0.2.0/24"]
+}
+
+variable nodegroup_pvt_subnet_cidr_blocks {
+	description = "list if cidr blocks for nodegroup private subnets"
+	type = list
+	default = ["10.0.64.0/19", "10.0.96.0/19"]
 }
 
 variable "instance_tenancy" {

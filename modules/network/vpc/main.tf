@@ -39,7 +39,7 @@ resource "aws_subnet" "public_subnet_eks" {
 	map_public_ip_on_launch = true
 
 	tags = {
-		Name = "eks-public-subnet-${count.index + 1}"
+		Name = "alb-ngw-public-subnet-${count.index + 1}"
 		"kubernetes.io/role/elb" = "1"
 	}	
 }
@@ -52,9 +52,23 @@ resource "aws_subnet" "private_subnet_eks" {
 	map_public_ip_on_launch = false
 
 	tags = {
-		Name = "eks-private-subnet-${count.index + 1}"
+		Name = "ctrlplane-private-subnet-${count.index + 1}"
 		"kubernetes.io/cluster/${var.vpcname}" = "owned"
 	}	
+}
+
+resource "aws_subnet" "nodegroup_private_subnet" {
+	vpc_id = aws_vpc.cluster_vpc.id
+	count = length(var.nodegroup_pvt_subnet_cidr_blocks)
+	cidr_block = var.nodegroup_pvt_subnet_cidr_blocks[count.index]
+	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
+	map_public_ip_on_launch = false
+
+	tags = {
+		Name = "nodegroup-private-subnet-${count.index + 1}"
+		"kubernetes.io/cluster/${var.vpcname}" = "owned"
+	}	
+  
 }
 
 resource "aws_internet_gateway" "igw_public_eks" {
@@ -121,6 +135,33 @@ resource "aws_route_table_association" "eks_private_route_association" {
 	subnet_id      =  aws_subnet.private_subnet_eks[count.index].id
 	route_table_id = 	aws_route_table.eks_private_routetable[count.index].id
 }
+
+
+resource "aws_route_table" "nodegroup_private_routetable" {
+	count = length(aws_subnet.nodegroup_private_subnet)
+	vpc_id = aws_vpc.cluster_vpc.id
+
+	route {
+		cidr_block = "0.0.0.0/0"
+		nat_gateway_id = aws_nat_gateway.eks_nat_gw[count.index].id
+	}	
+
+  	tags = {
+		Name = "Nodegroup-Private-RouteTable-${count.index + 1}"
+	} 
+}
+
+resource "aws_route_table_association" "nodegroup_private_route_association" {
+	count          =  length(aws_subnet.nodegroup_private_subnet)
+	subnet_id      =  aws_subnet.nodegroup_private_subnet[count.index].id
+	route_table_id = 	aws_route_table.nodegroup_private_routetable[count.index].id
+}
+
+
+
+
+
+
 
 /*
 resource "aws_flow_log" "eks-vpc-flow-log" {
