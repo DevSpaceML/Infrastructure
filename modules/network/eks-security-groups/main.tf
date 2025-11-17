@@ -4,7 +4,7 @@ data "aws_security_group" "cluster-sg" {
     vpc_id = var.vpc_id
 
     filter {
-        name   = "group-name"
+        name   = "tag:Name"
         values = [format("eks-%s-cluster-sg", var.clustername)]
     }
 }
