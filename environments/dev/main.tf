@@ -43,6 +43,13 @@ module "dev_cluster" {
   access_entries    = module.iam.access_entries
 }
 
+module "eks_security_groups" {
+  depends_on = [ module.dev_vpc,module.dev_cluster ]
+  source     = "../../modules/network/eks-security-groups"
+  vpc_id     = module.dev_vpc.eks_vpc_id
+  clustername = module.dev_cluster.cluster_name
+}
+
 module "dev_nodes" {
   depends_on         = [module.dev_cluster, module.iam]
   source             = "../../modules/compute/eks/nodegroups"
