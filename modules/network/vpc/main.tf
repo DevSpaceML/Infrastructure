@@ -6,6 +6,9 @@ data "aws_availability_zones" "available"{
 
 data "aws_vpc" "clustervpcdata" {
 	depends_on = [aws_vpc.cluster_vpc]
+
+	enable_dns_hostnames = true
+	enable_dns_support   = true
 	
 	filter {
 		name = "tag:Name"
@@ -13,6 +16,22 @@ data "aws_vpc" "clustervpcdata" {
 	}
 
 }
+
+resource "aws_vpc_dhcp_options" "eks_dhcp_options" {
+	domain_name_servers = ["AmazonProvidedDNS"]
+	domain_name = "ec2.internal"
+	
+	tags = {
+		Name = "${var.vpcname}-dhcp-options"
+	}
+}
+
+resource "aws_vpc_dhcp_options_association" "eks_dhcp_options_association" {
+	vpc_id = aws_vpc.cluster_vpc.id
+	dhcp_options_id = aws_vpc_dhcp_options.eks_dhcp_options.id	 
+}
+
+
 
 data "aws_subnets" "eks_subnets" {
 	filter {
