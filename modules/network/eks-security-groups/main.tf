@@ -37,6 +37,7 @@ resource "aws_security_group_rule" "nodegroup_to_cluster" {
     from_port                = 443                        
     to_port                  = 443
     protocol                 = "tcp"
+    cidr_blocks              = var.nodegroup_cidr_blocks
     security_group_id        = data.aws_security_group.cluster-sg.id
     source_security_group_id = aws_security_group.nodegroup-sg.id
 }
@@ -46,6 +47,7 @@ resource "aws_security_group_rule" "node_ingress_cluster_kubelet" {
    from_port = 10250
    to_port = 10250
    protocol = "tcp"
+   cidr_blocks = var.nodegroup_cidr_blocks
    security_group_id = aws_security_group.nodegroup-sg.id
    source_security_group_id = data.aws_security_group.cluster-sg.id
 } 

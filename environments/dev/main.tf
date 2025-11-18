@@ -47,6 +47,7 @@ module "eks_security_groups" {
   depends_on = [ module.dev_vpc,module.dev_cluster ]
   source     = "../../modules/network/eks-security-groups"
   vpc_id     = module.dev_vpc.eks_vpc_id
+  nodegroup_cidr_blocks = module.dev_vpc.nodegroup_pvt_cidr
   clustername = module.dev_cluster.cluster_name
 }
 

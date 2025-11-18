@@ -15,6 +15,10 @@ output "private_cidr" {
   value = var.private_subnet_cidr_blocks
 }
 
+output "nodegroup_pvt_cidr" {
+  value = var.nodegroup_pvt_subnet_cidr_blocks
+}
+
 output "eks_security_group_id" {
   value = aws_vpc.cluster_vpc.default_security_group_id
 }
