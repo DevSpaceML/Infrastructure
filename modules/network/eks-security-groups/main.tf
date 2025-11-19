@@ -3,9 +3,8 @@
 data "aws_security_group" "cluster-sg" {
     vpc_id = var.vpc_id
 
-    filter {
-        name   = "group-name"
-        values = ["eks-cluster-sg-${var.clustername}-*"]
+    tags = {
+      "aws:eks:cluster-name" = var.clustername
     }
 }
 
@@ -20,6 +19,16 @@ resource "aws_security_group" "nodegroup-sg" {
     }
 }
 
+# allow cluster security group to accept worker node traffic
+resource "aws_security_group_rule" "cluster_allow_ingress_from_nodegroup" {
+    type = "ingress"
+    from_port = 443
+    to_port = 443
+    protocol = "tcp"
+    security_group_id = data.aws_security_group.cluster-sg.id
+    source_security_group_id = aws_security_group.nodegroup-sg.id
+    description = "Allow cluster to accept incoming worker node traffic"
+}
 
 # allow communication between cluster and nodegroup
 resource "aws_security_group_rule" "cluster_to_nodegroup" {
@@ -29,6 +38,7 @@ resource "aws_security_group_rule" "cluster_to_nodegroup" {
     protocol                 = "tcp"
     security_group_id        = aws_security_group.nodegroup-sg.id
     source_security_group_id = data.aws_security_group.cluster-sg.id
+    description = "Allow nodegroup to accept incoming traffic from cluster"
 }
 
 # allow nodes to communicate with cluster
@@ -39,8 +49,8 @@ resource "aws_security_group_rule" "nodegroup_to_cluster" {
     protocol                 = "tcp"
     security_group_id        = aws_security_group.nodegroup-sg.id 
     source_security_group_id = data.aws_security_group.cluster-sg.id
+    description = "Allow nodes to send traffic to cluster"
 }
-
 
 # allow cluster to communicate with nodes on kubelet port
 resource "aws_security_group_rule" "node_ingress_cluster_kubelet" {
@@ -57,7 +67,7 @@ resource "aws_security_group_rule" "node_to_node" {
     type              = "ingress"
     from_port         = 0
     to_port           = 65535
-    protocol          = "tcp"
+    protocol          = "udp"
     security_group_id = aws_security_group.nodegroup-sg.id
     source_security_group_id = aws_security_group.nodegroup-sg.id
     description = "Allow nodes to communicate with each other"
