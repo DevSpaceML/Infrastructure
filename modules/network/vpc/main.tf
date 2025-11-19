@@ -62,6 +62,7 @@ resource "aws_subnet" "public_subnet_eks" {
 	tags = {
 		Name = "alb-ngw-public-subnet-${count.index + 1}"
 		"kubernetes.io/role/elb" = "1"
+		"kubernetes.io/cluster/${var.vpcname}" = "shared"
 	}	
 }
 
@@ -75,6 +76,7 @@ resource "aws_subnet" "private_subnet_eks" {
 	tags = {
 		Name = "ctrlplane-private-subnet-${count.index + 1}"
 		"kubernetes.io/cluster/${var.vpcname}" = "owned"
+		"kubernetes.io/role/internal-elb" = "1"
 	}	
 }
 
@@ -88,6 +90,7 @@ resource "aws_subnet" "nodegroup_private_subnet" {
 	tags = {
 		Name = "nodegroup-private-subnet-${count.index + 1}"
 		"kubernetes.io/cluster/${var.vpcname}" = "owned"
+		"kubernetes.io/role/internal-elb" = "1"
 	}	
   
 }
@@ -113,7 +116,7 @@ resource "aws_eip" "nat-eip" {
 resource "aws_nat_gateway" "eks_nat_gw" {
 	count = length(aws_subnet.private_subnet_eks)
 	allocation_id = aws_eip.nat-eip[count.index].id
-	subnet_id = aws_subnet.private_subnet_eks[count.index].id
+	subnet_id = aws_subnet.public_subnet_eks[count.index].id
 
 	tags = {
 		Name = "EKS-NAT-Gateway-${count.index+1}"
