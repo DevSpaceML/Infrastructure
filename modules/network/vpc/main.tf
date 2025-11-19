@@ -4,17 +4,34 @@ data "aws_availability_zones" "available"{
 	state = "available"
 }
 
-data "aws_vpc" "clustervpcdata" {
-	depends_on = [aws_vpc.cluster_vpc]
+resource "aws_vpc" "cluster_vpc" {
+	cidr_block = var.cidr
+	instance_tenancy = var.instance_tenancy
 
 	enable_dns_hostnames = true
 	enable_dns_support   = true
+
+	tags = {
+		Name = var.vpcname
+		"kubernetes.io/cluster/${var.vpcname}" = "shared"
+	}
+}
+
+data "aws_vpc" "clustervpcdata" {
+	depends_on = [aws_vpc.cluster_vpc]
 	
 	filter {
 		name = "tag:Name"
 		values = [var.vpcname]
 	}
 
+}
+
+data "aws_subnets" "eks_subnets" {
+	filter {
+			name = "vpc-id"
+			values = [data.aws_vpc.clustervpcdata.id]
+	}
 }
 
 resource "aws_vpc_dhcp_options" "eks_dhcp_options" {
@@ -24,30 +41,15 @@ resource "aws_vpc_dhcp_options" "eks_dhcp_options" {
 	tags = {
 		Name = "${var.vpcname}-dhcp-options"
 	}
+
+	depends_on = [ aws_vpc.cluster_vpc ]
 }
 
 resource "aws_vpc_dhcp_options_association" "eks_dhcp_options_association" {
 	vpc_id = aws_vpc.cluster_vpc.id
-	dhcp_options_id = aws_vpc_dhcp_options.eks_dhcp_options.id	 
-}
+	dhcp_options_id = aws_vpc_dhcp_options.eks_dhcp_options.id
 
-
-
-data "aws_subnets" "eks_subnets" {
-	filter {
-			name = "vpc-id"
-			values = [data.aws_vpc.clustervpcdata.id]
-	}
-}
-
-resource "aws_vpc" "cluster_vpc" {
-	cidr_block = var.cidr
-	instance_tenancy = var.instance_tenancy
-
-	tags = {
-		Name = var.vpcname
-		"kubernetes.io/cluster/${var.vpcname}" = "shared"
-	}
+	depends_on = [ aws_vpc.cluster_vpc, aws_vpc_dhcp_options.eks_dhcp_options ]	 
 }
 
 resource "aws_subnet" "public_subnet_eks" {
