@@ -3,7 +3,7 @@ vpcname  = "dev_vpc"
 dev_cidr = "10.0.0.0/16"
 
 # Cluster Vars
-clustername = "Data_Eng_cluster"
+clustername = "DEV-ML-AI-EKS"
 region      = "us-east-1"
 k8s_version = "1.29"
 
