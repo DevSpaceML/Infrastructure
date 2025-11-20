@@ -63,6 +63,7 @@ resource "aws_subnet" "public_subnet_eks" {
 		Name = "alb-ngw-public-subnet-${count.index + 1}"
 		"kubernetes.io/role/elb" = "1"
 		"kubernetes.io/cluster/${var.vpcname}" = "shared"
+		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	}	
 }
 
@@ -77,6 +78,7 @@ resource "aws_subnet" "private_subnet_eks" {
 		Name = "ctrlplane-private-subnet-${count.index + 1}"
 		"kubernetes.io/cluster/${var.vpcname}" = "owned"
 		"kubernetes.io/role/internal-elb" = "1"
+		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	}	
 }
 
@@ -91,9 +93,28 @@ resource "aws_subnet" "nodegroup_private_subnet" {
 		Name = "nodegroup-private-subnet-${count.index + 1}"
 		"kubernetes.io/cluster/${var.vpcname}" = "owned"
 		"kubernetes.io/role/internal-elb" = "1"
+		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	}	
   
 }
+
+locals {
+  pub_subnets_by_az = {
+	for subnet in aws_subnet.public_subnet_eks:
+	  subnet.tags["availability_zone"] => subnet.id 
+  }
+
+  pvt_subnets_by_az = {
+	for subnet in aws_subnet.private_subnet_eks:
+	  subnet.tags["availability_zone"] => subnet.id
+  }
+
+  public_subnets_by_id = values(local.pub_subnets_by_az)
+  pvt_subnets_by_id = values(local.pvt_subnets_by_az)
+
+  cluster_subnet_ids = concat(local.public_subnets_by_id, local.pvt_subnets_by_id)
+}
+
 
 resource "aws_internet_gateway" "igw_public_eks" {
 	vpc_id = aws_vpc.cluster_vpc.id

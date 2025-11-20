@@ -4,7 +4,7 @@ output "eks_vpc_id" {
 }
 
 output "subnet_id_list" {
-  value = data.aws_subnets.eks_subnets.ids
+  value = local.cluster_subnet_ids
 }
 
 output "public_cidr" {
