@@ -131,7 +131,7 @@ locals {
 
   public_subnets_by_id = values(local.pub_subnets_by_az)
   pvt_subnets_by_id = values(local.pvt_subnets_by_az)
-  
+
   rds_subnets_by_id = values(local.rds_subnets_by_az)
   cluster_subnet_ids =  local.pvt_subnets_by_id
    
@@ -157,7 +157,7 @@ resource "aws_eip" "nat-eip" {
 }
 
 resource "aws_nat_gateway" "eks_nat_gw" {
-	count = length(aws_subnet.private_subnet_eks)
+	count = length(aws_subnet.public_subnet_eks)
 	allocation_id = aws_eip.nat-eip[count.index].id
 	subnet_id = aws_subnet.public_subnet_eks[count.index].id
 
@@ -205,7 +205,7 @@ resource "aws_route_table_association" "eks_private_route_association" {
 
 
 resource "aws_route_table" "nodegroup_private_routetable" {
-	count = length(aws_subnet.nodegroup_private_subnet)
+	count = length(aws_subnet.public_subnet_eks)
 	vpc_id = aws_vpc.cluster_vpc.id
 
 	route {
@@ -219,15 +219,10 @@ resource "aws_route_table" "nodegroup_private_routetable" {
 }
 
 resource "aws_route_table_association" "nodegroup_private_route_association" {
-	count          =  length(aws_subnet.nodegroup_private_subnet)
+	count          =  length(aws_subnet.public_subnet_eks)
 	subnet_id      =  aws_subnet.nodegroup_private_subnet[count.index].id
 	route_table_id = 	aws_route_table.nodegroup_private_routetable[count.index].id
 }
-
-
-
-
-
 
 
 /*
