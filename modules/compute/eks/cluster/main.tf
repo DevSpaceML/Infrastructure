@@ -44,6 +44,7 @@ resource "aws_eks_cluster" "this" {
 	tags = {
 		Environment = var.environment
 	}
+
 }
 
 resource "aws_eks_access_entry" "eks_access" {

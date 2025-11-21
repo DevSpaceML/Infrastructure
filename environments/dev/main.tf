@@ -52,7 +52,7 @@ module "eks_security_groups" {
 }
 
 module "dev_nodes" {
-  depends_on         = [module.dev_cluster, module.iam]
+  depends_on         = [module.dev_cluster, module.iam, module.network_security_groups]
   source             = "../../modules/compute/eks/nodegroups"
   node_group_mgr_arn = module.iam.node_manager_role_arn.arn
   nodegroupname      = var.nodegroupname
