@@ -35,6 +35,10 @@ output "nodegroup_pvt_subnet_id_list" {
   value = aws_subnet.nodegroup_private_subnet[*].id
 }
 
+output "rds_private_subnet_list" {
+  value = local.rds_subnets_by_id
+}
+
 output "nat_gateways" {
   value = aws_nat_gateway.eks_nat_gw[*].id
 }

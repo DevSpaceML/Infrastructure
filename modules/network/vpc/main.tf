@@ -98,6 +98,21 @@ resource "aws_subnet" "nodegroup_private_subnet" {
   
 }
 
+resource "aws_subnet" "rds_private_subnet" {
+	vpc_id = aws_vpc.cluster_vpc.id
+	count = length(var.rds_private_subnet_cidr_blocks)
+	cidr_block = var.rds_private_subnet_cidr_blocks[count.index]
+	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
+	map_public_ip_on_launch = false
+
+	tags = {
+		Name = "rds-private-subnet-${count.index + 1}"
+		"kubernetes.io/cluster/${var.vpcname}" = "owned"
+		"kubernetes.io/role/internal-elb" = "1"
+		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
+	}	
+}
+
 locals {
   pub_subnets_by_az = {
 	for subnet in aws_subnet.public_subnet_eks:
@@ -109,10 +124,17 @@ locals {
 	  subnet.tags["availability_zone"] => subnet.id
   }
 
+  rds_subnets_by_az = {
+	for subnet in aws_subnet.rds_private_subnet:
+	  subnet.tags["availability_zone"] => subnet.id
+  }
+
   public_subnets_by_id = values(local.pub_subnets_by_az)
   pvt_subnets_by_id = values(local.pvt_subnets_by_az)
+  rds_subnets_by_id = values(local.rds_subnets_by_az)
 
   cluster_subnet_ids = concat(local.public_subnets_by_id, local.pvt_subnets_by_id)
+   
 }
 
 

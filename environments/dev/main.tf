@@ -112,7 +112,7 @@ module "route53" {
 }
 
 module "rds_appdata" {
-  depends_on         = [module.dev_vpc]
+  depends_on         = [ module.dev_vpc ]
   source             = "../../modules/database/rds"
-  private_subnet_Ids = module.dev_vpc.private_subnets
+  rds_subnet_ids = module.dev_vpc.rds_private_subnet_list
 }

@@ -1,7 +1,7 @@
 
 resource "aws_db_subnet_group" "k8_db_subnet_group" {
     name = "k8_db_subnets"
-	subnet_ids = var.private_subnet_Ids
+	subnet_ids = var.rds_subnet_ids
 	tags = {
 		Name = "k8_db_subnets"
 	}
@@ -31,11 +31,16 @@ resource "aws_db_instance" "replica-appdata_mysql"{
 	instance_class          = "db.t3.micro"
 	skip_final_snapshot     = true
 	backup_retention_period = 7
+	multi_az                = true
+
+	depends_on = [ aws_db_instance.appdata_mysql ]
 }
 
 resource "aws_db_snapshot" "appdata_mysql"{
 	db_instance_identifier = aws_db_instance.appdata_mysql.identifier
 	db_snapshot_identifier = "SnapshotAppDataMySql"
+
+	depends_on = [ aws_db_instance.appdata_mysql ]
 }
 
 resource "aws_iam_policy" "policy_dbEast_Readonly"{

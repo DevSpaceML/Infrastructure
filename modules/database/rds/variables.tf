@@ -10,8 +10,7 @@ variable "iamaccountid"{
 	default = ""
 }
 
-variable "private_subnet_Ids" {
+variable "rds_subnet_ids" {
   description = "list of private subnet ids"
   type        = list(string)
-  default = []
 }

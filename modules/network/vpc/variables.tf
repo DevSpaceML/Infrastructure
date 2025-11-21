@@ -28,11 +28,18 @@ variable "private_subnet_cidr_blocks" {
   default     = ["10.0.1.0/24", "10.0.2.0/24"]
 }
 
+variable "rds_private_subnet_cidr_blocks" {
+    description = "list of cidr blocks for RDS instances"
+	type = list(string)
+	default = ["10.0.31.0/24", "10.0.32.0/24"]
+}
+
 variable nodegroup_pvt_subnet_cidr_blocks {
 	description = "list if cidr blocks for nodegroup private subnets"
 	type = list
-	default = ["10.0.64.0/19", "10.0.96.0/19"]
+	default = ["10.0.64.0/24", "10.0.65.0/24", "10.0.66.0/24"]
 }
+
 
 variable "instance_tenancy" {
 	description = "Tenancy of ec2 instances in this VPC"
