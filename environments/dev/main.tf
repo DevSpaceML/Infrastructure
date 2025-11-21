@@ -52,7 +52,7 @@ module "eks_security_groups" {
 }
 
 module "dev_nodes" {
-  depends_on         = [module.dev_cluster, module.iam, module.network.eks-security_groups]
+  depends_on         = [module.dev_cluster, module.iam, module.eks_security_groups]
   source             = "../../modules/compute/eks/nodegroups"
   node_group_mgr_arn = module.iam.node_manager_role_arn.arn
   nodegroupname      = var.nodegroupname
@@ -62,6 +62,7 @@ module "dev_nodes" {
 
 data "aws_eks_cluster_auth" "devcluster" {
   name = module.dev_cluster.cluster_name
+  depends_on = [ module.dev_cluster ]
 }
 
 # Allow provider to be passed from caller
