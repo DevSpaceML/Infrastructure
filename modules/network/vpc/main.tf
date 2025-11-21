@@ -131,9 +131,9 @@ locals {
 
   public_subnets_by_id = values(local.pub_subnets_by_az)
   pvt_subnets_by_id = values(local.pvt_subnets_by_az)
+  
   rds_subnets_by_id = values(local.rds_subnets_by_az)
-
-  cluster_subnet_ids = concat(local.public_subnets_by_id, local.pvt_subnets_by_id)
+  cluster_subnet_ids =  local.pvt_subnets_by_id
    
 }
 
