@@ -54,7 +54,7 @@ module "eks_security_groups" {
 module "dev_nodes" {
   depends_on         = [module.dev_cluster, module.iam, module.eks_security_groups]
   source             = "../../modules/compute/eks/nodegroups"
-  node_group_mgr_arn = module.iam.node_manager_role_arn.arn
+  node_group_mgr_arn = module.iam.node_manager_role_arn
   nodegroupname      = var.nodegroupname
   eksclustername     = module.dev_cluster.cluster_name
   nodegroup_pvt_subnet_id_list = module.dev_vpc.nodegroup_pvt_subnet_id_list
@@ -78,7 +78,7 @@ module "auth" {
 
   source         = "../../modules/security/auth"
   eksclustername = module.dev_cluster.cluster_name
-  noderolearn    = module.iam.node_manager_role_arn.arn
+  noderolearn    = module.iam.node_manager_role_arn
   clusteradminrole = module.iam.cluster_role_arn
   DevOpsAdminSre   = module.iam.DevOps-SRE-Admin.arn
   techlead         = module.iam.techlead_developer.arn

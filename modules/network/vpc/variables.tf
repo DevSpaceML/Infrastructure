@@ -40,7 +40,6 @@ variable nodegroup_pvt_subnet_cidr_blocks {
 	default = ["10.0.64.0/24", "10.0.65.0/24", "10.0.66.0/24"]
 }
 
-
 variable "instance_tenancy" {
 	description = "Tenancy of ec2 instances in this VPC"
 	type = string
