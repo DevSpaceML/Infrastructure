@@ -8,23 +8,8 @@ variable "k8s_version" {
   type        = string
 }
 
-variable "region" {
-  description = "aws region"
-  type        = string
-}
-
 variable "instancetype" {
   description = "Default Instance Type"
-  type        = string
-}
-
-variable "vpcname" {
-  description = "name of vpc used by dev cluster"
-  type        = string
-}
-
-variable "dev_cidr" {
-  description = "Default cidr block for VPC cluster"
   type        = string
 }
 

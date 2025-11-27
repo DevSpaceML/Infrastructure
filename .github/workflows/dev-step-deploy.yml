@@ -1,0 +1,152 @@
+name: Deploy Dev Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      environments:
+        description: 'Environments To Deploy'
+        required: false
+        default: develop
+        type: string
+env:
+  TF_VERSION: "1.5.0"
+  AWS_REGION: "us-east-1"
+  CLUSTER_NAME: "dev-cluster"
+  EKS_CLUSTER_NAME: "dev-cluster"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+    deploy-network:
+        name: deploy-network
+        runs-on: ubuntu-latest
+    
+        steps:  
+          - name: checkout-code
+            uses: actions/checkout@v4
+            
+          - name: Configure AWS Credentials
+            uses: aws-actions/configure-aws-credentials@v4
+            with:
+              role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.AWS_REGION }}
+              mask-aws-account-id: false
+            
+          - name: Prepare Terraform
+            uses: hashicorp/setup-terraform@v3
+            with:
+              terraform_version: ${{ env.TF_VERSION }}
+              terraform_wrapper: false
+    
+          - name: Terraform Init
+            working-directory: ./environments/dev/network
+            run: |
+              terraform init
+    
+          - name: Terraform Apply
+            working-directory: ./environments/dev/network
+            run: |
+              terraform apply -auto-approve
+    
+    deploy-iam:
+        name: deploy-iam
+        runs-on: ubuntu-latest
+        needs: deploy-network
+        
+        steps:  
+          - name: checkout-code
+            uses: actions/checkout@v4
+            
+          - name: Configure AWS Credentials
+            uses: aws-actions/configure-aws-credentials@v4
+            with:
+              role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.AWS_REGION }}
+              mask-aws-account-id: false
+
+          - name: Prepare Terraform
+            uses: hashicorp/setup-terraform@v3
+            with:
+              terraform_version: ${{ env.TF_VERSION }}
+              terraform_wrapper: false
+
+          - name: Terraform Init
+            working-directory: ./environments/dev/iam
+            run: |
+              terraform init
+
+          - name: Terraform Plan
+            working-directory: ./environments/dev/iam
+            run: |
+              terraform plan 
+
+          - name: Terraform Apply
+            working-directory: ./environments/dev/iam
+            run: |
+              terraform apply -auto-approve
+            
+          - name: Get IAM Outputs
+            id: iam-outputs
+            working-directory: ./environments/dev/iam
+            run: |
+              echo "::set-output name=cluster_role_arn::$(terraform output -raw cluster_role_arn)"
+              echo "::set-output name=access_entries::$(terraform output -json access_entries)"
+
+    deploy-cluster:
+        name: deploy-eks-cluster
+        runs-on: ubuntu-latest
+        needs: [deploy-network, deploy-iam]
+        outputs:
+            cluster-endpoint: ${{ steps.cluster-info.outputs.endpoint }}
+            cluster-ca: ${{ steps.cluster-info.outputs.certificate_authority }}
+            cluster-arn: ${{ steps.cluster-info.outputs.arn }}
+        
+        steps:  
+          - name: checkout-code
+            uses: actions/checkout@v4
+
+          - name: Configure AWS Credentials
+            uses: aws-actions/configure-aws-credentials@v4
+            with:
+              role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.AWS_REGION }}
+              mask-aws-account-id: false
+            
+          - name: Prepare Terraform
+            uses: hashicorp/setup-terraform@v3
+            with:
+              terraform_version: ${{ env.TF_VERSION }}
+              terraform_wrapper: false
+
+          - name: Terraform Init
+            working-directory: ./environments/dev/cluster
+            run: |
+              terraform init -upgrade
+            
+          - name: Terraform Validate
+            working-directory: ./environments/dev/cluster
+            run: terraform validate
+            
+          - name: Terraform Plan
+            working-directory: ./environments/dev/cluster
+            run: |
+              terraform plan -var="VpcId=${{ needs.deploy-network.outputs.vpc-id }}" -var="cluster_role_arn=${{ needs.deploy-iam.outputs.cluster-role-arn }}" -var="access_entries=${{ needs.deploy-iam.outputs.access-entries }}" -out=deploy-dev-eks.tfplan
+
+          - name: Terraform Apply
+            working-directory: ./environments/dev/cluster
+            run: |
+              terraform apply -auto-approve deploy-dev-eks.tfplan
+
+          - name: Get Cluster Info
+            id: cluster-info
+            working-directory: ./environments/dev/cluster
+            run: |
+              echo "::set-output name=endpoint::$(terraform output -raw cluster_endpoint)"
+              echo "::set-output name=certificate_authority::$(terraform output -raw cluster_certificate_authority)"
+              echo "::set-output name=arn::$(terraform output -raw cluster_arn)"
+        

@@ -1,8 +1,3 @@
-# Cluster Vars
-clustername = "DEV-ML-AI"
-region      = "us-east-1"
-k8s_version = "1.29"
-
 # Node group vars
 instancetype       = "t3g.medium"
 desired_node_count = 3

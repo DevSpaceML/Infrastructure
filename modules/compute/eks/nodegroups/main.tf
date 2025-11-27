@@ -1,7 +1,7 @@
 resource "aws_eks_node_group" "cluster_nodes" {
 
 	cluster_name    = var.eksclustername
-	node_group_name = coalesce(var.nodegroupname,format("%s_cluster_nodes", var.eksclustername))
+	node_group_name = var.nodegroupname
 	node_role_arn   = var.node_group_mgr_arn
 	subnet_ids      = var.nodegroup_pvt_subnet_id_list
 	instance_types  = [var.instancetype]
