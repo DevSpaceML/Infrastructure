@@ -1,7 +1,7 @@
 
 resource "aws_db_subnet_group" "k8_db_subnet_group" {
     name = "k8_db_subnets"
-	subnet_ids = var.private_subnet_Ids
+	subnet_ids = var.rds_subnet_ids
 	tags = {
 		Name = "k8_db_subnets"
 	}
@@ -17,7 +17,7 @@ resource "aws_db_instance" "appdata_mysql"{
 	engine_version 	  		 = "8.0"
 	instance_class    		 = "db.t3.micro"
 	username		  		 = "root"
-	password 		  		 = "F@lc0nC0ll3g3!"
+	password 		  		 = "Falc0nC0ll3g3!"
 	parameter_group_name     = "default.MySql8.0"
 	skip_final_snapshot		 = true
 	backup_retention_period  = 7
@@ -31,11 +31,16 @@ resource "aws_db_instance" "replica-appdata_mysql"{
 	instance_class          = "db.t3.micro"
 	skip_final_snapshot     = true
 	backup_retention_period = 7
+	multi_az                = true
+
+	depends_on = [ aws_db_instance.appdata_mysql ]
 }
 
 resource "aws_db_snapshot" "appdata_mysql"{
 	db_instance_identifier = aws_db_instance.appdata_mysql.identifier
-	db_snapshot_identifier = "snapshot-appdata_mysql"
+	db_snapshot_identifier = "SnapshotAppDataMySql"
+
+	depends_on = [ aws_db_instance.appdata_mysql ]
 }
 
 resource "aws_iam_policy" "policy_dbEast_Readonly"{
@@ -99,6 +104,3 @@ resource "aws_iam_policy" "policy_dbadminaccess" {
 	 })	
 }
 
-output "dataeng_userId"{
-	value = aws_iam_user.data_engineer.unique_id
-}

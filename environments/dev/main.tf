@@ -1,63 +1,25 @@
-terraform {
-  required_version = ">= 1.4.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = ">= 2.36.0"
-    }
-    helm = {
-      source  = "hashicorp/helm"
-      version = ">= 2.0.0"
-    }
-  }
-  backend "s3" {
-    bucket         = "dev-terraform-state-586098609239"
-    key            = "dev/terraform.tfstate"
-    region         = "us-east-1"
-    encrypt        = true
-  }
-}
 
-provider "aws" {
-  region = "us-east-1"
-}
 
-module "dev_vpc" {
-  source  = "../../modules/network/vpc"
-  cidr    = var.dev_cidr
-  vpcname = var.vpcname
-}
-
-module "iam" {
-  source = "../../modules/security/iam"
-}
-
-module "dev_cluster" {
-  depends_on        = [module.dev_vpc, module.iam]
-  source            = "../../modules/compute/eks/cluster"
-  clustername       = var.clustername
-  vpcId             = module.dev_vpc.eks_vpc_id
-  public_subnet_ids = module.dev_vpc.public_subnets
-  public_cidr       = module.dev_vpc.public_cidr
-  cluster_role_arn  = module.iam.cluster_role_arn
-  access_entries    = module.iam.access_entries
+module "eks_security_groups" {
+  depends_on = [ module.dev_vpc,module.dev_cluster ]
+  source     = "../../modules/network/eks-security-groups"
+  vpc_id     = module.dev_vpc.eks_vpc_id
+  nodegroup_cidr_blocks = module.dev_vpc.nodegroup_pvt_cidr
+  clustername = module.dev_cluster.cluster_name
 }
 
 module "dev_nodes" {
-  depends_on         = [module.dev_cluster, module.iam]
+  depends_on         = [module.dev_cluster, module.iam, module.eks_security_groups]
   source             = "../../modules/compute/eks/nodegroups"
-  node_group_mgr_arn = module.iam.node_manager_role_arn.arn
+  node_group_mgr_arn = module.iam.node_manager_role_arn
   nodegroupname      = var.nodegroupname
   eksclustername     = module.dev_cluster.cluster_name
-  private_subnet_Ids = module.dev_vpc.private_subnets
+  nodegroup_pvt_subnet_id_list = module.dev_vpc.nodegroup_pvt_subnet_id_list
 }
 
 data "aws_eks_cluster_auth" "devcluster" {
   name = module.dev_cluster.cluster_name
+  depends_on = [ module.dev_cluster ]
 }
 
 # Allow provider to be passed from caller
@@ -73,9 +35,11 @@ module "auth" {
 
   source         = "../../modules/security/auth"
   eksclustername = module.dev_cluster.cluster_name
-  noderolearn    = module.iam.node_manager_role_arn.arn
+  noderolearn    = module.iam.node_manager_role_arn
   clusteradminrole = module.iam.cluster_role_arn
-  hosturl        = module.dev_cluster.cluster_endpoint
+  DevOpsAdminSre   = module.iam.DevOps-SRE-Admin.arn
+  techlead         = module.iam.techlead_developer.arn
+  hosturl          = module.dev_cluster.cluster_endpoint
 
   providers = {
     kubernetes = kubernetes.this
@@ -106,7 +70,7 @@ module "route53" {
 }
 
 module "rds_appdata" {
-  depends_on         = [module.dev_vpc]
+  depends_on         = [ module.dev_vpc ]
   source             = "../../modules/database/rds"
-  private_subnet_Ids = module.dev_vpc.private_subnets
+  rds_subnet_ids = module.dev_vpc.rds_private_subnet_list
 }

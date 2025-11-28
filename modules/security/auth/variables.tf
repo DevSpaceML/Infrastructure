@@ -17,3 +17,13 @@ variable "clusteradminrole" {
   description = "role for cluster administration"
   type        = string
 }
+
+variable "techlead" {
+  description = "Tech lead user account arn"
+  type = string
+}
+
+variable "DevOpsAdminSre" {
+  description = "Devops - SRE User account arn"
+  type = string
+}

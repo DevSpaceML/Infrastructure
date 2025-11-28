@@ -18,10 +18,9 @@ resource "aws_eks_cluster" "this" {
 	role_arn = var.cluster_role_arn
 	
 	vpc_config {
-		subnet_ids              = var.public_subnet_ids
+		subnet_ids              = var.subnetIdlist
 		endpoint_public_access  = var.endpoint_public_access
 		endpoint_private_access = var.endpoint_private_access
-    public_access_cidrs     = var.public_cidr
     security_group_ids      = var.additional_security_group_ids
 	}
 
@@ -45,6 +44,7 @@ resource "aws_eks_cluster" "this" {
 	tags = {
 		Environment = var.environment
 	}
+
 }
 
 resource "aws_eks_access_entry" "eks_access" {
@@ -56,6 +56,10 @@ resource "aws_eks_access_entry" "eks_access" {
 	kubernetes_groups = each.value.kubernetes_groups
 	type              = each.value.type
   user_name         = try(each.value.user_name, null)
+
+  lifecycle {
+    create_before_destroy = false
+  }
 }
 
 resource "aws_eks_access_policy_association" "eks_cluster_admin_policy" {

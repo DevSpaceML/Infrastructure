@@ -56,7 +56,7 @@ resource "kubernetes_cluster_role_binding_v1" "K8_cluster_role_Binding" {
   
 }
 
-# Developer Role
+# Developer Role and RoleBinding
 
 resource "kubernetes_role" "Developer" {
 
@@ -95,6 +95,29 @@ resource "kubernetes_role" "Developer" {
 	verbs = ["get","list"]
   }
 }
+
+resource "kubernetes_role_binding" "Developer_Role_Binding" {
+  depends_on = [ kubernetes_role.Developer ]
+
+  metadata {
+	name = "developer-role-binding"
+	namespace = "development"
+  }
+
+  role_ref {
+	api_group = "rbac.authorization.k8s.io"
+	kind      = "Role"
+	name      = kubernetes_role.Developer.metadata[0].name
+  }
+
+  subject {
+	kind      = "User"
+	name      = var.techlead
+	api_group = "rbac.authorization.k8s.io"
+  }
+}
+
+# DevOps-SRE Role and RoleBinding
 
 resource "kubernetes_role" "Devops-SRE" {
   metadata {
@@ -137,6 +160,28 @@ resource "kubernetes_role" "Devops-SRE" {
 	verbs = ["get","list","watch"]
   }
 }
+
+resource "kubernetes_role_binding" "DevOps_SRE_Role_Binding" {
+  depends_on = [ kubernetes_role.Devops-SRE ]
+
+  metadata {
+	name = "DevOps-SRE-role-binding"
+  }
+
+  role_ref {
+	api_group = "rbac.authorization.k8s.io"
+	kind      = "Role"
+	name      = kubernetes_role.Devops-SRE.metadata[0].name
+  }
+
+  subject {
+	kind      = "User"
+	name      = var.DevOpsAdminSre
+	api_group = "rbac.authorization.k8s.io"
+  }
+}
+
+# Monitoring Role and RoleBinding
 
 resource "kubernetes_cluster_role" "K8_monitor" {
   metadata {

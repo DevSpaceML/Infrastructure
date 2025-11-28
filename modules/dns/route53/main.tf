@@ -1,5 +1,6 @@
 # Create Hosted Zones for Application
 #get lb data dynamically [change to use variables for tags]
+
 data "aws_lb" "eks-lb" {    	
         name = "eks-cluster-lb"
 } 
