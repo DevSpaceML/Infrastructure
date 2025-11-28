@@ -71,7 +71,7 @@ jobs:
         working-directory: ./environments/dev/network
         run: |
           echo "Verify VPC Creation"
-          $VPC_ID=$(terraform output -raw vpc_id)
+          VPC_ID=$(terraform output -raw vpc_id)
           aws ec2 describe-vpcs --vpc-ids $VPC_ID --region ${{ env.AWS_REGION }}
 
           echo "Verify Subnets Creation"
