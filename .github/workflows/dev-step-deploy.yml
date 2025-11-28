@@ -3,6 +3,10 @@ name: Deploy Dev Infrastructure
 on:
   workflow_dispatch:
     inputs:
+      cluster_name:
+        description: 'EKS Cluster Name'
+        required: true
+        type: string
       environments:
         description: 'Environments To Deploy'
         required: false
@@ -11,142 +15,192 @@ on:
 env:
   TF_VERSION: "1.5.0"
   AWS_REGION: "us-east-1"
-  CLUSTER_NAME: "dev-cluster"
-  EKS_CLUSTER_NAME: "dev-cluster"
+  CLUSTER_NAME: ${{ github.event.inputs.cluster_name }}
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-    deploy-network:
-        name: deploy-network
-        runs-on: ubuntu-latest
+  deploy-network:
+    name: deploy-network
+    runs-on: ubuntu-latest
     
-        steps:  
-          - name: checkout-code
-            uses: actions/checkout@v4
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
             
-          - name: Configure AWS Credentials
-            uses: aws-actions/configure-aws-credentials@v4
-            with:
-              role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
-              role-session-name: GitHub-Actions-OIDC-Session
-              aws-region: ${{ env.AWS_REGION }}
-              mask-aws-account-id: false
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: false
             
-          - name: Prepare Terraform
-            uses: hashicorp/setup-terraform@v3
-            with:
-              terraform_version: ${{ env.TF_VERSION }}
-              terraform_wrapper: false
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
     
-          - name: Terraform Init
-            working-directory: ./environments/dev/network
-            run: |
+      - name: Terraform Init
+        working-directory: ./environments/dev/network
+        run: |
               terraform init
     
-          - name: Terraform Apply
-            working-directory: ./environments/dev/network
-            run: |
-              terraform apply -auto-approve
-    
-    deploy-iam:
-        name: deploy-iam
-        runs-on: ubuntu-latest
-        needs: deploy-network
+      - name: Terraform Apply
+        working-directory: ./environments/dev/network
+        run: |
+          terraform apply -auto-approve
+
+      - name: Verify Network Resources
+        working-directory: ./environments/dev/network
+        run: |
+          echo "Verify VPC Creation"
+          $VPC_ID=$(terraform output -raw vpc_id)
+          aws ec2 describe-vpcs --vpc-ids $VPC_ID --region ${{ env.AWS_REGION }}
+
+          echo "Verify Subnets Creation"
+          $SUBNET_IDS=$(terraform output -json subnet_ids | jq -r '.[]')
+          for SUBNET_ID in $SUBNET_IDS; do
+            STATE=$(aws ec2 describe-subnets --subnet-ids $SUBNET_ID --region ${{ env.AWS_REGION }} --query 'Subnets[0].State' --output text)
+            if [ "$STATE" != "available" ]; then
+              echo "Subnet $SUBNET_ID is not in 'available' state."
+              exit 1
+            else
+              echo "Subnet $SUBNET_ID is available."
+            fi
+          done
+
+  deploy-iam:
+    name: deploy-iam
+    runs-on: ubuntu-latest
+    needs: deploy-network
         
-        steps:  
-          - name: checkout-code
-            uses: actions/checkout@v4
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
             
-          - name: Configure AWS Credentials
-            uses: aws-actions/configure-aws-credentials@v4
-            with:
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: false
+
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: ./environments/dev/iam
+        run: |
+          terraform init
+
+      - name: Terraform Plan
+        working-directory: ./environments/dev/iam
+        run: |
+          terraform plan 
+
+      - name: Terraform Apply
+        working-directory: ./environments/dev/iam
+        run: |
+          terraform apply -auto-approve
+            
+      - name: Verify IAM Resources
+        working-directory: ./environments/dev/iam
+        run: |
+          echo "Verfify IAM Role and Policy attachments"
+          $cluster_role_arn=$(terraform output -raw cluster_role_arn)
+          $node_role_arn=$(terraform output -raw node_role_arn)
+
+          ROLE_NAME=$(echo ${cluster_role_arn} | cut -d'/' -f2)
+          POLICIES=$(aws iam list-attached-role-policies --role-name $ROLE_NAME --query 'AttachedPolicies[].PolicyName' --output text)
+          echo "Cluster Role Policies: $POLICIES"
+
+          NODE_ROLE_NAME=$(echo ${node_role_arn} | cut -d'/' -f2)
+          NODE_POLICIES=$(aws iam list-attached-role-policies --role-name $NODE_ROLE_NAME --query 'AttachedPolicies[].PolicyName' --output text)
+          echo "Node Role Policies: $NODE_POLICIES"
+
+  deploy-cluster:
+    name: deploy-eks-cluster
+    runs-on: ubuntu-latest
+    needs: [deploy-network, deploy-iam]
+    outputs:
+      cluster-endpoint: ${{ steps.cluster-info.outputs.endpoint }}
+      cluster-ca: ${{ steps.cluster-info.outputs.certificate_authority }}
+      cluster-arn: ${{ steps.cluster-info.outputs.arn }}
+        
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
               role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
               role-session-name: GitHub-Actions-OIDC-Session
               aws-region: ${{ env.AWS_REGION }}
               mask-aws-account-id: false
-
-          - name: Prepare Terraform
-            uses: hashicorp/setup-terraform@v3
-            with:
-              terraform_version: ${{ env.TF_VERSION }}
-              terraform_wrapper: false
-
-          - name: Terraform Init
-            working-directory: ./environments/dev/iam
-            run: |
-              terraform init
-
-          - name: Terraform Plan
-            working-directory: ./environments/dev/iam
-            run: |
-              terraform plan 
-
-          - name: Terraform Apply
-            working-directory: ./environments/dev/iam
-            run: |
-              terraform apply -auto-approve
             
-          - name: Get IAM Outputs
-            id: iam-outputs
-            working-directory: ./environments/dev/iam
-            run: |
-              echo "::set-output name=cluster_role_arn::$(terraform output -raw cluster_role_arn)"
-              echo "::set-output name=access_entries::$(terraform output -json access_entries)"
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
 
-    deploy-cluster:
-        name: deploy-eks-cluster
-        runs-on: ubuntu-latest
-        needs: [deploy-network, deploy-iam]
-        outputs:
-            cluster-endpoint: ${{ steps.cluster-info.outputs.endpoint }}
-            cluster-ca: ${{ steps.cluster-info.outputs.certificate_authority }}
-            cluster-arn: ${{ steps.cluster-info.outputs.arn }}
-        
-        steps:  
-          - name: checkout-code
-            uses: actions/checkout@v4
-
-          - name: Configure AWS Credentials
-            uses: aws-actions/configure-aws-credentials@v4
-            with:
-              role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
-              role-session-name: GitHub-Actions-OIDC-Session
-              aws-region: ${{ env.AWS_REGION }}
-              mask-aws-account-id: false
+      - name: Terraform Init
+        working-directory: ./environments/dev/cluster
+        run: |
+          terraform init -upgrade
             
-          - name: Prepare Terraform
-            uses: hashicorp/setup-terraform@v3
-            with:
-              terraform_version: ${{ env.TF_VERSION }}
-              terraform_wrapper: false
-
-          - name: Terraform Init
-            working-directory: ./environments/dev/cluster
-            run: |
-              terraform init -upgrade
+      - name: Terraform Validate
+        working-directory: ./environments/dev/cluster
+        run: |
+          terraform validate
             
-          - name: Terraform Validate
-            working-directory: ./environments/dev/cluster
-            run: terraform validate
-            
-          - name: Terraform Plan
-            working-directory: ./environments/dev/cluster
-            run: |
-              terraform plan -var="VpcId=${{ needs.deploy-network.outputs.vpc-id }}" -var="cluster_role_arn=${{ needs.deploy-iam.outputs.cluster-role-arn }}" -var="access_entries=${{ needs.deploy-iam.outputs.access-entries }}" -out=deploy-dev-eks.tfplan
+      - name: Terraform Plan
+        working-directory: ./environments/dev/cluster
+        run: |
+          terraform plan -out=deploy-dev-eks.tfplan
 
-          - name: Terraform Apply
-            working-directory: ./environments/dev/cluster
-            run: |
-              terraform apply -auto-approve deploy-dev-eks.tfplan
+      - name: Terraform Apply
+        working-directory: ./environments/dev/cluster
+        run: |
+          terraform apply -auto-approve deploy-dev-eks.tfplan
 
-          - name: Get Cluster Info
-            id: cluster-info
-            working-directory: ./environments/dev/cluster
-            run: |
-              echo "::set-output name=endpoint::$(terraform output -raw cluster_endpoint)"
-              echo "::set-output name=certificate_authority::$(terraform output -raw cluster_certificate_authority)"
-              echo "::set-output name=arn::$(terraform output -raw cluster_arn)"
+      - name: Verify Cluster Deployment
+        working-directory: ./environments/dev/cluster
+        run: |
+          echo "Verifying EKS Cluster Creation"
+          CLUSTER_NAME="${{ env.EKS_CLUSTER_NAME }}"
+          aws eks describe-cluster --name $CLUSTER_NAME --region ${{ env.AWS_REGION }}
+
+          echo "Checking if cluster is active"
+          TIMEOUT=900  # 15 minutes in seconds
+          INTERVAL=30  # Check every 30 seconds
+          ELAPSED=0
+
+          echo "Checking EKS cluster status for up to 15 minutes..."
+
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+          STATUS=$(aws eks describe-cluster --name $CLUSTER_NAME --region ${{ env.AWS_REGION }} --query 'cluster.status' --output text)
+          
+          if [ "$STATUS" = "ACTIVE" ]; then
+            echo "EKS Cluster $CLUSTER_NAME is active."
+            exit 0
+          fi
+          
+          echo "Cluster status: $STATUS. Waiting... ($ELAPSED/$TIMEOUT seconds elapsed)"
+          sleep $INTERVAL
+          ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          echo "✗ ERROR: EKS Cluster $CLUSTER_NAME did not become active within 15 minutes."
+          echo "Final status: $STATUS"
+          exit 1      
         
