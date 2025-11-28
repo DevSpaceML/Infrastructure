@@ -75,7 +75,7 @@ jobs:
           aws ec2 describe-vpcs --vpc-ids $VPC_ID --region ${{ env.AWS_REGION }}
 
           echo "Verify Subnets Creation"
-          $SUBNET_IDS=$(terraform output -json subnet_ids | jq -r '.[]')
+          $SUBNET_IDS=$(terraform output -json cluster_subnet_id_list | jq -r '.[]')
           for SUBNET_ID in $SUBNET_IDS; do
             STATE=$(aws ec2 describe-subnets --subnet-ids $SUBNET_ID --region ${{ env.AWS_REGION }} --query 'Subnets[0].State' --output text)
             if [ "$STATE" != "available" ]; then
