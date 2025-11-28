@@ -51,11 +51,21 @@ jobs:
         working-directory: ./environments/dev/network
         run: |
               terraform init
+      
+      - name: Terraform Validate
+        working-directory: ./environments/dev/network
+        run: |
+          terraform validate
+      
+      - name: Terraform Plan
+        working-directory: ./environments/dev/network
+        run: |
+          terraform plan -out=deploy-dev-network.tfplan    
     
       - name: Terraform Apply
         working-directory: ./environments/dev/network
         run: |
-          terraform apply -auto-approve
+          terraform apply -auto-approve deploy-dev-network.tfplan
 
       - name: Verify Network Resources
         working-directory: ./environments/dev/network
