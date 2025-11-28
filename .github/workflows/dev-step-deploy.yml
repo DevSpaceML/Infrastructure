@@ -1,6 +1,9 @@
 name: Deploy Dev Infrastructure
 
 on:
+  push:
+    branches: [develop]
+    paths: ['infrastructure/environments/dev/**']
   workflow_dispatch:
     inputs:
       cluster_name:
