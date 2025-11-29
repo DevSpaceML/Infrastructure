@@ -143,11 +143,7 @@ jobs:
     name: deploy-eks-cluster
     runs-on: ubuntu-latest
     needs: [deploy-network, deploy-iam]
-    outputs:
-      cluster-endpoint: ${{ steps.cluster-info.outputs.endpoint }}
-      cluster-ca: ${{ steps.cluster-info.outputs.certificate_authority }}
-      cluster-arn: ${{ steps.cluster-info.outputs.arn }}
-        
+
     steps:  
       - name: checkout-code
         uses: actions/checkout@v4
@@ -190,7 +186,7 @@ jobs:
         working-directory: ./environments/dev/cluster
         run: |
           echo "Verifying EKS Cluster Creation"
-          CLUSTER_NAME="${{ env.EKS_CLUSTER_NAME }}"
+          CLUSTER_NAME="${{ env.CLUSTER_NAME }}"
           aws eks describe-cluster --name $CLUSTER_NAME --region ${{ env.AWS_REGION }}
 
           echo "Checking if cluster is active"
@@ -213,7 +209,7 @@ jobs:
           ELAPSED=$((ELAPSED + INTERVAL))
           done
 
-          echo "✗ ERROR: EKS Cluster $CLUSTER_NAME did not become active within 15 minutes."
+          echo "ERROR: EKS Cluster $CLUSTER_NAME did not become active within 15 minutes."
           echo "Final status: $STATUS"
           exit 1      
         
