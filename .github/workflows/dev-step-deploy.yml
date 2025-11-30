@@ -127,6 +127,9 @@ jobs:
       - name: Verify IAM Resources
         working-directory: ./environments/dev/iam
         run: |
+          echo "initialize access to remote state"
+          terraform init -input=false
+          
           echo "Verfify IAM Role and Policy attachments"
           arn--cluster-role=$(terraform output -raw cluster-role--arn)
           arn--node-role=$(terraform output -raw node-mgr--arn)
