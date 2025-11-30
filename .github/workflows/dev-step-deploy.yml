@@ -129,7 +129,7 @@ jobs:
         run: |
           echo "Verfify IAM Role and Policy attachments"
           arn--cluster-role=$(terraform output -raw cluster-role--arn)
-          arn--node-role=$(terraform output -raw node_role_arn)
+          arn--node-role=$(terraform output -raw node-mgr--arn)
 
           ROLE_NAME=$(echo ${arn--cluster-role} | cut -d'/' -f2)
           POLICIES=$(aws iam list-attached-role-policies --role-name $ROLE_NAME --query 'AttachedPolicies[].PolicyName' --output text)
