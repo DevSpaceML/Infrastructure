@@ -2,7 +2,7 @@ output "node_mgr_arn" {
   value = module.iam.node_manager_role_arn
 }
 
-output "cluster_role_arn" {
+output "cluster-role--arn" {
   value = module.iam.cluster_role_arn
 }
 

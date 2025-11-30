@@ -128,14 +128,14 @@ jobs:
         working-directory: ./environments/dev/iam
         run: |
           echo "Verfify IAM Role and Policy attachments"
-          cluster_role_arn=$(terraform output -raw cluster_role_arn)
-          node_role_arn=$(terraform output -raw node_role_arn)
+          arn-cluster_role=$(terraform output -raw cluster_role_arn)
+          arn-node_role=$(terraform output -raw node_role_arn)
 
-          ROLE_NAME=$(echo ${cluster_role_arn} | cut -d'/' -f2)
+          ROLE_NAME=$(echo ${arn-cluster_role} | cut -d'/' -f2)
           POLICIES=$(aws iam list-attached-role-policies --role-name $ROLE_NAME --query 'AttachedPolicies[].PolicyName' --output text)
           echo "Cluster Role Policies: $POLICIES"
 
-          NODE_ROLE_NAME=$(echo ${node_role_arn} | cut -d'/' -f2)
+          NODE_ROLE_NAME=$(echo ${arn-node_role} | cut -d'/' -f2)
           NODE_POLICIES=$(aws iam list-attached-role-policies --role-name $NODE_ROLE_NAME --query 'AttachedPolicies[].PolicyName' --output text)
           echo "Node Role Policies: $NODE_POLICIES"
 
