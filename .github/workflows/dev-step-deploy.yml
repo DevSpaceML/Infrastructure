@@ -128,7 +128,7 @@ jobs:
         working-directory: ./environments/dev/iam
         run: |
           echo "Verfify IAM Role and Policy attachments"
-          arn-cluster_role=$(terraform output -raw cluster_role_arn)
+          arn-cluster_role=$(terraform output -raw cluster-role--arn)
           arn-node_role=$(terraform output -raw node_role_arn)
 
           ROLE_NAME=$(echo ${arn-cluster_role} | cut -d'/' -f2)
