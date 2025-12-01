@@ -123,6 +123,15 @@ jobs:
         working-directory: ./environments/dev/iam
         run: |
           terraform apply -auto-approve
+      
+      - name: Verify IAM Roles
+        working-directory: ./environments/dev/iam
+        run: |
+          echo "Verifying IAM Roles"
+          ROLE_NAMES=$(terraform output -json iam_role_names | jq -r '.[]')
+          for ROLE_NAME in $ROLE_NAMES; do
+            aws iam get-role --role-name $ROLE_NAME
+          done    
 
   deploy-cluster:
     name: deploy-eks-cluster
