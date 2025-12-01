@@ -19,7 +19,7 @@ env:
   TF_VERSION: "1.5.0"
   AWS_REGION: "us-east-1"
   CLUSTER_NAME: ${{ github.event.inputs.cluster_name }}
-  TF_VAR_clustername: ${{ inputs.CLUSTER_NAME }}
+  TF_VAR_clustername: ${{ inputs.cluster_name }}
 
 permissions:
   id-token: write
