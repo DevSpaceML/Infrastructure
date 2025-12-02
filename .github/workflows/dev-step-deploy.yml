@@ -129,7 +129,7 @@ jobs:
         working-directory: ./environments/dev/iam
         run: |
           echo "Verifying IAM Roles"
-          iam_role_arn=$(terraform output -raw cluster-role--arn)
+          iam_role_arn=$(terraform output -raw cluster-role-arn)
           role_name="${iam_role_arn##*/}"
 
           aws iam get-role --role-name $role_name
