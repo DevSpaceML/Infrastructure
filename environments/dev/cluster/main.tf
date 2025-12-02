@@ -21,13 +21,13 @@ provider "aws" {
 }
 
 module "dev_cluster" {
-  source            = "../../../modules/compute/eks/cluster"
-  clustername       = var.clustername
-  vpcId             = data.terraform_remote_state.dev_network.outputs.vpc_id
-  subnetIdlist      = data.terraform_remote_state.dev_network.outputs.nodegroup_subnet_id_list
-  public_subnet_ids = data.terraform_remote_state.dev_network.outputs.public_subnets
-  private_subnet_ids = data.terraform_remote_state.dev_network.outputs.private_subnets
+  source             = "../../../modules/compute/eks/cluster"
+  clustername        = var.clustername
+  vpcId              = data.terraform_remote_state.dev_network.outputs.vpc_id
+  subnetIdlist       = data.terraform_remote_state.dev_network.outputs.cluster_subnet_id_list
+  public_subnet_ids  = data.terraform_remote_state.dev_network.outputs.public_subnet_list
+  private_subnet_ids = data.terraform_remote_state.dev_network.outputs.private_subnet_list
   public_cidr        = data.terraform_remote_state.dev_network.outputs.public_cidr
-  cluster_role_arn   = data.terraform_remote_state.dev_iam.outputs.cluster_role_arn
-  access_entries     = data.terraform_remote_state.dev_iam.outputs.access_entries
+  cluster_role_arn   = data.terraform_remote_state.dev_iam.outputs.cluster-role-arn
+  access_entries     = data.terraform_remote_state.dev_iam.outputs.access-entries-map
 }
