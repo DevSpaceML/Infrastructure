@@ -42,8 +42,8 @@ resource "aws_route53_record" "certvalidation_r53_record" {
 	    }
    }
     
-	 zone_id   = aws_route53_zone.approute.zone_id
-	 name      =  each.value.name
+	zone_id   = aws_route53_zone.approute.zone_id
+	name      =  each.value.name
     type      = each.value.type
     records   = [each.value.record]
     ttl       = 60
