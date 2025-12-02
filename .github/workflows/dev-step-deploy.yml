@@ -207,5 +207,72 @@ jobs:
 
           echo "ERROR: EKS Cluster $CLUSTER_NAME did not become active within 15 minutes."
           echo "Final status: $STATUS"
-          exit 1      
+          exit 1
+  
+  deploy-nodegroup:
+    name: deploy-eks-nodegroup
+    runs-on: ubuntu-latest
+    needs: deploy-cluster
+
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+            
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: false
+
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: ./environments/dev/nodegroup
+        run: |
+          terraform init
+            
+      - name: Terraform Validate
+        working-directory: ./environments/dev/nodegroup
+        run: |
+          terraform validate
+            
+      - name: Terraform Plan
+        working-directory: ./environments/dev/nodegroup
+        run: |
+          terraform plan -out=deploy-dev-nodegroup.tfplan
+
+      - name: Terraform Apply
+        working-directory: ./environments/dev/nodegroup
+        run: |
+          terraform apply -auto-approve deploy-dev-nodegroup.tfplan
+
+      - name: Verify Node Group Deployment
+        working-directory: ./environments/dev/nodegroup
+        run: |
+          echo "Verifying EKS Node Group Creation"
+          CLUSTER_NAME="${{ env.CLUSTER_NAME }}"
+          NODEGROUP_NAME=$(terraform output -raw nodegroup_name)
+
+          aws eks describe-nodegroup --cluster-name $CLUSTER_NAME --nodegroup-name $NODEGROUP_NAME --region ${{ env.AWS_REGION }}
+
+          echo "Checking if node group is active"
+          TIMEOUT=900  # 15 minutes in seconds
+          INTERVAL=30  # Check every 30 seconds
+          ELAPSED=0
+
+          echo "Checking EKS node group status for up to 15 minutes..."
+
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+          STATUS=$(aws eks describe-nodegroup --cluster-name $CLUSTER_NAME --nodegroup-name $NODEGROUP_NAME --region ${{ env.AWS_REGION }} --query 'nodegroup.status' --output text)
+          
+          if [ "$STATUS" = "ACTIVE" ]; then
+            echo "EKS Node Group $NODEGROUP_NAME is active in cluster $CLUSTER_NAME."
+            exit 0
+          fi
         
