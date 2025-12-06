@@ -274,4 +274,70 @@ jobs:
           if [ "$STATUS" = "ACTIVE" ]; then
             echo "EKS Node Group $NODEGROUP_NAME is active in cluster $CLUSTER_NAME."
             exit 0
-          fi       
+          fi
+
+  deploy-database:
+    name: deploy-database
+    runs-on: ubuntu-latest
+    needs: deploy-nodegroup
+
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+            
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: false
+
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: ./environments/dev/database
+        run: |
+          terraform init
+            
+      - name: Terraform Validate
+        working-directory: ./environments/dev/database
+        run: |
+          terraform validate
+            
+      - name: Terraform Plan
+        working-directory: ./environments/dev/database
+        run: |
+          terraform plan -out=deploy-dev-database.tfplan
+
+      - name: Terraform Apply
+        working-directory: ./environments/dev/database
+        run: |
+          terraform apply -auto-approve deploy-dev-database.tfplan
+
+      - name: Verify Database Deployment
+        working-directory: ./environments/dev/database
+        run: |
+          echo "Verifying RDS Database Instance Creation"
+          DB_INSTANCE_IDENTIFIER=$(terraform output -raw db_instance_identifier)
+
+          aws rds describe-db-instances --db-instance-identifier $DB_INSTANCE_IDENTIFIER --region ${{ env.AWS_REGION }}
+
+          echo "Checking if database instance is available"
+          TIMEOUT=900  # 15 minutes in seconds
+          INTERVAL=30  # Check every 30 seconds
+          ELAPSED=0
+
+          echo "Checking RDS database instance status for up to 15 minutes..."
+
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+          STATUS=$(aws rds describe-db-instances --db-instance-identifier $DB_INSTANCE_IDENTIFIER --region ${{ env.AWS_REGION }} --query 'DBInstances[0].DBInstanceStatus' --output text)
+          
+          if [ "$STATUS" = "available" ]; then
+            echo "RDS Database Instance $DB_INSTANCE_IDENTIFIER is available."
+            exit 0
+          fi               
