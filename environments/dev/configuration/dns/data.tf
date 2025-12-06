@@ -11,7 +11,7 @@ data "terraform_remote_state" "certs" {
   backend = "s3"
     config = {
       bucket = "dev-terraform-state-586098609239"
-      key = "dev/configuration/certs/"
+      key = "dev/configuration/certs/terraform.tfstate"
       region = "value"
     }
 }

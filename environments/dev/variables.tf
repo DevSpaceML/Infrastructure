@@ -1,8 +1,3 @@
-variable "clustername" {
-  description = "name of the dev cluster"
-  type        = string
-}
-
 variable "k8s_version" {
   description = "Version to be used with the cluster"
   type        = string

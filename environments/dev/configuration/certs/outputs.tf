@@ -1,5 +1,5 @@
 output "certificate" {
-  value = module.certs.eks_certificate
+  value = module.certs.ekscertificate
 }
 
 output "certificate_arn" {

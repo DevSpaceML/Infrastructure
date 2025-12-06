@@ -6,6 +6,7 @@ resource "aws_eks_node_group" "cluster_nodes" {
 	subnet_ids      = var.nodegroup_pvt_subnet_id_list
 	instance_types  = [var.instancetype]
 	ami_type 		= "AL2_ARM_64"
+	version         = var.k8s_version
 
 	scaling_config {
 		desired_size = var.desired_node_count

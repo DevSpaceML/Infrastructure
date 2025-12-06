@@ -274,5 +274,4 @@ jobs:
           if [ "$STATUS" = "ACTIVE" ]; then
             echo "EKS Node Group $NODEGROUP_NAME is active in cluster $CLUSTER_NAME."
             exit 0
-          fi
-        
+          fi       
