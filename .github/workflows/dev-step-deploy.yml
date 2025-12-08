@@ -382,7 +382,6 @@ jobs:
         working-directory: ./environments/dev/cert
         run: |
           terraform apply -auto-approve deploy-dev-cert.tfplan    
-
           
       - name: Terraform Init Dns
         working-directory: ./environments/dev/dns
