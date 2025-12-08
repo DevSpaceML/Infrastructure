@@ -231,10 +231,6 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
-      
-      - name: Clear terraform workspace cache
-        run: |
-          rm -rf ./environments/dev/nodegroup/.terraform    
 
       - name: Terraform Init
         working-directory: ./environments/dev/nodegroup
