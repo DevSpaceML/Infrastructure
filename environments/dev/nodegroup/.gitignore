@@ -7,7 +7,7 @@
 *.tfplan
 .terraformrc
 terraformrc
-terraform.lock.hcl
+.terraform.lock.hcl
 .vscode
 .idea
 *.swp
