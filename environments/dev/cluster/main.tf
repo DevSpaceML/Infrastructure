@@ -31,3 +31,11 @@ module "dev_cluster" {
   cluster_role_arn   = data.terraform_remote_state.dev_iam.outputs.cluster-role-arn
   access_entries     = data.terraform_remote_state.dev_iam.outputs.access-entries-map
 }
+
+module "eks_security_groups" {
+  depends_on            = [ module.dev_cluster ]
+  source                = "../../../modules/network/eks-security-groups"
+  vpc_id                = data.terraform_remote_state.dev_network.outputs.vpc_id
+  nodegroup_cidr_blocks = data.terraform_remote_state.dev_network.outputs.nodegroup_cidr
+  clustername           = module.dev_cluster.cluster_name
+}
