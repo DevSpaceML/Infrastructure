@@ -34,7 +34,3 @@ variable "k8s_version" {
   type = string
   default = "1.29"
 }
-
-locals {
-  nodegroup_name = var.nodegroupname != null ? var.nodegroupname : "${var.eksclustername}-nodegroup"
-}
