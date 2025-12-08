@@ -1,7 +1,3 @@
-variable "eksclustername" {
-  description = "name of the cluster"
-  type = string
-}
 
 variable "nodegroupname" {
   description = "name of nodegroup"
