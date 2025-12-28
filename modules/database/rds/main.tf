@@ -12,7 +12,7 @@ resource "aws_db_instance" "appdata_mysql"{
 
 	allocated_storage 		 = 10
 	db_name			  		 = "tiyeni"
-	identifier				 = "dataeast"
+	identifier				 = "dataeast_mysql"
 	engine 			  		 = "mysql"
 	engine_version 	  		 = "8.0"
 	instance_class    		 = "db.t3.micro"

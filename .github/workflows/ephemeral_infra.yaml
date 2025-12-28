@@ -1,0 +1,25 @@
+name: ephemeral-dev-eks
+
+on:
+  repository_dispatch:
+    types: [ephmrl-dev-eks]
+
+jobs:
+  developer-eks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          aws-region: us-east-1
+
+      - name: Check passed in variables
+        run: |
+          echo "Parameters received from repository dispatch event:"
+          echo "--------------------------------"
+          echo "Environment: ${{ github.event.client_payload.environment }}"
+          echo "Cluster Name: ${{ github.event.client_payload.cluster_name }}"

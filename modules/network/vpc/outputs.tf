@@ -23,11 +23,11 @@ output "eks_security_group_id" {
   value = aws_vpc.cluster_vpc.default_security_group_id
 }
 
-output "public_subnets" {
+output "public_subnet_id_list" {
   value = aws_subnet.public_subnet_eks[*].id
 }
 
-output "private_subnets" {
+output "private_subnet_id_list" {
   value = aws_subnet.private_subnet_eks[*].id
 }
 
@@ -35,7 +35,7 @@ output "nodegroup_pvt_subnet_id_list" {
   value = aws_subnet.nodegroup_private_subnet[*].id
 }
 
-output "rds_private_subnet_list" {
+output "rds_private_subnet_id_list" {
   value = local.rds_subnets_by_id
 }
 

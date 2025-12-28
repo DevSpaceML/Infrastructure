@@ -1,7 +1,9 @@
 module "dev_nodes" {
-  source             = "../../../modules/compute/eks/nodegroups"
-  node_group_mgr_arn = module.iam.node_manager_role_arn
-  nodegroupname      = local.nodegroup_name
-  eksclustername     = module.dev_cluster.cluster_name
-  nodegroup_pvt_subnet_id_list = module.dev_vpc.nodegroup_pvt_subnet_id_list
+  source                       = "../../../modules/compute/eks/nodegroups"
+  node_group_mgr_arn           = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
+  nodegroupname                = "${data.terraform_remote_state.dev_cluster.outputs.cluster_name}-nodegroup"
+  eksclustername               = data.terraform_remote_state.dev_cluster.outputs.cluster_name
+  k8s_version                  = var.k8s_version
+  instancetype                 = var.instancetype
+  nodegroup_pvt_subnet_id_list = data.terraform_remote_state.dev_network.outputs.nodegroup_subnet_id_list
 }

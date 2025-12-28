@@ -44,3 +44,8 @@ variable "nodegroup_pvt_subnet_id_list" {
 	type = list
 }
 
+variable "k8s_version" {
+  description = "kubernetes version being used"
+  type = string
+}
+
