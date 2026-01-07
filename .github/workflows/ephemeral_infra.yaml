@@ -1,4 +1,4 @@
-name: ephemeral-dev-eks
+name: ephmrl-dev-eks
 
 on:
   repository_dispatch:
@@ -29,7 +29,9 @@ jobs:
 
       - name: Check passed in variables
         run: |
-          echo "Parameters received from repository dispatch event:"
+          echo "Payload received: ${{ github.event.client_payload }}"
           echo "--------------------------------"
+          echo "Parameters received from repository dispatch event:"
+          echo "##"
           echo "Environment: ${{ github.event.client_payload.environment }}"
           echo "Cluster Name: ${{ github.event.client_payload.cluster_name }}"
