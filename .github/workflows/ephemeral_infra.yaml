@@ -4,6 +4,10 @@ on:
   repository_dispatch:
     types: [ephmrl-dev-eks]
 
+env:
+  TF_VERSION: "1.5.0"
+  AWS_REGION: "us-east-1"    
+
 jobs:
   developer-eks:
     runs-on: ubuntu-latest
@@ -15,7 +19,9 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
-          aws-region: us-east-1
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: false
 
       - name: Check passed in variables
         run: |
