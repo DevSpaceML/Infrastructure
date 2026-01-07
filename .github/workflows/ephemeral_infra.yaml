@@ -29,9 +29,9 @@ jobs:
 
       - name: Check passed in variables
         run: |
-          echo "Payload received: ${{ github.event.client_payload }}"
+          echo "Payload received: ${{ github.event.client_payload.config }}"
           echo "--------------------------------"
           echo "Parameters received from repository dispatch event:"
           echo "##"
           echo "Environment: ${{ github.event.client_payload.config.environment }}"
-          echo "Cluster Name: ${{ github.event.client_payload.config.cluster_name }}"
+          echo "Cluster Name: ${{ github.event.client_payload.config.projectName }}"
