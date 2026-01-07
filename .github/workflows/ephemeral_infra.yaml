@@ -33,5 +33,5 @@ jobs:
           echo "--------------------------------"
           echo "Parameters received from repository dispatch event:"
           echo "##"
-          echo "Environment: ${{ github.event.client_payload.environment }}"
-          echo "Cluster Name: ${{ github.event.client_payload.cluster_name }}"
+          echo "Environment: ${{ github.event.client_payload.config.environment }}"
+          echo "Cluster Name: ${{ github.event.client_payload.config.cluster_name }}"
