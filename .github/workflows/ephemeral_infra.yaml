@@ -35,3 +35,5 @@ jobs:
           echo "##"
           echo "Environment: ${{ github.event.client_payload.config.environment }}"
           echo "Cluster Name: ${{ github.event.client_payload.config.projectName }}"
+          echo "Region: ${{ github.event.client_payload.config.region }}"
+          echo "Instance Type: ${{ github.event.client_payload.config.instanceType }}"
