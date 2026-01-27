@@ -15,6 +15,7 @@ module "dev_nodes" {
   nodegroupname      = var.nodegroupname
   eksclustername     = module.dev_cluster.cluster_name
   nodegroup_pvt_subnet_id_list = module.dev_vpc.nodegroup_pvt_subnet_id_list
+  k8s_version = "1.29"
 }
 
 data "aws_eks_cluster_auth" "devcluster" {
