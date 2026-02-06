@@ -47,15 +47,16 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
-      
-      - name: Terraform Init
-        working-directory: environments/${{ env.ENVIRONMENT }}
+
+      # Deploy Network
+      - name: Deploy Network
+        working-directory: environments/${{ env.ENVIRONMENT }}/network
         run: |
           terraform init -upgrade
       - name: Terraform Validate
-        working-directory: environments/${{ env.ENVIRONMENT }}
+        working-directory: environments/${{ env.ENVIRONMENT }}/network
         run: terraform validate 
       - name: Terraform Plan
-        working-directory: environments/${{ env.ENVIRONMENT }}
+        working-directory: environments/${{ env.ENVIRONMENT }}/network
         run: |
           terraform plan -var-file=${{ env.tfvarsFile }} -out=ephemeral-${{ env.ENVIRONMENT }}-eks.tfplan

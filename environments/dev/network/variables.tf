@@ -13,3 +13,8 @@ variable "vpcname" {
   description = "name of vpc used by dev cluster"
   type        = string
 }
+
+variable "createvpc" {
+  description = "creates dedicated vpc if true"
+  type = string
+}

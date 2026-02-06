@@ -1,4 +1,9 @@
 #EKS VPC variables for VPC module
+variable "createvpc" {
+  description = "creates dedicated vpc if true"
+  type = bool
+  default = false
+}
 
 variable "vpcname" {
 	description = "Name of VPC"
