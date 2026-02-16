@@ -1,6 +1,6 @@
 
 output "eks_vpc_id" {
-  value = aws_vpc.cluster_vpc.id
+  value = length(aws_vpc.cluster_vpc) > 0 ? aws_vpc.cluster_vpc[0].id : data.aws_vpc.deployed_vpc[0].id
 }
 
 output "subnet_id_list" {
@@ -20,7 +20,7 @@ output "nodegroup_pvt_cidr" {
 }
 
 output "eks_security_group_id" {
-  value = aws_vpc.cluster_vpc.default_security_group_id
+  value = data.aws_security_group.default_sec_group.id
 }
 
 output "public_subnet_id_list" {

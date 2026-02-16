@@ -20,27 +20,33 @@ resource "aws_vpc" "cluster_vpc" {
 }
 
 data "aws_vpc" "clustervpcdata" {
-	count = length(data.aws_vpc.selected_vpc) == 1 ? 0 : 1
-	depends_on = [data.aws_vpc.selected_vpc]
+	count = length(aws_vpc.cluster_vpc) > 0 ? 1 : 0
 	
 	filter {
 		name = "tag:Name"
 		values = [var.vpcname]
 	}
-
 }
 
-data "aws_vpc" "selected_vpc" {
+data "aws_vpc" "deployed_vpc" {
+	count = length(aws_vpc.cluster_vpc) > 0 ? 0 : 1
 	filter {
-		name = "tag:Name"
-		values = [var.vpcname]
+		name = "tag:id"
+		values = [var.existing_vpc_id]
 	}  
+}
+
+data "aws_security_group" "default_sec_group" {
+  filter {
+	name = "vpc-id"
+	values = var.createvpc ? [aws_vpc.cluster_vpc[0].id] : [data.aws_vpc.deployed_vpc[0].id]
+  }	 
 }
 
 data "aws_subnets" "eks_subnets" {
 	filter {
 			name = "vpc-id"
-			values = [data.aws_vpc.selected_vpc.id]
+			values = [data.aws_vpc.deployed_vpc[0].id]
 	}
 }
 
@@ -52,18 +58,18 @@ resource "aws_vpc_dhcp_options" "eks_dhcp_options" {
 		Name = "${var.vpcname}-dhcp-options"
 	}
 
-	depends_on = [ data.aws_vpc.selected_vpc ]
+	depends_on = [ data.aws_vpc.deployed_vpc ]
 }
 
 resource "aws_vpc_dhcp_options_association" "eks_dhcp_options_association" {
-	vpc_id = data.aws_vpc.selected_vpc.id
+	vpc_id = data.aws_vpc.deployed_vpc[0].id
 	dhcp_options_id = aws_vpc_dhcp_options.eks_dhcp_options.id
 
-	depends_on = [ data.aws_vpc.selected_vpc, aws_vpc_dhcp_options.eks_dhcp_options ]	 
+	depends_on = [ data.aws_vpc.deployed_vpc, aws_vpc_dhcp_options.eks_dhcp_options ]	 
 }
 
 resource "aws_subnet" "public_subnet_eks" {
-	vpc_id = data.aws_vpc.selected_vpc.id
+	vpc_id = data.aws_vpc.deployed_vpc[0].id
 	count = length(var.public_subnet_cidr_blocks)
 	cidr_block = var.public_subnet_cidr_blocks[count.index]
 	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
@@ -78,7 +84,7 @@ resource "aws_subnet" "public_subnet_eks" {
 }
 
 resource "aws_subnet" "private_subnet_eks" {
-	vpc_id = data.aws_vpc.selected_vpc.id
+	vpc_id = data.aws_vpc.deployed_vpc[0].id
 	count = length(var.private_subnet_cidr_blocks)
 	cidr_block = var.private_subnet_cidr_blocks[count.index]
 	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
@@ -93,7 +99,7 @@ resource "aws_subnet" "private_subnet_eks" {
 }
 
 resource "aws_subnet" "nodegroup_private_subnet" {
-	vpc_id = data.aws_vpc.selected_vpc.id
+	vpc_id = data.aws_vpc.deployed_vpc[0].id
 	count = length(var.nodegroup_pvt_subnet_cidr_blocks)
 	cidr_block = var.nodegroup_pvt_subnet_cidr_blocks[count.index]
 	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
@@ -109,7 +115,7 @@ resource "aws_subnet" "nodegroup_private_subnet" {
 }
 
 resource "aws_subnet" "rds_private_subnet" {
-	vpc_id = data.aws_vpc.selected_vpc.id
+	vpc_id = data.aws_vpc.deployed_vpc[0].id
 	count = length(var.rds_private_subnet_cidr_blocks)
 	cidr_block = var.rds_private_subnet_cidr_blocks[count.index]
 	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
@@ -147,7 +153,7 @@ locals {
 }
 
 resource "aws_internet_gateway" "igw_public_eks" {
-	vpc_id = data.aws_vpc.selected_vpc.id
+	vpc_id = data.aws_vpc.deployed_vpc[0].id
 
 	tags = {
 		Name = "${var.igw_name}"
@@ -175,7 +181,7 @@ resource "aws_nat_gateway" "eks_nat_gw" {
 }
 
 resource "aws_route_table" "eks_public_routetable" {
-	vpc_id = data.aws_vpc.selected_vpc.id
+	vpc_id = data.aws_vpc.deployed_vpc[0].id
 
 	route {
 		cidr_block = "0.0.0.0/0"
@@ -193,7 +199,7 @@ resource "aws_route_table_association" "eks_public_route_association" {
 
 resource "aws_route_table" "eks_private_routetable" {
 	count = length(aws_subnet.private_subnet_eks)
-	vpc_id = data.aws_vpc.selected_vpc.id
+	vpc_id = data.aws_vpc.deployed_vpc[0].id
 
 	route {
 		cidr_block = "0.0.0.0/0"
@@ -214,7 +220,7 @@ resource "aws_route_table_association" "eks_private_route_association" {
 
 resource "aws_route_table" "nodegroup_private_routetable" {
 	count = length(aws_subnet.public_subnet_eks)
-	vpc_id = data.aws_vpc.selected_vpc.id
+	vpc_id = data.aws_vpc.deployed_vpc[0].id
 
 	route {
 		cidr_block = "0.0.0.0/0"
@@ -236,7 +242,7 @@ resource "aws_route_table_association" "nodegroup_private_route_association" {
 /*
 resource "aws_flow_log" "eks-vpc-flow-log" {
 	log_destination = "${var.vpcname}-vpc-flow-logs"
-	vpc_id = data.aws_vpc.selected_vpc.id
+	vpc_id = data.aws_vpc.deployed_vpc[0].id
 	traffic_type = "ALL"
 	destination_options {
 		file_format = "plain-text"

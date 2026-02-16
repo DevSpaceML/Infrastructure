@@ -5,6 +5,12 @@ variable "createvpc" {
   default = false
 }
 
+variable "existing_vpc_id" {
+  description = "required if createvpc is false"
+  type = string
+  default = ""
+}
+
 variable "vpcname" {
 	description = "Name of VPC"
 	type = string
