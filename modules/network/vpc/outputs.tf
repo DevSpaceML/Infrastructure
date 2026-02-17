@@ -1,6 +1,6 @@
 
 output "eks_vpc_id" {
-  value = length(aws_vpc.cluster_vpc) > 0 ? aws_vpc.cluster_vpc[0].id : data.aws_vpc.deployed_vpc[0].id
+  value = length(aws_vpc.cluster_vpc) > 0 ? aws_vpc.cluster_vpc[count.index].id : data.aws_vpc.deployed_vpc[count.index].id
 }
 
 output "subnet_id_list" {
