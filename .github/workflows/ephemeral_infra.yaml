@@ -59,4 +59,4 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/${{ env.ENVIRONMENT }}/network
         run: |
-          terraform plan -var-file="../${{ env.tfvarsFile }}" -out=ephemeral-${{ env.ENVIRONMENT }}-eks.tfplan
+          terraform plan -var-file="environments/${{ env.ENVIRONMENT }}/${{ env.tfvarsFile }}" -out=ephemeral-${{ env.ENVIRONMENT }}-eks.tfplan
