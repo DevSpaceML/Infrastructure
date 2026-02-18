@@ -36,11 +36,11 @@ jobs:
           echo "--------------------------------"
           echo "Parameters received from repository dispatch event:"
           echo "##"
-          echo "ENVIRONMENT=${{ github.event.client_payload.config.environment }}" >> GITHUB_OUTPUT
-          echo "ClusterName=${{ github.event.client_payload.config.projectName }}" >> GITHUB_OUTPUT
-          echo "Region=${{ github.event.client_payload.config.region }}" >> GITHUB_OUTPUT
-          echo "InstanceType=${{ github.event.client_payload.config.instanceType }}" >> GITHUB_OUTPUT
-          echo "tfvarsfile=${{ github.event.client_payload.config.tfvarsFile }}" >> GITHUB_OUTPUT
+          echo "ENVIRONMENT=${{ github.event.client_payload.config.environment }}" >> $GITHUB_OUTPUT
+          echo "ClusterName=${{ github.event.client_payload.config.projectName }}" >> $GITHUB_OUTPUT
+          echo "Region=${{ github.event.client_payload.config.region }}" >> $GITHUB_OUTPUT
+          echo "InstanceType=${{ github.event.client_payload.config.instanceType }}" >> $GITHUB_OUTPUT
+          echo "tfvarsfile=${{ github.event.client_payload.config.tfvarsFile }}" >> $GITHUB_OUTPUT
       
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -50,13 +50,13 @@ jobs:
 
       # Deploy Network
       - name: Deploy Network
-        working-directory: environments/${{ env.ENVIRONMENT }}/network
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network
         run: |
           terraform init -upgrade
       - name: Terraform Validate
-        working-directory: environments/${{ env.ENVIRONMENT }}/network
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network
         run: terraform validate 
       - name: Terraform Plan
-        working-directory: environments/${{ env.ENVIRONMENT }}/network
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network
         run: |
-          terraform plan -var-file=${{ env.tfvarsFile }} -out=ephemeral-${{ env.ENVIRONMENT }}-eks.tfplan
+          terraform plan -var-file="${{ env.tfvarsFile }}" -out=ephemeral-${{ env.ENVIRONMENT }}-eks.tfplan
