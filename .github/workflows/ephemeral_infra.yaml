@@ -31,6 +31,7 @@ jobs:
           mask-aws-account-id: false
 
       - name: config_variables
+        working-directory: ./environments/${{ env.ENVIRONMENT }}
         run: |
           PAYLOAD=$(printf '%s' '${{ tojson(github.event.client_payload.config) }}')
           echo "Payload received: $PAYLOAD"
@@ -41,7 +42,7 @@ jobs:
               "\(.key)=\(.value | tojson)"
             else
               "\(.key)=\(.value)"
-            end' > ../${{ env.tfvarsFilename }}
+            end' > ${{ env.tfvarsFilename }}
           echo "--------------------------------"
           cat ../${{ env.tfvarsFilename }}
 
