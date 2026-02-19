@@ -41,7 +41,7 @@ jobs:
              "\(.key)=\(.value | tojson)"
           else
              "\(.key)=\(.value)"
-          end' 
+          end'\ 
           <<< "$PAYLOAD" > ../${{ env.tfvarsFilename }}
           echo "--------------------------------"
           cat ../${{ env.tfvarsFilename }}
@@ -52,8 +52,7 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-
-      # Deploy Network
+    # Deploy Network
     #  - name: Deploy Network
     #    working-directory: ./environments/${{ env.ENVIRONMENT }}/network
     #    run: |
