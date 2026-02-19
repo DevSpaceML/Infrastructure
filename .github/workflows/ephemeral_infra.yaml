@@ -33,6 +33,7 @@ jobs:
       - name: config_variables
         working-directory: ./environments/${{ env.ENVIRONMENT }}
         run: |
+          pwd
           PAYLOAD=$(printf '%s' '${{ tojson(github.event.client_payload.config) }}')
           echo "Payload received: $PAYLOAD"
           echo "--------------------------------"
