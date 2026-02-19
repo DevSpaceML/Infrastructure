@@ -32,7 +32,7 @@ jobs:
 
       - name: config_variables
         run: |
-          PAYLOAD=$(printf '$%' '${{ tojson(github.event.client_payload.config) }}')
+          PAYLOAD=$(printf '%s' '${{ tojson(github.event.client_payload.config) }}')
           echo "Payload received: $PAYLOAD"
           echo "--------------------------------"
           printf '%s' "$PAYLOAD" | jq -r 'to_entries[] |
