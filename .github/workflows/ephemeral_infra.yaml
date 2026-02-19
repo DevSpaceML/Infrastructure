@@ -44,7 +44,7 @@ jobs:
               "\(.key)=\(.value)"
             end' > ${{ env.tfvarsFilename }}
           echo "--------------------------------"
-          cat ../${{ env.tfvarsFilename }}
+          cat ${{ env.tfvarsFilename }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
