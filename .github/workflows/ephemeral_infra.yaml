@@ -7,7 +7,7 @@ on:
 env:
   TF_VERSION: "1.5.0"
   AWS_REGION: "us-east-1"
-  PAYLOAD: ${{ github.event.client_payload.config }}
+  PAYLOAD: ${{ toJson(github.event.client_payload.config) }}
   ENVIRONMENT: ${{ github.event.client_payload.config.environment }}
   CLUSTER_NAME: ${{ github.event.client_payload.config.projectName }}
   tfvarsFilename: "${{ github.event.client_payload.config.projectName }}.tfvars"
@@ -33,7 +33,7 @@ jobs:
 
       - name: config_variables
         run: |
-          echo "Payload received: ${{ github.event.client_payload.config }}"
+          echo "Payload received: ${{ env.PAYLOAD }}"
           echo "--------------------------------"
           jq -r 'to_entries[] | "\(.key)=\(.value)"' <<< "${{ env.PAYLOAD }}" > config.env
           cat config.env
