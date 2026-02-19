@@ -35,10 +35,17 @@ jobs:
           PAYLOAD='${{ tojson(github.event.client_payload.config) }}'
           echo "Payload received: $PAYLOAD"
           echo "--------------------------------"
-          jq -r 'to_entries[] | "\(.key)=\(.value)"' <<< "$PAYLOAD" > config.env
-          cat config.env
+          jq -r 'to_entries[] |
+          if .key == "network" then
+             .value | to_entries[] |
+             "\(.key)=\(.value | tojson)"
+          else
+             "\(.key)=\(.value)"
+          end' 
+          <<< "$PAYLOAD" > ../${{ env.tfvarsFilename }}
           echo "--------------------------------"
-      
+          cat ../${{ env.tfvarsFilename }}
+
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
