@@ -35,7 +35,7 @@ jobs:
         run: |
           pwd
           PAYLOAD=$(printf '%s' '${{ tojson(github.event.client_payload.config) }}')
-          echo "Payload received: $PAYLOAD"
+          echo "Current Payload: $PAYLOAD"
           echo "--------------------------------"
           printf '%s' "$PAYLOAD" | jq -r 'to_entries[] |
             if .key == "network" then
@@ -45,6 +45,7 @@ jobs:
               "\(.key)=\(.value)"
             end' > ${{ env.tfvarsFilename }}
           echo "--------------------------------"
+          find /home/runner/work/Infrastructure/Infrastructure/environments/${{ env.ENVIRONMENT }} -type f | sort
           cat ${{ env.tfvarsFilename }}
 
       - name: Setup Terraform
