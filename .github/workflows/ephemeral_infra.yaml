@@ -55,15 +55,16 @@ jobs:
           terraform_wrapper: false
 
     # Deploy Network
-    #  - name: Deploy Network
-    #    working-directory: ./environments/${{ env.ENVIRONMENT }}/network
-    #    run: |
-    #      terraform init -upgrade
-    #  - name: Terraform Validate
-    #    working-directory: ./environments/${{ env.ENVIRONMENT }}/network
-    #    run: terraform validate 
-    #  - name: Terraform Plan
-    #    run: |
-    #      terraform plan -var-file="/infrastructure/${{ env.ENVIRONMENT }}/${{ env.tfvarsFile }}" -out=ephemeral-${{ env.ENVIRONMENT }}-eks.tfplan  
-    #    working-directory: ./environments/${{ env.ENVIRONMENT }}/network
+      - name: Deploy Network
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network
+        run: |
+          terraform init -upgrade
+      - name: Terraform Validate
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network
+        run: terraform validate 
+      - name: Terraform Plan
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network
+        run: |
+          terraform plan -var-file="/infrastructure/${{ env.ENVIRONMENT }}/${{ env.tfvarsFilename }}" -out=ephemeral-${{ env.ENVIRONMENT }}-eks.tfplan  
+        
         
