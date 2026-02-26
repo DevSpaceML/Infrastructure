@@ -1,4 +1,10 @@
 #EKS VPC variables for VPC module
+
+variable "region" {
+	description = "aws region"
+	type = string
+}
+
 variable "createvpc" {
   description = "creates dedicated vpc if true"
   type = bool
@@ -13,11 +19,6 @@ variable "existing_vpc_id" {
 
 variable "vpcname" {
 	description = "Name of VPC"
-	type = string
-}
-
-variable "region" {
-	description = "aws region"
 	type = string
 }
 

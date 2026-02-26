@@ -24,4 +24,6 @@ module "dev_vpc" {
   source  = "../../../modules/network/vpc"
   cidr    = var.dev_cidr
   vpcname = var.vpcname
+  region = var.region
+  createvpc = var.createvpc
 }

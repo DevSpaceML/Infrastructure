@@ -1,3 +1,8 @@
+variable "region" {
+  description = "deployment region"
+  type = string
+}
+
 variable "k8s_version" {
   description = "Version to be used with the cluster"
   type        = string
