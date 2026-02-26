@@ -19,7 +19,6 @@ variable "vpcname" {
 variable "region" {
 	description = "aws region"
 	type = string
-	default = "us-east-2"
 }
 
 variable "cidr" {

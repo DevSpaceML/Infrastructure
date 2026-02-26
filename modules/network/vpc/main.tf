@@ -217,7 +217,6 @@ resource "aws_route_table_association" "eks_private_route_association" {
 	route_table_id = 	aws_route_table.eks_private_routetable[count.index].id
 }
 
-
 resource "aws_route_table" "nodegroup_private_routetable" {
 	count = length(aws_subnet.public_subnet_eks)
 	vpc_id = data.aws_vpc.deployed_vpc[0].id
