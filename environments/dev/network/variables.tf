@@ -16,5 +16,17 @@ variable "vpcname" {
 
 variable "createvpc" {
   description = "creates dedicated vpc if true"
-  type = string
+  type = bool
+}
+
+variable "rds_private_subnet_cidr_blocks" {
+    description = "list of cidr blocks for RDS instances"
+	type = list(string)
+	default = []
+}
+
+variable nodegroup_pvt_subnet_cidr_blocks {
+	description = "list if cidr blocks for nodegroup private subnets"
+	type = list(string)
+	default = []
 }
