@@ -29,7 +29,7 @@ data "aws_vpc" "clustervpcdata" {
 }
 
 data "aws_vpc" "deployed_vpc" {
-	count = length(aws_vpc.cluster_vpc) > 0 ? 0 : 1
+	count = var.createvpc ? 0 : 1
 	filter {
 		name = "tag:id"
 		values = [var.existing_vpc_id]
