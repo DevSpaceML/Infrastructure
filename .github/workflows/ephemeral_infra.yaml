@@ -46,10 +46,10 @@ jobs:
             elif .key == "db" then "rds_private_subnet_cidr_blocks=\(.value)"
             elif .key == "node" then "nodegroup_pvt_subnet_cidr_blocks=\(.value)"
             else
-              "\(.key)=\(.value)"
+              "\(.key)=\(.value | tojson)"
             end   
           else
-          "\(.key)=\(.value)" 
+          "\(.key)=\(.value | tojson)" 
           end' > ${{ env.tfvarsFilename }}
           echo "--------------------------------"
           find /home/runner/work/Infrastructure/Infrastructure/environments/${{ env.ENVIRONMENT }} -type f | sort
