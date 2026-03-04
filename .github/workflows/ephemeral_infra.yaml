@@ -38,12 +38,19 @@ jobs:
           echo "Current Payload: $PAYLOAD"
           echo "--------------------------------"
           printf '%s' "$PAYLOAD" | jq -r 'to_entries[] |
-            if .key == "network" then
-              .value | to_entries[] |
-              "\(.key)=\(.value | tojson)"
+          if .key == "network" then
+            .value | to_entries[] |
+            if .key == "eks" then
+                "public_subnet_cidr_block=" + (.value[:2] | tostring),
+                "private_subnet_cidr_block=" + (.value[2:4] | tostring)
+            elif .key == "db" then "rds_private_subnet_cidr_blocks=\(.value)"
+            elif .key == "node" then "nodegroup_pvt_subnet_cidr_blocks=\(.value)"
             else
               "\(.key)=\(.value)"
-            end' > ${{ env.tfvarsFilename }}
+            end   
+          else
+          "\(.key)=\(.value)" 
+          end' > ${{ env.tfvarsFilename }}
           echo "--------------------------------"
           find /home/runner/work/Infrastructure/Infrastructure/environments/${{ env.ENVIRONMENT }} -type f | sort
           cat ${{ env.tfvarsFilename }}
