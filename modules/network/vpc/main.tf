@@ -30,10 +30,7 @@ data "aws_vpc" "clustervpcdata" {
 
 data "aws_vpc" "deployed_vpc" {
 	count = var.createvpc ? 0 : 1
-	filter {
-		name = "tag:Name"
-		values = [var.vpcname]
-	}  
+	id = var.existing_vpc_id
 }
 
 data "aws_security_group" "default_sec_group" {
