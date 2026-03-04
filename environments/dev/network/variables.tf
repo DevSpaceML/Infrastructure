@@ -1,8 +1,4 @@
 
-variable "dev_cidr" {
-  description = "Default cidr block for VPC cluster"
-  type        = string
-}
 
 variable "region" {
   description = "aws region"
@@ -20,6 +16,29 @@ variable "createvpc" {
   description = "creates dedicated vpc if true"
   type = bool
   default = false
+}
+
+variable "dev_cidr" {
+  description = "Default cidr block for VPC cluster"
+  type        = string
+}
+
+variable "existing_vpc_id" {
+  description = "required if createvpc is false"
+  type = string
+  default = ""
+}
+
+variable "private_subnet_cidr_blocks" {
+  description = "A list of CIDR blocks for the subnets"
+  type        = list(string)
+  default     = ["10.0.1.0/24", "10.0.2.0/24"]
+}
+
+variable "public_subnet_cidr_blocks" {
+  description = "Public Cidr blocks for NAT gateways, ALB, etc"
+  type        = list(string)
+  default     = ["10.0.11.0/24", "10.0.12.0/24"]
 }
 
 variable "rds_private_subnet_cidr_blocks" {
