@@ -31,8 +31,8 @@ data "aws_vpc" "clustervpcdata" {
 data "aws_vpc" "existing_vpc" {
 	count = var.createvpc ? 0 : 1
 	filter {
-    name   = "vpc-id"
-    values = [var.existing_vpc_id]
+    name   = "tag:vpcname"
+    values = [var.vpcname]
   }
 }
 
