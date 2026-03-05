@@ -16,7 +16,7 @@ permissions:
   contents: read  
 
 jobs:
-  developer-eks:
+  deploy-network:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
@@ -72,6 +72,39 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/${{ env.ENVIRONMENT }}/network
         run: |
-          terraform plan -var-file="../${{ env.tfvarsFilename }}" -out=ephemeral-${{ env.ENVIRONMENT }}-eks.tfplan  
+          terraform plan -var-file="../${{ env.tfvarsFilename }}" -out=ephemeral-${{ env.ENVIRONMENT }}-eks.tfplan
+
+  # Deploy IAM      
+  deploy-iam:
+    name: deploy-iam
+    runs-on: ubuntu-latest
+    needs: deploy-network
         
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+            
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: false
+
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: ./environments/dev/iam
+        run: |
+          terraform init
+
+      - name: Terraform Plan
+        working-directory: ./environments/dev/iam
+        run: |
+          terraform plan
         
