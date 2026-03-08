@@ -42,6 +42,7 @@ jobs:
       - name: config_variables
         shell: bash
         id: parse_vars
+        working-directory: ./environments/${{ env.ENVIRONMENT }}
         run: |
           PAYLOAD=$(printf '%s' '${{ tojson(github.event.client_payload.config) }}')
           echo "Current Payload: $PAYLOAD"
