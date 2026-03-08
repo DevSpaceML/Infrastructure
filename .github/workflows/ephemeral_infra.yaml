@@ -16,8 +16,17 @@ permissions:
   contents: read  
 
 jobs:
-  deploy-network:
+  configure-variables:
     runs-on: ubuntu-latest
+    outputs:
+      region: ${{ steps.parse_vars.outputs.region }}
+      vpcname: ${{ steps.parse_vars.outputs.vpcname }}
+      createvpc: ${{ steps.parse_vars.outputs.createvpc }}
+      existing_vpc_id: ${{ steps.parse_vars.outputs.existing_vpc_id }}
+      public_subnet_cidr: ${{ steps.parse_vars.outputs.public_subnet_cidr }}
+      private_subnet_cidr: ${{ steps.parse_vars.outputs.private_subnet_cidr }}
+      rds_subnet_cidrs: ${{ steps.parse_vars.outputs.rds_subnet_cidrs }}
+      nodegroup_subnet_cidrs: ${{ steps.parse_vars.outputs.nodegroup_subnet_cidrs }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -31,29 +40,56 @@ jobs:
           mask-aws-account-id: false
 
       - name: config_variables
-        working-directory: ./environments/${{ env.ENVIRONMENT }}
+        shell: bash
+        id: parse_vars
         run: |
-          pwd
           PAYLOAD=$(printf '%s' '${{ tojson(github.event.client_payload.config) }}')
           echo "Current Payload: $PAYLOAD"
-          echo "--------------------------------"
-          printf '%s' "$PAYLOAD" | jq -r 'to_entries[] |
-          if .key == "network" then
-            .value | to_entries[] |
-            if .key == "eks" then
-                "public_subnet_cidr_block=" + (.value[:2] | tostring),
-                "private_subnet_cidr_block=" + (.value[2:4] | tostring)
-            elif .key == "db" then "rds_private_subnet_cidr_blocks=\(.value)"
-            elif .key == "node" then "nodegroup_pvt_subnet_cidr_blocks=\(.value)"
-            else
-              "\(.key)=\(.value | tojson)"
-            end   
-          else
-          "\(.key)=\(.value | tojson)" 
-          end' > ${{ env.tfvarsFilename }}
-          echo "--------------------------------"
-          find /home/runner/work/Infrastructure/Infrastructure/environments/${{ env.ENVIRONMENT }} -type f | sort
-          cat ${{ env.tfvarsFilename }}
+
+          # ── Loop over all top-level scalar fields dynamically ──────────────────
+          while IFS='=' read -r key value; do
+            echo "${key}=${value}" >> "$GITHUB_OUTPUT"
+          done < <(
+            echo "$PAYLOAD" | jq -r '
+              to_entries[]
+              | select(.key != "network")
+              | select(.value | type == "string")
+              | "\(.key)=\(.value)"
+            '
+          )
+          # ── Network block: special split logic per subnet role ──────────────────
+          echo "$PAYLOAD" | jq -r '
+            .network | to_entries[] |
+            if   .key == "eks"  then
+              "public_subnet_cidr="  + (.value[:2]  | tojson),
+              "private_subnet_cidr=" + (.value[2:4] | tojson)
+            elif .key == "db"   then "rds_subnet_cidrs="       + (.value | tojson)
+            elif .key == "node" then "nodegroup_subnet_cidrs=" + (.value | tojson)
+            else                     "\(.key)="                + (.value | tojson)
+            end
+          ' >> "$GITHUB_OUTPUT"
+
+  deploy-network:
+    runs-on: ubuntu-latest
+    needs: configure-variables
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_public_subnet_cidr_block: ${{ needs.configure-variables.outputs.public_subnet_cidr }}
+      TF_VAR_private_subnet_cidr_block: ${{ needs.configure-variables.outputs.private_subnet_cidr }}
+      TF_VAR_rds_private_subnet_cidr_blocks: ${{ needs.configure-variables.outputs.rds_subnet_cidrs }}
+      TF_VAR_nodegroup_pvt_subnet_cidr_blocks: ${{ needs.configure-variables.outputs.nodegroup_subnet_cidrs }}
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.AWS_REGION }}
+          mask-aws-account-id: false
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -61,7 +97,7 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-    # Deploy Network
+    # Deploy Network Step
       - name: Deploy Network
         working-directory: ./environments/${{ env.ENVIRONMENT }}/network
         run: |
@@ -72,13 +108,7 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/${{ env.ENVIRONMENT }}/network
         run: |
-          terraform plan -var-file="../${{ env.tfvarsFilename }}" -out=ephemeral-${{ env.ENVIRONMENT }}-eks.tfplan
-
-      - name: Upload Terraform Plan
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfplan-${{ env.ENVIRONMENT }}
-          path: ./environments/${{ env.ENVIRONMENT }}/network/ephemeral-${{ env.ENVIRONMENT }}-eks.tfplan
+          terraform plan 
 
   # Deploy IAM      
   deploy-iam:
@@ -119,6 +149,12 @@ jobs:
     name: deploy-eks-cluster
     runs-on: ubuntu-latest
     needs: [deploy-network, deploy-iam]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+      TF_VAR_vpcname: ${{ needs.configure-variables.outputs.vpcname }}
+      TF_VAR_createvpc: ${{ needs.configure-variables.outputs.createvpc }}
+      TF_VAR_existing_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}  
 
     steps:  
       - name: checkout-code
@@ -151,11 +187,5 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/${{ env.ENVIRONMENT }}/cluster
         run: |
-          terraform plan -var-file="../${{ env.tfvarsFilename }}"
-
-      - name: Upload Terraform Plan
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfplan-${{ env.ENVIRONMENT }}
-          path: ./environments/${{ env.ENVIRONMENT }}/iam/ephemeral-${{ env.ENVIRONMENT }}-eks.tfplan   
+          terraform plan 
           
