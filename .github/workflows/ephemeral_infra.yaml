@@ -81,7 +81,7 @@ jobs:
       TF_VAR_dev_cidr: ${{ needs.configure-variables.outputs.dev_cidr }}
       TF_VAR_existing_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}
       TF_VAR_vpcname: ${{ needs.configure-variables.outputs.vpcname }}
-      TF_VAR_createvpc: ${{ needs.configure-variables.outputs.createvpc }}
+      TF_VAR_createvpc: ${{ fromJson(needs.configure-variables.outputs.createvpc) }}
       TF_VAR_public_subnet_cidr_block: ${{ needs.configure-variables.outputs.public_subnet_cidr }}
       TF_VAR_private_subnet_cidr_block: ${{ needs.configure-variables.outputs.private_subnet_cidr }}
       TF_VAR_rds_private_subnet_cidr_blocks: ${{ needs.configure-variables.outputs.rds_subnet_cidrs }}
