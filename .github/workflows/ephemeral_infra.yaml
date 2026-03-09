@@ -20,6 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       environment: ${{ steps.parse_vars.outputs.environment }}
+      clustername: ${{ steps.parse_vars.outputs.projectName }}
       region: ${{ steps.parse_vars.outputs.region }}
       dev_cidr: ${{ steps.parse_vars.outputs.dev_cidr }}
       vpcname: ${{ steps.parse_vars.outputs.vpcname }}
