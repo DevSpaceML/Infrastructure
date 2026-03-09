@@ -78,6 +78,7 @@ jobs:
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+      TF_VAR_dev_cidr: ${{ needs.configure-variables.outputs.dev_cidr }}
       TF_VAR_existing_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}
       TF_VAR_vpcname: ${{ needs.configure-variables.outputs.vpcname }}
       TF_VAR_createvpc: ${{ needs.configure-variables.outputs.createvpc }}
