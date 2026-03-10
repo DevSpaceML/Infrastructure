@@ -36,6 +36,16 @@ data "aws_vpc" "existing_vpc" {
   }
 }
 
+data "aws_internet_gateway" "existing_igw" {
+  count = var.createvpc ? 0 : 1
+
+  filter {
+	name   = "attachment.vpc-id"
+	values = [data.aws_vpc.existing_vpc[0].id]
+  }
+  
+}
+
 data "aws_security_group" "default_sec_group" {
   filter {
 	name = "vpc-id"
@@ -62,14 +72,14 @@ resource "aws_vpc_dhcp_options" "eks_dhcp_options" {
 }
 
 resource "aws_vpc_dhcp_options_association" "eks_dhcp_options_association" {
-	vpc_id = data.aws_vpc.existing_vpc[0].id
+	vpc_id = var.createvpc? data.aws_vpc.clustervpcdata[0].id : data.aws_vpc.existing_vpc[0].id
 	dhcp_options_id = aws_vpc_dhcp_options.eks_dhcp_options.id
 
 	depends_on = [ data.aws_vpc.existing_vpc, aws_vpc_dhcp_options.eks_dhcp_options ]	 
 }
 
 resource "aws_subnet" "public_subnet_eks" {
-	vpc_id = data.aws_vpc.existing_vpc[0].id
+	vpc_id = var.createvpc? data.aws_vpc.clustervpcdata[0].id : data.aws_vpc.existing_vpc[0].id
 	count = length(var.public_subnet_cidr_blocks)
 	cidr_block = var.public_subnet_cidr_blocks[count.index]
 	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
@@ -84,7 +94,7 @@ resource "aws_subnet" "public_subnet_eks" {
 }
 
 resource "aws_subnet" "private_subnet_eks" {
-	vpc_id = data.aws_vpc.existing_vpc[0].id
+	vpc_id = var.createvpc? data.aws_vpc.clustervpcdata[0].id : data.aws_vpc.existing_vpc[0].id
 	count = length(var.private_subnet_cidr_blocks)
 	cidr_block = var.private_subnet_cidr_blocks[count.index]
 	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
@@ -99,7 +109,7 @@ resource "aws_subnet" "private_subnet_eks" {
 }
 
 resource "aws_subnet" "nodegroup_private_subnet" {
-	vpc_id = data.aws_vpc.existing_vpc[0].id
+	vpc_id = var.createvpc? data.aws_vpc.clustervpcdata[0].id : data.aws_vpc.existing_vpc[0].id
 	count = length(var.nodegroup_pvt_subnet_cidr_blocks)
 	cidr_block = var.nodegroup_pvt_subnet_cidr_blocks[count.index]
 	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
@@ -115,7 +125,7 @@ resource "aws_subnet" "nodegroup_private_subnet" {
 }
 
 resource "aws_subnet" "rds_private_subnet" {
-	vpc_id = data.aws_vpc.existing_vpc[0].id
+	vpc_id = var.createvpc? data.aws_vpc.clustervpcdata[0].id : data.aws_vpc.existing_vpc[0].id
 	count = length(var.rds_private_subnet_cidr_blocks)
 	cidr_block = var.rds_private_subnet_cidr_blocks[count.index]
 	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
@@ -182,8 +192,7 @@ resource "aws_nat_gateway" "eks_nat_gw" {
 }
 
 resource "aws_route_table" "eks_public_routetable" {
-	vpc_id = data.aws_vpc.existing_vpc[0].id
-
+	vpc_id = var.createvpc? data.aws_vpc.clustervpcdata[0].id : data.aws_vpc.existing_vpc[0].id
 	route {
 		cidr_block = "0.0.0.0/0"
 		gateway_id = var.createvpc? aws_internet_gateway.igw_public_eks[0].id : data.aws_internet_gateway.existing_igw[0].id
@@ -220,7 +229,15 @@ resource "aws_route_table_association" "eks_private_route_association" {
 
 resource "aws_route_table" "nodegroup_private_routetable" {
 	count = length(aws_subnet.public_subnet_eks)
+<<<<<<< HEAD
 	vpc_id = var.createvpc? aws_vpc.cluster_vpc[0].id : data.aws_vpc.existing_vpc[0].id
+=======
+<<<<<<< Updated upstream
+	vpc_id = var.createvpc? data.aws_vpc.clustervpcdata[0].id : data.aws_vpc.existing_vpc[0].id
+=======
+	vpc_id = var.createvpc? aws_vpc.cluster_vpc[0].id : data.aws_vpc.existing_vpc[0].id
+>>>>>>> Stashed changes
+>>>>>>> develop
 
 	route {
 		cidr_block = "0.0.0.0/0"
