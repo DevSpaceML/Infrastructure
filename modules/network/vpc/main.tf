@@ -186,7 +186,7 @@ resource "aws_route_table" "eks_public_routetable" {
 
 	route {
 		cidr_block = "0.0.0.0/0"
-		gateway_id = aws_internet_gateway.igw_public_eks.id
+		gateway_id = var.createvpc? aws_internet_gateway.igw_public_eks[0].id : data.aws_internet_gateway.existing_igw[0].id
 	}	
 }
 
@@ -200,7 +200,7 @@ resource "aws_route_table_association" "eks_public_route_association" {
 
 resource "aws_route_table" "eks_private_routetable" {
 	count = length(aws_subnet.private_subnet_eks)
-	vpc_id = data.aws_vpc.existing_vpc[0].id
+	vpc_id = var.createvpc? aws_vpc.cluster_vpc[0].id : data.aws_vpc.existing_vpc[0].id
 
 	route {
 		cidr_block = "0.0.0.0/0"
@@ -220,7 +220,7 @@ resource "aws_route_table_association" "eks_private_route_association" {
 
 resource "aws_route_table" "nodegroup_private_routetable" {
 	count = length(aws_subnet.public_subnet_eks)
-	vpc_id = data.aws_vpc.existing_vpc[0].id
+	vpc_id = var.createvpc? aws_vpc.cluster_vpc[0].id : data.aws_vpc.existing_vpc[0].id
 
 	route {
 		cidr_block = "0.0.0.0/0"
