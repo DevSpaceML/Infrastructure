@@ -229,11 +229,7 @@ resource "aws_route_table_association" "eks_private_route_association" {
 
 resource "aws_route_table" "nodegroup_private_routetable" {
 	count = length(aws_subnet.public_subnet_eks)
-<<<<<<< Updated upstream
-	vpc_id = var.createvpc? data.aws_vpc.clustervpcdata[0].id : data.aws_vpc.existing_vpc[0].id
-=======
 	vpc_id = var.createvpc? aws_vpc.cluster_vpc[0].id : data.aws_vpc.existing_vpc[0].id
->>>>>>> Stashed changes
 
 	route {
 		cidr_block = "0.0.0.0/0"
