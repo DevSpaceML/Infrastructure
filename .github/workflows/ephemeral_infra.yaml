@@ -117,7 +117,17 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/${{ env.ENVIRONMENT }}/network
         run: |
-          terraform plan 
+          terraform plan -out=tfplan
+          terraform show -json tfplan > tfplan.json
+          cat tfplan.json
+      - name: Upload Network Plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: network-tfplan
+          path: ./environments/${{ env.ENVIRONMENT }}/network/tfplan.json
+      - name: Terraform Apply
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network
+        run: terraform apply -auto-approve tfplan    
 
   # Deploy IAM      
   deploy-iam:
