@@ -153,7 +153,8 @@ locals {
 }
 
 resource "aws_internet_gateway" "igw_public_eks" {
-	vpc_id = data.aws_vpc.existing_vpc[0].id
+	count = var.createvpc ? 1 : 0
+	vpc_id = data.aws_vpc.clustervpcdata[0].id
 
 	tags = {
 		Name = "${var.igw_name}"
