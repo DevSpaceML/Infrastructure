@@ -164,7 +164,11 @@ locals {
 
 resource "aws_internet_gateway" "igw_public_eks" {
 	count = var.createvpc ? 1 : 0
+<<<<<<< Updated upstream
 	vpc_id = data.aws_vpc.clustervpcdata[0].id 
+=======
+	vpc_id = data.aws_vpc.clustervpcdata[0].id
+>>>>>>> Stashed changes
 
 	tags = {
 		Name = "${var.igw_name}"
