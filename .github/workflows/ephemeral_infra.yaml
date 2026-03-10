@@ -121,7 +121,7 @@ jobs:
           terraform show -json tfplan > tfplan.json
           cat tfplan.json
       - name: Upload Network Plan
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: network-tfplan
           path: ./environments/${{ env.ENVIRONMENT }}/network/tfplan.json
