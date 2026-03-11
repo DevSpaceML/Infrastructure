@@ -75,7 +75,7 @@ resource "aws_vpc_dhcp_options_association" "eks_dhcp_options_association" {
 	vpc_id = var.createvpc? data.aws_vpc.clustervpcdata[0].id : data.aws_vpc.existing_vpc[0].id
 	dhcp_options_id = aws_vpc_dhcp_options.eks_dhcp_options.id
 
-	depends_on = [ data.aws_vpc.existing_vpc, aws_vpc_dhcp_options.eks_dhcp_options ]	 
+	depends_on = [ aws_vpc_dhcp_options.eks_dhcp_options ]	 
 }
 
 resource "aws_subnet" "public_subnet_eks" {
