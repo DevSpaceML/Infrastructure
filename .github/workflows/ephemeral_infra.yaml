@@ -214,6 +214,7 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/${{ env.ENVIRONMENT }}/cluster
         run: |
+          echo "Running terraform plan for cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
           terraform plan -out=tfplan
           terraform show -json tfplan > tfplan.json
           cat tfplan.json 
