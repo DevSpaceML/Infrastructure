@@ -111,20 +111,24 @@ jobs:
         working-directory: ./environments/${{ env.ENVIRONMENT }}/network
         run: |
           terraform init -upgrade
+
       - name: Terraform Validate
         working-directory: ./environments/${{ env.ENVIRONMENT }}/network
         run: terraform validate 
+
       - name: Terraform Plan
         working-directory: ./environments/${{ env.ENVIRONMENT }}/network
         run: |
           terraform plan -out=tfplan
           terraform show -json tfplan > tfplan.json
           cat tfplan.json
+
       - name: Upload Network Plan
         uses: actions/upload-artifact@v4
         with:
           name: network-tfplan
           path: ./environments/${{ env.ENVIRONMENT }}/network/tfplan.json
+
       - name: Terraform Apply
         working-directory: ./environments/${{ env.ENVIRONMENT }}/network
         run: terraform apply -auto-approve tfplan    
@@ -162,6 +166,9 @@ jobs:
         working-directory: ./environments/${{ env.ENVIRONMENT }}/iam
         run: |
           terraform plan
+      - name: Terraform Apply
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/iam
+        run: terraform apply -auto-approve    
   
   # Deploy Cluster
   deploy-cluster:
@@ -207,5 +214,15 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/${{ env.ENVIRONMENT }}/cluster
         run: |
-          terraform plan 
+          terraform plan -out=tfplan
+          terraform show -json tfplan > tfplan.json
+          cat tfplan.json 
+      - name: Upload Cluster Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluster-tfplan
+          path: ./environments/${{ env.ENVIRONMENT }}/cluster/tfplan.json
           
+      - name: Terraform Apply
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/cluster
+        run: terraform apply -auto-approve tfplan
