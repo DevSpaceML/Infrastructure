@@ -5,14 +5,28 @@ output "eks_vpc_id" {
  
 output "cluster_subnet_id_list" {
   value = values(local.pvt_subnets_by_az)
+
+  precondition {
+    condition     = length(local.pvt_subnets_by_az) > 0
+    error_message = "pvt_subnets_by_az is empty — subnet resources may not have been created."
+  }
 }
 
 output "rds_private_subnet_id_list" {
   value = values(local.rds_subnets_by_az)
+  precondition {
+    condition     = length(local.rds_subnets_by_az) > 0
+    error_message = "rds_subnets_by_az is empty — subnet resources may not have been created."
+  }
 }
   
 output "nodegroup_pvt_subnet_id_list" {
   value = aws_subnet.nodegroup_private_subnet[*].id
+
+  precondition {
+    condition     = length(aws_subnet.nodegroup_private_subnet) > 0
+    error_message = "nodegroup_private_subnet is empty — subnet resources may not have been created."
+  }
 }
 
 output "public_cidr" {
