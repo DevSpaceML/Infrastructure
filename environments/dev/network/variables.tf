@@ -32,13 +32,13 @@ variable "existing_vpc_id" {
 variable "private_subnet_cidr_blocks" {
   description = "A list of CIDR blocks for the subnets"
   type        = list(string)
-  default     = ["10.0.1.0/24", "10.0.2.0/24"]
+  default     = []
 }
 
 variable "public_subnet_cidr_blocks" {
   description = "Public Cidr blocks for NAT gateways, ALB, etc"
   type        = list(string)
-  default     = ["10.0.11.0/24", "10.0.12.0/24"]
+  default     = []
 }
 
 variable "rds_private_subnet_cidr_blocks" {
