@@ -142,24 +142,19 @@ resource "aws_subnet" "rds_private_subnet" {
 locals {
   pub_subnets_by_az = {
 	for subnet in aws_subnet.public_subnet_eks:
-	  subnet.tags["availability_zone"] => subnet.id 
+	  subnet.availability_zone => subnet.id 
   }
 
   pvt_subnets_by_az = {
 	for subnet in aws_subnet.private_subnet_eks:
-	  subnet.tags["availability_zone"] => subnet.id
+	  subnet.availability_zone => subnet.id
   }
 
   rds_subnets_by_az = {
 	for subnet in aws_subnet.rds_private_subnet:
-	  subnet.tags["availability_zone"] => subnet.id
+	  subnet.availability_zone => subnet.id
   }
-
-  public_subnets_by_id = values(local.pub_subnets_by_az)
-  pvt_subnets_by_id = values(local.pvt_subnets_by_az)
-
-  rds_subnets_by_id = values(local.rds_subnets_by_az)
-  cluster_subnet_ids =  local.pvt_subnets_by_id   
+ 
 }
 
 resource "aws_internet_gateway" "igw_public_eks" {
