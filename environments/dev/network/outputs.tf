@@ -17,7 +17,7 @@ output "nodegroup_cidr" {
 # --
 
 output "cluster_subnet_id_list" {
-  value = module.dev_vpc.subnet_id_list
+  value = module.dev_vpc.cluster_subnet_id_list
 }
 
 output "public_subnet_list" {
