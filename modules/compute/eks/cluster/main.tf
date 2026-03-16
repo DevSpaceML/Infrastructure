@@ -18,7 +18,7 @@ resource "aws_eks_cluster" "this" {
 	role_arn = var.cluster_role_arn
 	
 	vpc_config {
-		subnet_ids              = var.subnetIdlist
+		subnet_ids              = var.cluster_subnet_id_list
 		endpoint_public_access  = var.endpoint_public_access
 		endpoint_private_access = var.endpoint_private_access
     security_group_ids      = var.additional_security_group_ids
