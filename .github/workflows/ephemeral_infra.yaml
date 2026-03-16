@@ -63,8 +63,8 @@ jobs:
           echo "$PAYLOAD" | jq -r '
             .network | to_entries[] |
             if   .key == "eks"  then
-              "public_subnet_cidr="  + (.value[:2]  | tojson),
-              "private_subnet_cidr=" + (.value[2:4] | tojson)
+              "public_subnet_cidr_blocks="  + (.value[:2]  | tojson),
+              "private_subnet_cidr_blocks=" + (.value[2:4] | tojson)
             elif .key == "db"   then "rds_subnet_cidrs="       + (.value | tojson)
             elif .key == "node" then "nodegroup_subnet_cidrs=" + (.value | tojson)
             else                     "\(.key)="                + (.value | tojson)
