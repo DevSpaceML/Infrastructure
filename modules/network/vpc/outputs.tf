@@ -2,10 +2,6 @@
 output "eks_vpc_id" {
   value = length(aws_vpc.cluster_vpc) > 0 ? aws_vpc.cluster_vpc[0].id : data.aws_vpc.existing_vpc[0].id
 }
-  
-output "nodegroup_pvt_subnet_id_list" {
-  value = aws_subnet.nodegroup_private_subnet[*].id
-}
 
 output "public_cidr" {
   value = var.public_subnet_cidr_blocks
@@ -29,6 +25,14 @@ output "public_subnet_id_list" {
 
 output "private_subnet_id_list" {
   value = aws_subnet.private_subnet_eks[*].id
+}
+  
+output "nodegroup_pvt_subnet_id_list" {
+  value = aws_subnet.nodegroup_private_subnet[*].id
+}
+
+output "rds_private_subnet_id_list" {
+  value = aws_subnet.rds_private_subnet[*].id
 }
 
 output "nat_gateways" {
