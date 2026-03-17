@@ -229,11 +229,6 @@ resource "aws_route_table_association" "nodegroup_private_route_association" {
 	route_table_id = 	aws_route_table.nodegroup_private_routetable[count.index].id
 }
 
-locals {
-  public_subnet_ids  = aws_subnet.public_subnet_eks[*].id
-  private_subnet_ids = aws_subnet.private_subnet_eks[*].id
-}
-
 
 /*
 resource "aws_flow_log" "eks-vpc-flow-log" {
