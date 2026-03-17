@@ -30,13 +30,11 @@ variable "cidr" {
 variable "public_subnet_cidr_blocks" {
   description = "Public Cidr blocks for NAT gateways, ALB, etc"
   type        = list(string)
-  default     = []
 }
 
 variable "private_subnet_cidr_blocks" {
   description = "A list of CIDR blocks for the subnets"
   type        = list(string)
-  default     = []
 }
 
 variable "rds_private_subnet_cidr_blocks" {
