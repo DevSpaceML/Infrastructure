@@ -2,14 +2,6 @@
 output "eks_vpc_id" {
   value = length(aws_vpc.cluster_vpc) > 0 ? aws_vpc.cluster_vpc[0].id : data.aws_vpc.existing_vpc[0].id
 }
- 
-output "cluster_subnet_id_list" {
-  value = values(local.pvt_subnets_by_az)
-}
-
-output "rds_private_subnet_id_list" {
-  value = values(local.rds_subnets_by_az)
-}
   
 output "nodegroup_pvt_subnet_id_list" {
   value = aws_subnet.nodegroup_private_subnet[*].id
@@ -38,8 +30,6 @@ output "public_subnet_id_list" {
 output "private_subnet_id_list" {
   value = aws_subnet.private_subnet_eks[*].id
 }
-
-
 
 output "nat_gateways" {
   value = aws_nat_gateway.eks_nat_gw[*].id
