@@ -14,17 +14,13 @@ output "nodegroup_cidr" {
   value = module.dev_vpc.nodegroup_pvt_cidr
 }
 
-# --
+# -- Subnet ID lists for cluster and nodegroups
 
-output "cluster_subnet_id_list" {
-  value = module.dev_vpc.cluster_subnet_id_list
-}
-
-output "public_subnet_list" {
+output "public_subnet_id_list" {
   value = module.dev_vpc.public_subnet_id_list
 }
 
-output "private_subnet_list" {
+output "private_subnet_id_list" {
   value = module.dev_vpc.private_subnet_id_list
 }
 

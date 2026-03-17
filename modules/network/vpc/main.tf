@@ -6,7 +6,6 @@ data "aws_availability_zones" "available"{
 
 resource "aws_vpc" "cluster_vpc" {
 	count = var.createvpc ? 1 : 0
-
 	cidr_block = var.cidr
 	instance_tenancy = var.instance_tenancy
 
@@ -30,6 +29,7 @@ data "aws_vpc" "clustervpcdata" {
 
 data "aws_vpc" "existing_vpc" {
 	count = var.createvpc ? 0 : 1
+
 	filter {
     name   = "tag:vpcname"
     values = [var.vpcname]
@@ -86,7 +86,7 @@ resource "aws_subnet" "public_subnet_eks" {
 	map_public_ip_on_launch = true
 
 	tags = {
-		Name = "alb-ngw-public-subnet-${count.index + 1}"
+		Name = "public-subnet-${count.index + 1}"
 		"kubernetes.io/role/elb" = "1"
 		"kubernetes.io/cluster/${var.vpcname}" = "shared"
 		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
@@ -101,7 +101,7 @@ resource "aws_subnet" "private_subnet_eks" {
 	map_public_ip_on_launch = false
 
 	tags = {
-		Name = "ctrlplane-private-subnet-${count.index + 1}"
+		Name = "private-subnet-${count.index + 1}"
 		"kubernetes.io/cluster/${var.vpcname}" = "owned"
 		"kubernetes.io/role/internal-elb" = "1"
 		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
@@ -140,21 +140,8 @@ resource "aws_subnet" "rds_private_subnet" {
 }
 
 locals {
-  pub_subnets_by_az = {
-	for subnet in aws_subnet.public_subnet_eks:
-	  subnet.availability_zone => subnet.id 
-  }
-
-  pvt_subnets_by_az = {
-	for subnet in aws_subnet.private_subnet_eks:
-	  subnet.availability_zone => subnet.id
-  }
-
-  rds_subnets_by_az = {
-	for subnet in aws_subnet.rds_private_subnet:
-	  subnet.availability_zone => subnet.id
-  }
- 
+  public_subnet_ids  = aws_subnet.public_subnet_eks[*].id
+  private_subnet_ids = aws_subnet.private_subnet_eks[*].id
 }
 
 resource "aws_internet_gateway" "igw_public_eks" {
@@ -240,6 +227,11 @@ resource "aws_route_table_association" "nodegroup_private_route_association" {
 	count          =  length(aws_subnet.public_subnet_eks)
 	subnet_id      =  aws_subnet.nodegroup_private_subnet[count.index].id
 	route_table_id = 	aws_route_table.nodegroup_private_routetable[count.index].id
+}
+
+locals {
+  public_subnet_ids  = aws_subnet.public_subnet_eks[*].id
+  private_subnet_ids = aws_subnet.private_subnet_eks[*].id
 }
 
 

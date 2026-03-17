@@ -70,6 +70,7 @@ jobs:
             else                     "\(.key)="                + (.value | tojson)
             end
           ' >> "$GITHUB_OUTPUT"
+          echo "$GITHUB_OUTPUT"
 
   deploy-network:
     runs-on: ubuntu-latest
