@@ -20,19 +20,19 @@ output "eks_security_group_id" {
 }
 
 output "public_subnet_id_list" {
-  value = aws_subnet.public_subnet_eks[*].id
+  value = [for s in aws_subnet.public_subnet_eks : s.id]
 }
 
 output "private_subnet_id_list" {
-  value = aws_subnet.private_subnet_eks[*].id
+  value = [for s in aws_subnet.private_subnet_eks : s.id]
 }
   
 output "nodegroup_pvt_subnet_id_list" {
-  value = aws_subnet.nodegroup_private_subnet[*].id
+  value = [for s in aws_subnet.nodegroup_private_subnet : s.id]
 }
 
 output "rds_private_subnet_id_list" {
-  value = aws_subnet.rds_private_subnet[*].id
+  value = [for s in aws_subnet.rds_private_subnet : s.id]
 }
 
 output "nat_gateways" {
