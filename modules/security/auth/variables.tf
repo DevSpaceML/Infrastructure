@@ -1,4 +1,4 @@
-variable "eksclustername" {
+variable "clustername" {
   description = "name of the eks cluster"
   type = string
 }

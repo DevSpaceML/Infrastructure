@@ -3,7 +3,7 @@
 # Deploy Application LoadBalancer 
 
 data "aws_eks_cluster" "ekscluster" {
-  name = var.eksclustername
+  name = var.clustername
 }
 
 resource "aws_route53_zone" "approute" {
