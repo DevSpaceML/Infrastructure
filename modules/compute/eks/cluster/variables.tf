@@ -52,12 +52,6 @@ variable "endpoint_public_access" {
   default     = true
 }
 
-variable "cluster_subnet_id_list" {
-  description = "list of subnet Ids available to the cluster"
-  type        = list(string)
-  default = []
-}
-
 variable "public_subnet_ids" {
   description = "list of public subnet Ids available to the cluster"
 	type = list

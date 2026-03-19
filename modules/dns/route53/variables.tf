@@ -3,12 +3,12 @@ variable "securitygroupId" {
 	type = string
 }
 
-variable "private_cidr_block" {
+variable "private_cidr_blocks" {
 	description = "private cidr block"
 	type        =  list(string)
 }
 
-variable "public_cidr_block" {
+variable "public_cidr_blocks" {
 	description = "public cidr block"
 	type        =  list(string)
 }

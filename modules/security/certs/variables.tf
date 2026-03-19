@@ -28,7 +28,7 @@ variable "cluster_vpc_id" {
 	type = string
 }
 
-variable "eksclustername" {
+variable "clustername" {
 	description = "name of cluster"
 	type = string
 }

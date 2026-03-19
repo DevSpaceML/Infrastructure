@@ -213,14 +213,14 @@ resource "aws_route_table" "nodegroup_private_routetable" {
 	count = length(aws_subnet.public_subnet_eks)
 	vpc_id = var.createvpc? aws_vpc.cluster_vpc[0].id : data.aws_vpc.existing_vpc[0].id
 
-	route {
-		cidr_block = "0.0.0.0/0"
-		nat_gateway_id = aws_nat_gateway.eks_nat_gw[count.index].id
-	}	
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.eks_nat_gw[count.index].id
+  }
 
-  	tags = {
-		Name = "Nodegroup-Private-RouteTable-${count.index + 1}"
-	} 
+  tags = {
+    Name = "Nodegroup-Private-RouteTable-${count.index + 1}"
+  }
 }
 
 resource "aws_route_table_association" "nodegroup_private_route_association" {

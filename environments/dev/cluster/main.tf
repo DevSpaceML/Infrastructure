@@ -24,7 +24,6 @@ module "dev_cluster" {
   source                 = "../../../modules/compute/eks/cluster"
   clustername            = var.clustername
   vpcId                  = data.terraform_remote_state.dev_network.outputs.vpc_id
-  cluster_subnet_id_list = data.terraform_remote_state.dev_network.outputs.public_subnet_id_list
   public_subnet_ids      = data.terraform_remote_state.dev_network.outputs.public_subnet_id_list
   private_subnet_ids     = data.terraform_remote_state.dev_network.outputs.private_subnet_id_list
   public_cidr            = data.terraform_remote_state.dev_network.outputs.public_cidr

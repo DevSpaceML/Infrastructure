@@ -29,7 +29,7 @@ resource "aws_security_group_rule" "eks-tcp-ingress" {
   to_port           = 443
   protocol          = "tcp"
   security_group_id = var.securitygroupId
-  cidr_blocks       = var.public_cidr_block
+  cidr_blocks       = var.public_cidr_blocks
 }
 
 resource "aws_security_group_rule" "node-group-egress" {
@@ -38,5 +38,5 @@ resource "aws_security_group_rule" "node-group-egress" {
 	to_port   		  = 10250
 	protocol  		  = "tcp"
 	security_group_id = var.securitygroupId
-	cidr_blocks		  = var.private_cidr_block	
+	cidr_blocks		  = var.private_cidr_blocks	
 }
