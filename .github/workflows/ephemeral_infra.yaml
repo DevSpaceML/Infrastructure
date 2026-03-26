@@ -1,3 +1,21 @@
+# Deployment sequence for ephemeral eks cluster
+#   1. Configure TF_Vars
+#   2. Deploy Network
+#   3. Deploy IAM
+#   4. Deploy Cluster
+#        enable control-plane logging with Cloudwatch 
+#   5. Configure Cluster Authentication
+#    step1 --> configure aws-auth ConfigMap for role mappings
+#    step2 --> configure OIDC provider for IRSA (IAM Roles for Service Accounts)
+#   6. Nodegroup 
+#   7. Certs
+#   8. Database
+#   9. Helm App+ingress Deployment
+#   10.DNS (Route53 etc)
+#    Consider using external-dns as a Helm chart in step 9 to automate Route53 record management, 
+#    rather than managing it as a separate Terraform 
+#    step. This would simplify the workflow and reduce the number of Terraform steps, while still achieving dynamic DNS management based on Kubernetes resources.
+
 name: ephmrl-dev-eks
 
 on:
@@ -175,7 +193,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [configure-variables, deploy-network, deploy-iam]
     env:
-      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment }}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
       TF_VAR_vpcname: ${{ needs.configure-variables.outputs.vpcname }}
@@ -226,3 +244,207 @@ jobs:
       - name: Terraform Apply
         working-directory: ./environments/${{ env.ENVIRONMENT }}/cluster
         run: terraform apply -auto-approve tfplan
+      
+      - name: Verify Cluster Deployment
+        working-directory: ./environments/dev/cluster
+        run: |
+          echo "Verifying EKS Cluster Creation"
+          CLUSTER_NAME="${{ env.TF_VAR_clustername }}"
+          aws eks describe-cluster --name $CLUSTER_NAME --region ${{ env.TF_VAR_region }} --query 'cluster.status' --output text
+
+          echo "Checking if cluster is active"
+          TIMEOUT=900  # 15 minutes in seconds
+          INTERVAL=30  # Check every 30 seconds
+          ELAPSED=0
+
+          echo "Checking EKS cluster status for up to 15 minutes..."
+
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+          STATUS=$(aws eks describe-cluster --name $CLUSTER_NAME --region ${{ env.TF_VAR_region }} --query 'cluster.status' --output text)
+          
+          if [ "$STATUS" = "ACTIVE" ]; then
+            echo "EKS Cluster $CLUSTER_NAME is active."
+            exit 0
+          fi
+          
+          echo "Cluster status: $STATUS. Waiting... ($ELAPSED/$TIMEOUT seconds elapsed)"
+          sleep $INTERVAL
+          ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          echo "ERROR: EKS Cluster $CLUSTER_NAME did not become active within 15 minutes."
+          echo "Final status: $STATUS"
+          exit 1
+
+  # Cluster Authentication for users and roles
+  configure-auth:
+    name: configure-auth
+    runs-on: ubuntu-latest
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+              role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.AWS_REGION }}
+              mask-aws-account-id: false
+            
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/k8auth
+        run: |
+          terraform init -upgrade
+            
+      - name: Terraform Validate
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/k8auth
+        run: |
+          terraform validate
+            
+      - name: Terraform Plan
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/k8auth
+        run: |
+          echo "Running terraform plan for auth configuration of cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          terraform plan -out=tfplan
+          terraform show -json tfplan > tfplan.json
+          cat tfplan.json 
+      - name: Upload Auth Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-tfplan
+          path: ./environments/${{ env.ENVIRONMENT }}/configuration/k8auth/tfplan.json
+      
+      - name: Terraform Apply
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/k8auth
+        run: terraform apply -auto-approve tfplan
+      
+      - name: Verify Kubectl access to Cluster
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/k8auth
+        run: |
+          echo "Verifying kubectl access to EKS Cluster"
+          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
+          kubectl get nodes
+  
+  # Deploy Nodegroups
+  deploy-nodegroups:
+    name: deploy-nodegroups
+    runs-on: ubuntu-latest
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+    
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+              role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.AWS_REGION }}
+              mask-aws-account-id: false
+            
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/nodegroups
+        run: |
+          terraform init -upgrade
+            
+      - name: Terraform Validate
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/nodegroups
+        run: |
+          terraform validate
+            
+      - name: Terraform Plan
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/nodegroups
+        run: |
+          echo "Running terraform plan for nodegroup configuration of cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          terraform plan -out=tfplan
+          terraform show -json tfplan > tfplan.json
+          cat tfplan.json 
+      - name: Upload Nodegroups Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: nodegroups-tfplan
+          path: ./environments/${{ env.ENVIRONMENT }}/nodegroups/tfplan.json  
+  
+  deploy-certs:
+    name: deploy-certs
+    runs-on: ubuntu-latest
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+
+
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+              role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.TF_VAR_region }}
+              mask-aws-account-id: false
+            
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/certs
+        run: |
+          terraform init -upgrade
+            
+      - name: Terraform Validate
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/certs
+        run: |
+          terraform validate
+            
+      - name: Terraform Plan
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/certs
+        run: |
+          echo "Running terraform plan for certs configuration of cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          terraform plan -out=tfplan
+          terraform show -json tfplan > tfplan.json
+          cat tfplan.json 
+      - name: Upload Certs Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: certs-tfplan
+          path: ./environments/${{ env.ENVIRONMENT }}/configuration/certs/tfplan.json
+
+      - name: Terraform Apply
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/certs
+        run: terraform apply -auto-approve tfplan
+
+        
+          
+
+        
