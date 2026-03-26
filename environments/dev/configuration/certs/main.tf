@@ -7,5 +7,5 @@ module "certs" {
   eks_subnets        = data.terraform_remote_state.dev_network.outputs.cluster_subnet_id_list
   securitygroupId    = data.terraform_remote_state.dev_network.outputs.eks_sec_group_id
   cluster_vpc_id     = data.terraform_remote_state.dev_network.outputs.vpc_id
-  eksclustername     = data.terraform_remote_state.dev_cluster.outputs.cluster_name
+  clustername        = data.terraform_remote_state.dev_cluster.outputs.cluster_name
 }

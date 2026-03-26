@@ -44,7 +44,7 @@ resource "kubernetes_cluster_role_binding_v1" "K8_cluster_role_Binding" {
 
     subject {
 		kind      = "ServiceAccount"
-		name      = "deployment"
+		name      = "k8_svc_account"
 		namespace = "kube-system"
     }
 
