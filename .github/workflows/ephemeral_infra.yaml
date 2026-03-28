@@ -155,6 +155,9 @@ jobs:
     name: deploy-iam
     runs-on: ubuntu-latest
     needs: [configure-variables, deploy-network]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      region: ${{ needs.configure-variables.outputs.region }}
         
     steps:  
       - name: checkout-code
@@ -165,7 +168,7 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
           role-session-name: GitHub-Actions-OIDC-Session
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ env.region }}
           mask-aws-account-id: false
 
       - name: Prepare Terraform
@@ -246,7 +249,7 @@ jobs:
         run: terraform apply -auto-approve tfplan
       
       - name: Verify Cluster Deployment
-        working-directory: ./environments/dev/cluster
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/cluster
         run: |
           echo "Verifying EKS Cluster Creation"
           CLUSTER_NAME="${{ env.TF_VAR_clustername }}"
@@ -387,12 +390,18 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: nodegroups-tfplan
-          path: ./environments/${{ env.ENVIRONMENT }}/nodegroups/tfplan.json  
+          path: ./environments/${{ env.ENVIRONMENT }}/nodegroups/tfplan.json
+      
+      - name: Terraform Apply
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/nodegroups
+        run: terraform apply -auto-approve tfplan
   
   deploy-certs:
     name: deploy-certs
     runs-on: ubuntu-latest
     needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth]
+    outputs:
+      cert_arn: ${{ steps.extract-cert-arn.outputs.cert_arn }}
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
@@ -443,6 +452,106 @@ jobs:
       - name: Terraform Apply
         working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/certs
         run: terraform apply -auto-approve tfplan
+      
+      - name: Extract Cert ARN output
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/certs
+        id: extract-cert-arn
+        run: |
+          echo "Extracting cert ARN from terraform output"
+          echo "cert_arn=$(terraform output -json | jq -r '.cert_arn.value')" >> $GITHUB_OUTPUT
+          echo "Cert ARN: $(cat $GITHUB_OUTPUT)"
+
+  deploy-app:
+    name: deploy-app
+    runs-on: ubuntu-latest
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, deploy-nodegroups, deploy-certs]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+      TF_VAR_image_repository: 586098609239.dkr.ecr.us-east-1.amazonaws.com/dev/gemapp
+      TF_VAR_cert_arn: ${{ needs.deploy-certs.outputs.cert_arn }}
+      HELM_RELEASE_NAME: "gem-app"
+      HELM_CHART_PATH: "./helm-charts/gem-app"
+      HELM_NAMESPACE: "gem-app-namespace"
+      APP_VERSION: "dev-latest"
+
+    steps:  
+      - name: Checkout Helm Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+              role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.AWS_REGION }}
+              mask-aws-account-id: false
+      
+      - name: Update kubeconfig
+        run: |
+          echo "Updating kubeconfig for cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
+          kubectl config view
+      
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+        with:
+          version: v3.12.0
+      
+      - name: Login to ECR
+        id: ecr-login
+        run: |
+          echo "Logging in to ECR for region ${TF_VAR_region}"
+          aws ecr get-login-password --region ${{ env.TF_VAR_region }} | helm registry login --username AWS --password-stdin 586098609239.dkr.ecr.${{ env.TF_VAR_region }}.amazonaws.com    
+      
+      - name: Create Namespace
+        run: |
+          echo "Creating namespace ${HELM_NAMESPACE} for app deployment"
+          kubectl create namespace ${HELM_NAMESPACE} || echo "Namespace ${HELM_NAMESPACE} already exists"    
+
+      - name: Deploy App with Helm
+        run : |
+          helm upgrade --install ${{ env.HELM_RELEASE_NAME }} \
+            --namespace ${{ env.HELM_NAMESPACE }} --create-namespace \
+            --set image.repository=${{ env.TF_VAR_image_repository }} \
+            --set service.annotations."alb\.ingress\.kubernetes\.io/certificate-arn"=${{ env.TF_VAR_cert_arn }} \
+            --set service.annotations."alb\.ingress\.kubernetes\.io/listen-ports"='[{"HTTP":80},{"HTTPS":443}]' \
+            --set ingress.enabled=true \
+            --set image.tag=${{ env.APP_VERSION }} \
+            --set environment=${ENVIRONMENT} \
+            --values ${HELM_CHART_PATH}/values.yaml \
+            --values ${HELM_CHART_PATH}/values-${ENVIRONMENT}.yaml \
+            --timeout 10m \
+            --wait \
+            --atomic
+      
+      - name: Verify App Deployment
+        run: |
+          echo "Verifying app deployment in namespace ${HELM_NAMESPACE}"
+          kubectl rollout status deployment/${{ env.HELM_RELEASE_NAME }} -n ${{ env.HELM_NAMESPACE }} --timeout=5m
+          kubectl get all -n ${{ env.HELM_NAMESPACE }} --timeout=120s
+      
+      - name: Verify Ingress and ALB
+        run: |
+          echo "Verifying Ingress and ALB for the deployed app"
+          kubectl get ingress -n ${{ env.HELM_NAMESPACE }} -o wide
+          kubectl describe ingress -n ${{ env.HELM_NAMESPACE }}
+      
+      - name: Show deployed resources
+        run: |
+          echo "Showing all resources in namespace ${HELM_NAMESPACE}"
+          kubectl get all -n ${{ env.HELM_NAMESPACE }} -o wide
+      
+      - name: Rollback on Failure
+        if: failure()
+        run: |
+          echo "Deployment failed, rolling back release ${HELM_RELEASE_NAME}"
+          helm rollback ${{ env.HELM_RELEASE_NAME }} --namespace ${{ env.HELM_NAMESPACE }} || echo "Rollback failed or no previous release to rollback to"
+            
+
+                
+            
 
         
           
