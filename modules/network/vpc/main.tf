@@ -47,10 +47,12 @@ data "aws_internet_gateway" "existing_igw" {
 }
 
 data "aws_security_group" "default_sec_group" {
+  vpc_id = var.createvpc ? aws_vpc.clustervpc.id : data.aws_vpc.existing_vpc[0].id
+	
   filter {
-	name = "vpc-id"
-	values = var.createvpc ? [aws_vpc.cluster_vpc[0].id] : [data.aws_vpc.existing_vpc[0].id]
-  }	 
+    name   = "group-name"
+    values = ["default"]
+  } 
 }
 
 data "aws_subnets" "eks_subnets" {
