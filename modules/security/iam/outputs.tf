@@ -2,8 +2,8 @@ output "DevOps-SRE-Admin" {
   value = data.aws_iam_user.DevOpsAdmin
 }
 
-output "techlead_developer" {
-  value = aws_iam_user.developer
+output "techlead_developer_arn" {
+  value = aws_iam_user.developer.arn
 }
 
 output "cluster_role_arn" {

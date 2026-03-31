@@ -58,7 +58,7 @@ resource "kubernetes_cluster_role_binding_v1" "K8_cluster_role_Binding" {
 
 # Developer Role and RoleBinding
 
-resource "kubernetes_role" "Developer" {
+resource "kubernetes_role_v1" "Developer" {
 
   metadata {
 	name = "app-developer"
