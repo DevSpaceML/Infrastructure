@@ -40,14 +40,14 @@ data "aws_internet_gateway" "existing_igw" {
   count = var.createvpc ? 0 : 1
 
   filter {
-	name   = "attachment.vpc-id"
-	values = [data.aws_vpc.existing_vpc[0].id]
+    name   = "attachment.vpc-id"
+    values = [data.aws_vpc.existing_vpc[0].id]
   }
   
 }
 
 data "aws_security_group" "default_sec_group" {
-  vpc_id = var.createvpc ? aws_vpc.clustervpc.id : data.aws_vpc.existing_vpc[0].id
+  vpc_id = var.createvpc ? aws_vpc.cluster_vpc[0].id : data.aws_vpc.existing_vpc[0].id
 	
   filter {
     name   = "group-name"
