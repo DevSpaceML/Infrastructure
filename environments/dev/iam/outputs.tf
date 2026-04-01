@@ -11,7 +11,7 @@ output "DevOpsAdminSre-arn" {
 }
 
 output "techlead-arn" {
-  value = module.iam.techlead_developer.arn
+  value = module.iam.techlead_developer_arn
 }
 
 output "access-entries-map" {
