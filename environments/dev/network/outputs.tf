@@ -1,7 +1,7 @@
-/*output "vpc_id" {
+output "vpc_id" {
   value = module.dev_vpc.eks_vpc_id
 }
-*/
+
 output "public_cidr" {
   value = module.dev_vpc.public_cidr
 }
