@@ -1,7 +1,7 @@
 
-output "eks_vpc_id" {
+/*output "eks_vpc_id" {
   value = length(aws_vpc.cluster_vpc) > 0 ? aws_vpc.cluster_vpc[0].id : data.aws_vpc.existing_vpc[0].id
-}
+}*/
 
 output "public_cidr" {
   value = var.public_subnet_cidr_blocks
