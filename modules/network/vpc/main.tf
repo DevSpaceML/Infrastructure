@@ -27,6 +27,7 @@ data "aws_vpc" "clustervpcdata" {
 	}
 }
 
+/*
 data "aws_vpc" "existing_vpc" {
 	count = var.createvpc ? 0 : 1
 
@@ -35,6 +36,7 @@ data "aws_vpc" "existing_vpc" {
     values = [var.vpcname]
   }
 }
+*/
 
 data "aws_internet_gateway" "existing_igw" {
   count = var.createvpc ? 0 : 1
@@ -45,6 +47,7 @@ data "aws_internet_gateway" "existing_igw" {
   }
   
 }
+
 
 data "aws_security_group" "default_sec_group" {
   vpc_id = var.createvpc ? aws_vpc.cluster_vpc[0].id : data.aws_vpc.existing_vpc[0].id
