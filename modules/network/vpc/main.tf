@@ -27,7 +27,6 @@ data "aws_vpc" "clustervpcdata" {
 	}
 }
 
-/*
 data "aws_vpc" "existing_vpc" {
 	count = var.createvpc ? 0 : 1
 
@@ -36,7 +35,7 @@ data "aws_vpc" "existing_vpc" {
     values = [var.vpcname]
   }
 }
-*/
+
 
 data "aws_internet_gateway" "existing_igw" {
   count = var.createvpc ? 0 : 1
