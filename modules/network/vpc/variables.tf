@@ -14,7 +14,7 @@ variable "createvpc" {
 variable "existing_vpc_id" {
   description = "required if createvpc is false"
   type = string
-  default = ""
+  default = null
 }
 
 variable "vpcname" {
