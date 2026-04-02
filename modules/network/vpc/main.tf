@@ -41,11 +41,10 @@ data "aws_internet_gateway" "existing_igw" {
 
   filter {
     name   = "attachment.vpc-id"
-    values = local.vpc_id
+    values = [local.vpc_id]
   }
   
 }
-
 
 data "aws_security_group" "default_sec_group" {
   vpc_id = local.vpc_id
@@ -59,7 +58,7 @@ data "aws_security_group" "default_sec_group" {
 data "aws_subnets" "eks_subnets" {
 	filter {
 			name = "vpc-id"
-			values = local.vpc_id
+			values = [local.vpc_id]
 	}
 }
 
