@@ -48,7 +48,7 @@ data "aws_internet_gateway" "existing_igw" {
 
 
 data "aws_security_group" "default_sec_group" {
-  vpc_id = 
+  vpc_id = local.vpc_id
 	
   filter {
     name   = "group-name"
