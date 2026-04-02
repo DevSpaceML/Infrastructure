@@ -97,7 +97,7 @@ resource "kubernetes_role_v1" "Developer" {
 }
 
 resource "kubernetes_role_binding" "Developer_Role_Binding" {
-  depends_on = [ kubernetes_role.Developer ]
+  depends_on = [ kubernetes_role_v1.Developer ]
 
   metadata {
 	name = "developer-role-binding"
@@ -107,7 +107,7 @@ resource "kubernetes_role_binding" "Developer_Role_Binding" {
   role_ref {
 	api_group = "rbac.authorization.k8s.io"
 	kind      = "Role"
-	name      = kubernetes_role.Developer.metadata[0].name
+	name      = kubernetes_role_v1.Developer.metadata[0].name
   }
 
   subject {
@@ -119,7 +119,7 @@ resource "kubernetes_role_binding" "Developer_Role_Binding" {
 
 # DevOps-SRE Role and RoleBinding
 
-resource "kubernetes_role" "Devops-SRE" {
+resource "kubernetes_role_v1" "Devops-SRE" {
   metadata {
 	name = "DevopsSRE"
   }
@@ -162,7 +162,7 @@ resource "kubernetes_role" "Devops-SRE" {
 }
 
 resource "kubernetes_role_binding" "DevOps_SRE_Role_Binding" {
-  depends_on = [ kubernetes_role.Devops-SRE ]
+  depends_on = [ kubernetes_role_v1.Devops-SRE ]
 
   metadata {
 	name = "DevOps-SRE-role-binding"
