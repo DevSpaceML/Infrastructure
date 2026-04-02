@@ -1,6 +1,6 @@
 
 output "eks_vpc_id" {
-  value = length(aws_vpc.cluster_vpc) > 0 ? aws_vpc.cluster_vpc[0].id : data.aws_vpc.existing_vpc[0].id
+  value = local.vpc_id
 }
 
 output "public_cidr" {
