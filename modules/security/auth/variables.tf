@@ -8,6 +8,11 @@ variable "cluster_cert" {
   type = string
 }
 
+variable "region" {
+  description = "region"
+  type = string
+}
+
 variable "hosturl" {
   description = "host identifier"
   type = string

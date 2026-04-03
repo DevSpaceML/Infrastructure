@@ -1,3 +1,6 @@
+output "region" {
+  value = var.region
+}
 
 output "eks_vpc_id" {
   value = local.vpc_id

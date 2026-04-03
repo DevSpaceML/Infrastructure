@@ -14,8 +14,12 @@ provider "kubernetes" {
    cluster_ca_certificate = var.cluster_cert
    exec {
 	 api_version = "client.authentication.k8s.io/v1beta1"
-	 command = "aws-iam-authenticator"
-	 args = ["token", "-i", var.clustername, "-r", var.noderolearn]
+	 command = "aws"
+	 args = [
+      "eks", "get-token",
+      "--cluster-name", var.clustername,
+      "--region",       var.region
+    ]
    }
 }
 

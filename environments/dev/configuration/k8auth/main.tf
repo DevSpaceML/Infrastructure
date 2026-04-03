@@ -7,4 +7,5 @@ module "Dev_k8_auth" {
   techlead         = data.terraform_remote_state.dev_iam.outputs.techlead-arn
   hosturl          = data.terraform_remote_state.dev_cluster.outputs.cluster_endpoint
   cluster_cert     = data.terraform_remote_state.dev_cluster.outputs.cluster_cert
+  region           = data.terraform_remote_state.dev_vpc.outputs.region
 }
