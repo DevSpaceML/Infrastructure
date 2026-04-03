@@ -317,6 +317,12 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
+      - name: Update kubeconfig
+        run: |
+          echo "Updating kubeconfig for cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
+          kubectl config view    
+
       - name: Terraform Init
         working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/k8auth
         run: |
@@ -377,7 +383,7 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TF_VERSION }}
-          terraform_wrapper: false
+          terraform_wrapper: false 
 
       - name: Terraform Init
         working-directory: ./environments/${{ env.ENVIRONMENT }}/nodegroups
