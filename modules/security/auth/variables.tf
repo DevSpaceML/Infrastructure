@@ -3,6 +3,11 @@ variable "clustername" {
   type = string
 }
 
+variable "cluster_cert" {
+  description = "certificate of the cluster"
+  type = string
+}
+
 variable "hosturl" {
   description = "host identifier"
   type = string

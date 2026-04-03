@@ -9,6 +9,15 @@ terraform {
     }
   }
 }
+provider "kubernetes" {
+   host = var.hosturl
+   cluster_ca_certificate = base64decode(var.cluster_cert)
+   exec {
+	 api_version = "client.authentication.k8s.io/v1beta1"
+	 command = "aws-iam-authenticator"
+	 args = ["token", "-i", var.clustername, "-r", var.noderolearn]
+   }
+}
 
 # ClusterRole and Binding
 resource "kubernetes_cluster_role_v1" "k8_cluster_role" {
