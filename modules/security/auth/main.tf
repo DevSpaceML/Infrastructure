@@ -11,7 +11,7 @@ terraform {
 }
 provider "kubernetes" {
    host = var.hosturl
-   cluster_ca_certificate = base64decode(var.cluster_cert)
+   cluster_ca_certificate = var.cluster_cert
    exec {
 	 api_version = "client.authentication.k8s.io/v1beta1"
 	 command = "aws-iam-authenticator"
