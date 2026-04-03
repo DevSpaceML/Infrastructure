@@ -171,7 +171,7 @@ resource "kubernetes_role_binding" "DevOps_SRE_Role_Binding" {
   role_ref {
 	api_group = "rbac.authorization.k8s.io"
 	kind      = "Role"
-	name      = kubernetes_role.Devops-SRE.metadata[0].name
+	name      = kubernetes_role_v1.Devops-SRE.metadata[0].name
   }
 
   subject {
@@ -183,7 +183,7 @@ resource "kubernetes_role_binding" "DevOps_SRE_Role_Binding" {
 
 # Monitoring Role and RoleBinding
 
-resource "kubernetes_cluster_role" "K8_monitor" {
+resource "kubernetes_cluster_role_v1" "K8_monitor" {
   metadata {
 	name = "k8_monitor"
   }
