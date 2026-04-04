@@ -100,6 +100,11 @@ variable "cluster_role_arn" {
 	type = string
 }
 
+variable "node_role_arn" {
+  description = "Role attached to eks nodegroups"
+  type = string
+}
+
 variable "cluster_encryption_config" {
   description = "Configuration block for encrypting Kubernetes secrets"
   type        = list(object(

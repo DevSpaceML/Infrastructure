@@ -28,6 +28,7 @@ module "dev_cluster" {
   private_subnet_ids     = data.terraform_remote_state.dev_network.outputs.private_subnet_id_list
   public_cidr            = data.terraform_remote_state.dev_network.outputs.public_cidr
   cluster_role_arn       = data.terraform_remote_state.dev_iam.outputs.cluster-role-arn
+  node_role_arn          = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
   access_entries         = data.terraform_remote_state.dev_iam.outputs.access-entries-map
 }
 

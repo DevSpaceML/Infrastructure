@@ -47,6 +47,31 @@ resource "aws_eks_cluster" "this" {
 
 }
 
+
+resource "kubernetes_config_map_v1" "k8auth" {
+  depends_on = [ aws_eks_cluster.this ]
+
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
+
+  data = {
+    mapRoles = yamlencode([
+      {
+        rolearn  = "arn:aws:iam::586098609239:role/GitHubActionsRole"
+        username = "github-actions"
+        groups   = ["system:masters"]
+      },
+      {
+        rolearn  = var.node_role_arn
+        username = "eks_cluster_role"
+        groups   = ["cluster-admin"]
+      }
+    ])
+  }
+}
+
 resource "aws_eks_access_entry" "eks_access" {
   depends_on = [ aws_eks_cluster.this ]
 
