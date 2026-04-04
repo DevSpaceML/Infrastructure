@@ -1,6 +1,6 @@
 provider "kubernetes" {
    host = module.dev_cluster.cluster_endpoint
-   cluster_ca_certificate = module.dev_cluster.cluster_cert
+   cluster_ca_certificate = module.dev_cluster.cluster_certificate
    
    exec {
 	 api_version = "client.authentication.k8s.io/v1beta1"
