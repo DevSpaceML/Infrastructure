@@ -20,6 +20,22 @@ provider "aws" {
   region = "us-east-1"
 }
 
+
+provider "kubernetes" {
+   host = module.dev_cluster.cluster_endpoint
+   cluster_ca_certificate = module.dev_cluster.cluster_cert
+   
+   exec {
+	 api_version = "client.authentication.k8s.io/v1beta1"
+	 command = "aws"
+	 args = [
+      "eks", "get-token",
+      "--cluster-name", module.dev_cluster.cluster_name,
+      "--region",       var.region
+    ]
+   }
+}
+
 module "dev_cluster" {
   source                 = "../../../modules/compute/eks/cluster"
   clustername            = var.clustername
@@ -30,6 +46,7 @@ module "dev_cluster" {
   cluster_role_arn       = data.terraform_remote_state.dev_iam.outputs.cluster-role-arn
   node_role_arn          = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
   access_entries         = data.terraform_remote_state.dev_iam.outputs.access-entries-map
+  region                 = var.terraform_remote_state.dev_network.outputs.region
 }
 
 module "eks_security_groups" {
