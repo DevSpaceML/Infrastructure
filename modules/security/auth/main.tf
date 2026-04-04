@@ -109,7 +109,7 @@ resource "kubernetes_role_v1" "Developer" {
   }
 }
 
-resource "kubernetes_role_binding" "Developer_Role_Binding" {
+resource "kubernetes_role_binding_v1" "Developer_Role_Binding" {
   depends_on = [ kubernetes_role_v1.Developer ]
 
   metadata {

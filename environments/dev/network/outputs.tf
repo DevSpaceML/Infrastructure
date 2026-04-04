@@ -2,6 +2,10 @@ output "vpc_id" {
   value = module.dev_vpc.eks_vpc_id
 }
 
+output "region" {
+  value = module.dev_vpc.region
+}
+
 output "public_cidr" {
   value = module.dev_vpc.public_cidr
 }
