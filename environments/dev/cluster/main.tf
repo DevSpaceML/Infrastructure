@@ -21,32 +21,40 @@ provider "aws" {
 }
 
 
+data "aws_eks_cluster_auth" "this" {
+  name = aws_eks_cluster.this.name
+}
+
 provider "kubernetes" {
-   host = module.dev_cluster.cluster_endpoint
-   cluster_ca_certificate = module.dev_cluster.cluster_certificate
-   
-   exec {
-	 api_version = "client.authentication.k8s.io/v1beta1"
-	 command = "aws"
-	 args = [
-      "eks", "get-token",
-      "--cluster-name", module.dev_cluster.cluster_name,
-      "--region",       var.region
-    ]
-   }
+   host = aws_eks_cluster.this.endpoint
+   cluster_ca_certificate = base64decode(aws_eks_cluster.this.certificate_authority[0].data)
+   token                  = data.aws_eks_cluster_auth.this.token
 }
 
 module "dev_cluster" {
   source                 = "../../../modules/compute/eks/cluster"
   clustername            = var.clustername
+  region                 = data.terraform_remote_state.dev_network.outputs.region
   vpcId                  = data.terraform_remote_state.dev_network.outputs.vpc_id
   public_subnet_ids      = data.terraform_remote_state.dev_network.outputs.public_subnet_id_list
   private_subnet_ids     = data.terraform_remote_state.dev_network.outputs.private_subnet_id_list
   public_cidr            = data.terraform_remote_state.dev_network.outputs.public_cidr
   cluster_role_arn       = data.terraform_remote_state.dev_iam.outputs.cluster-role-arn
   node_role_arn          = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
-  access_entries         = data.terraform_remote_state.dev_iam.outputs.access-entries-map
-  region                 = data.terraform_remote_state.dev_network.outputs.region
+  access_entries         = merge(data.terraform_remote_state.dev_iam.outputs.access-entries-map, {
+                                  "github_actions" = {
+                                     principal_arn     = data.terraform_remote_state.dev_iam.outputs.github-actions-arn
+                                     type              = "STANDARD"
+                                     kubernetes_groups = ["system:masters"]
+                                     user_name         = "github-actions"
+                                    },                                     
+                                    node_manager = {
+                                      principal_arn = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
+                                      type = "STANDARD"
+                                      kubernetes_groups = []
+                                      user_name = "node-manager"
+                                    }
+                              })
 }
 
 module "eks_security_groups" {

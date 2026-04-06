@@ -14,6 +14,10 @@ output "node_manager_role_arn" {
   value = aws_iam_role.eks_node_manager_role.arn
 }
 
+output "github_actions_role_arn" {
+  value = aws_iam_role.github_actions_role.arn
+}
+
 output "access_entries" {
   description = "Map of access entries to create"
   value = {
@@ -28,13 +32,7 @@ output "access_entries" {
       type = "STANDARD"
       kubernetes_groups = ["cluster-admin"]
     }
-
-    node_manager = {
-      principal_arn = aws_iam_role.eks_node_manager_role.arn
-      type = "STANDARD"
-      kubernetes_groups = ["devops"]
-    }
-
+    
     techlead = {
       principal_arn = aws_iam_user.developer.arn
       type = "STANDARD"

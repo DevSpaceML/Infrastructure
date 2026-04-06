@@ -17,3 +17,8 @@ output "techlead-arn" {
 output "access-entries-map" {
   value = module.iam.access_entries
 }
+
+output "github-actions-arn" {
+  value = module.iam.github_actions_role_arn
+}
+
