@@ -38,13 +38,14 @@ module "dev_cluster" {
   public_subnet_ids      = data.terraform_remote_state.dev_network.outputs.public_subnet_id_list
   private_subnet_ids     = data.terraform_remote_state.dev_network.outputs.private_subnet_id_list
   public_cidr            = data.terraform_remote_state.dev_network.outputs.public_cidr
+  github_actions_arn     = data.terraform_remote_state.dev_iam.github_actions_role_arn
   cluster_role_arn       = data.terraform_remote_state.dev_iam.outputs.cluster-role-arn
   node_role_arn          = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
   access_entries         = merge(data.terraform_remote_state.dev_iam.outputs.access-entries-map, {
                                   "github_actions" = {
                                      principal_arn     = data.terraform_remote_state.dev_iam.outputs.github-actions-arn
                                      type              = "STANDARD"
-                                     kubernetes_groups = ["system:masters"]
+                                     kubernetes_groups = []
                                      user_name         = "github-actions"
                                     },                                     
                                     node_manager = {
