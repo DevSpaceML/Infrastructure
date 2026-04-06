@@ -4,7 +4,7 @@ data "aws_eks_cluster_auth" "dev_cluster" {
 
 provider "kubernetes" {
    host = data.terraform_remote_state.dev_cluster.outputs.cluster_endpoint
-   cluster_ca_certificate = base64decode(data.terraform_remote_state.dev_cluster.outputs.cluster_cert)
+   cluster_ca_certificate = data.terraform_remote_state.dev_cluster.outputs.cluster_cert
    token                  = data.aws_eks_cluster_auth.dev_cluster.token
 }
 

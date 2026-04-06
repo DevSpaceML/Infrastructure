@@ -62,7 +62,6 @@ resource "kubernetes_role_v1" "Developer" {
 
   metadata {
 	name = "app-developer"
-	namespace = "development"
   }
 
   rule {
@@ -101,7 +100,6 @@ resource "kubernetes_role_binding_v1" "Developer_Role_Binding" {
 
   metadata {
 	name = "developer-role-binding"
-	namespace = "development"
   }
 
   role_ref {
