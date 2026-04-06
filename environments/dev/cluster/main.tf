@@ -20,14 +20,14 @@ provider "aws" {
   region = "us-east-1"
 }
 
-data "aws_eks_cluster_auth" "this" {
-  name = aws_eks_cluster.this.name
+data "aws_eks_cluster_auth" "dev_cluster" {
+  name = module.dev_cluster.cluster_name
 }
 
 provider "kubernetes" {
-   host = aws_eks_cluster.this.endpoint
-   cluster_ca_certificate = base64decode(aws_eks_cluster.this.certificate_authority[0].data)
-   token                  = data.aws_eks_cluster_auth.this.token
+   host = module.dev_cluster.cluster_endpoint
+   cluster_ca_certificate = base64decode(module.dev_cluster.certificate_authority[0].data)
+   token                  = data.aws_eks_cluster_auth.dev_cluster.token
 }
 
 module "dev_cluster" {
@@ -51,7 +51,7 @@ module "dev_cluster" {
                                       principal_arn = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
                                       type = "STANDARD"
                                       kubernetes_groups = []
-                                      user_name = "node-manager"
+                                      user_name = ""
                                     }
                               })
 }
