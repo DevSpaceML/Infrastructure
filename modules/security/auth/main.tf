@@ -23,11 +23,11 @@ resource "kubernetes_cluster_role_v1" "k8_cluster_role" {
    }   
 }
 
-resource "kubernetes_cluster_role_binding_v1" "K8_cluster_role_Binding" {
+resource "kubernetes_cluster_role_binding_v1" "k8_cluster_role_Binding" {
 	depends_on = [ kubernetes_cluster_role_v1.k8_cluster_role ]
 
 	metadata {
-	  name = "K8_RoleBinding"
+	  name = "k8_RoleBinding"
 	}
 
 	role_ref {
@@ -39,18 +39,6 @@ resource "kubernetes_cluster_role_binding_v1" "K8_cluster_role_Binding" {
     subject {
 		kind      = "User"
 		name      = var.clusteradminrole
-		api_group = "rbac.authorization.k8s.io"
-    }
-
-    subject {
-		kind      = "ServiceAccount"
-		name      = "k8_svc_account"
-		namespace = "kube-system"
-    }
-
-    subject {
-		kind      = "Group"
-		name      = "system-masters"
 		api_group = "rbac.authorization.k8s.io"
     }
   
@@ -159,7 +147,7 @@ resource "kubernetes_role_v1" "Devops-SRE" {
   }
 }
 
-resource "kubernetes_role_binding" "DevOps_SRE_Role_Binding" {
+resource "kubernetes_role_binding_v1" "DevOps_SRE_Role_Binding" {
   depends_on = [ kubernetes_role_v1.Devops-SRE ]
 
   metadata {
@@ -181,7 +169,7 @@ resource "kubernetes_role_binding" "DevOps_SRE_Role_Binding" {
 
 # Monitoring Role and RoleBinding
 
-resource "kubernetes_cluster_role_v1" "K8_monitor" {
+resource "kubernetes_cluster_role_v1" "k8_monitor" {
   metadata {
 	name = "k8_monitor"
   }
