@@ -15,7 +15,7 @@ output "node_manager_role_arn" {
 }
 
 output "github_actions_role_arn" {
-  value = aws_iam_role.github_actions_role.arn
+  value = data.aws_iam_role.github_actions_role.arn
 }
 
 output "access_entries" {

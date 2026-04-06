@@ -9,6 +9,10 @@ data "aws_iam_user" "DevOpsAdmin" {
   user_name = "DevOpsAdmin"
 }
 
+data "aws_iam_role" "github_actions_role" {
+  name = "GitHubActionsRole" 
+}
+
 resource "aws_iam_user" "developer" {
   name = "LeadDeveloper"
 }
