@@ -105,10 +105,6 @@ variable "node_role_arn" {
   type = string
 }
 
-variable "github_actions_arn" {
-  description = "github actions arn"
-}
-
 variable "cluster_encryption_config" {
   description = "Configuration block for encrypting Kubernetes secrets"
   type        = list(object(
