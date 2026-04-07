@@ -46,8 +46,17 @@ module "dev_cluster" {
                                      type              = "STANDARD"
                                      kubernetes_groups = []
                                      user_name         = "github-actions"
-                                    },                                     
-                                    node_manager = {
+                                    },
+                                    "devops_admin" = {
+                                      principal_arn = data.terraform_remote_state.dev_iam.outputs.DevOpsAdminSre-arn
+                                      type = "STANDARD"
+                                      kubernetes_groups = [
+                                        "system:bootstrappers",
+                                        "system:nodes"
+                                      ]
+                                      user_name = "devops-admin"
+                                    },
+                                    "node_manager" = {
                                       principal_arn = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
                                       type = "STANDARD"
                                       kubernetes_groups = []
