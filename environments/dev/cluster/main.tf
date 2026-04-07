@@ -56,7 +56,7 @@ module "dev_cluster" {
                                     "devops_admin" = {
                                       principal_arn = data.terraform_remote_state.dev_iam.outputs.DevOpsAdminSre-arn
                                       type = "STANDARD"
-                                      kubernetes_groups = [cluster-admin]
+                                      kubernetes_groups = ["cluster-admin"]
                                       user_name = "devops-admin"
                                     },
                                     "node_manager" = {
