@@ -105,6 +105,11 @@ variable "node_role_arn" {
   type = string
 }
 
+variable "devops_admin_arn" {
+  description = "arn of DevOps Admin account"
+  type = string
+}
+
 variable "cluster_encryption_config" {
   description = "Configuration block for encrypting Kubernetes secrets"
   type        = list(object(

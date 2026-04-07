@@ -45,6 +45,7 @@ module "dev_cluster" {
   public_cidr            = data.terraform_remote_state.dev_network.outputs.public_cidr
   cluster_role_arn       = data.terraform_remote_state.dev_iam.outputs.cluster-role-arn
   node_role_arn          = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
+  devops_admin_arn       = data.terraform_remote_state.dev_iam.outputs.DevOpsAdminSre-arn
   access_entries         = merge(data.terraform_remote_state.dev_iam.outputs.access-entries-map, {
                                   "github_actions" = {
                                      principal_arn     = data.terraform_remote_state.dev_iam.outputs.github-actions-arn
@@ -55,10 +56,7 @@ module "dev_cluster" {
                                     "devops_admin" = {
                                       principal_arn = data.terraform_remote_state.dev_iam.outputs.DevOpsAdminSre-arn
                                       type = "STANDARD"
-                                      kubernetes_groups = [
-                                        "system:bootstrappers",
-                                        "system:nodes"
-                                      ]
+                                      kubernetes_groups = [cluster-admin]
                                       user_name = "devops-admin"
                                     },
                                     "node_manager" = {

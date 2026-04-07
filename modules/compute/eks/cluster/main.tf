@@ -63,7 +63,7 @@ resource "aws_eks_access_policy_association" "github_actions" {
 
 resource "aws_eks_access_policy_association" "DevopsAdmin" {
   cluster_name  = aws_eks_cluster.this.name
-  principal_arn = data.aws_iam_user.DevOpsAdmin.arn
+  principal_arn = var.devops_admin_arn
   policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
 
   access_scope {
