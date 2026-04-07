@@ -27,7 +27,12 @@ data "aws_eks_cluster_auth" "dev_cluster" {
 provider "kubernetes" {
    host = module.dev_cluster.cluster_endpoint
    cluster_ca_certificate = base64decode(module.dev_cluster.certificate_authority[0].data)
-   token                  = data.aws_eks_cluster_auth.dev_cluster.token
+
+   exec {
+    api_version = "client.authentication.k8s.io/v1beta1"
+    command     = "aws"
+    args        = ["eks", "get-token", "--cluster-name", data.terraform_remote_state.dev_cluster.outputs.cluster_name, "--region", data.terraform_remote_state.dev_network.outputs.region]
+  }
 }
 
 module "dev_cluster" {
