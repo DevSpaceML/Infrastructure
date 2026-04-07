@@ -96,31 +96,6 @@ resource "aws_iam_role_policy_attachment" "attach_lbControllerPolicy" {
 }
 
 
-resource "helm_release" "aws_load_balancer_controller" {
-  depends_on = [ kubernetes_service_account.svc_acc_lbController ]
-
-  name       = "eks-cluster-lbc"
-  repository = "https://aws.github.io/eks-charts"
-  chart      = "aws-load-balancer-controller"
-  namespace  = "kube-system"
-  version    = "1.7.1"
-
-  set {
-    name = "clusterName"
-    value = data.aws_eks_cluster.eks-cluster.name
-  }
-
-  set {
-    name = "serviceAccount.create"
-    value = "false"
-  }
-
-  set {
-    name = "serviceAccount.name"
-    value = kubernetes_service_account.svc_acc_lbController.metadata[0].name
-  }
-}
-
 
 
 
