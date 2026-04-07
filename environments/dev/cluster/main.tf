@@ -76,11 +76,9 @@ module "eks_security_groups" {
   clustername           = module.dev_cluster.cluster_name
 }
 
-/*
 module "add_ons" {
   depends_on  = [ module.dev_cluster ]
   source      = "../../../modules/compute/eks/addons"
   clustername = module.dev_cluster.cluster_name
   rolearn     = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
 }
-*/
