@@ -98,8 +98,8 @@ module "eks_security_groups" {
 module "dev_nodes" {
   source                       = "../../../modules/compute/eks/nodegroups"
   node_group_mgr_arn           = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
-  nodegroupname                = "${data.terraform_remote_state.dev_cluster.outputs.cluster_name}-nodegroup"
-  clustername                  = data.terraform_remote_state.dev_cluster.outputs.cluster_name
+  nodegroupname                = "${module.dev_cluster.cluster_name}-nodegroup"
+  clustername                  = module.dev_cluster.cluster_name
   k8s_version                  = var.k8s_version
   instancetype                 = var.instancetype
   nodegroup_pvt_subnet_id_list = data.terraform_remote_state.dev_network.outputs.nodegroup_subnet_id_list
