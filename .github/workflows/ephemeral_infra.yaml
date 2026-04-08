@@ -90,6 +90,7 @@ jobs:
           ' >> "$GITHUB_OUTPUT"
           cat $GITHUB_OUTPUT
 
+  # DEPLOY NETWORK
   deploy-network:
     runs-on: ubuntu-latest
     needs: configure-variables
@@ -123,7 +124,7 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-    # Deploy Network Step
+    
       - name: Deploy Network
         working-directory: ./environments/${{ env.ENVIRONMENT }}/network
         run: |
@@ -150,7 +151,7 @@ jobs:
         working-directory: ./environments/${{ env.ENVIRONMENT }}/network
         run: terraform apply -auto-approve tfplan    
 
-  # Deploy IAM      
+  # DEPLOY IAM      
   deploy-iam:
     name: deploy-iam
     runs-on: ubuntu-latest
@@ -190,7 +191,7 @@ jobs:
         working-directory: ./environments/${{ env.ENVIRONMENT }}/iam
         run: terraform apply -auto-approve    
   
-  # Deploy Cluster
+  # DEPLOY CLUSTER
   deploy-cluster:
     name: deploy-eks-cluster
     runs-on: ubuntu-latest
@@ -289,7 +290,7 @@ jobs:
           echo "Final status: $STATUS"
           exit 1
 
-  # Cluster Authentication for users and roles
+  # CLUSTER AUTHENTICATION FOR USERS/ROLES
   configure-auth:
     name: configure-auth
     runs-on: ubuntu-latest
@@ -356,62 +357,8 @@ jobs:
           echo "Verifying kubectl access to EKS Cluster"
           aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
           kubectl get nodes
-  
-  # Deploy Nodegroups
-  deploy-nodegroups:
-    name: deploy-nodegroups
-    runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth]
-    env:
-      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment }}
-      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
-      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
-    
-    steps:  
-      - name: checkout-code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-              role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
-              role-session-name: GitHub-Actions-OIDC-Session
-              aws-region: ${{ env.AWS_REGION }}
-              mask-aws-account-id: false
-            
-      - name: Prepare Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-          terraform_wrapper: false 
-
-      - name: Terraform Init
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/nodegroups
-        run: |
-          terraform init -upgrade
-            
-      - name: Terraform Validate
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/nodegroups
-        run: |
-          terraform validate
-            
-      - name: Terraform Plan
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/nodegroups
-        run: |
-          echo "Running terraform plan for nodegroup configuration of cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
-          terraform plan -out=tfplan
-          terraform show -json tfplan > tfplan.json
-          cat tfplan.json 
-      - name: Upload Nodegroups Plan
-        uses: actions/upload-artifact@v4
-        with:
-          name: nodegroups-tfplan
-          path: ./environments/${{ env.ENVIRONMENT }}/nodegroups/tfplan.json
-      
-      - name: Terraform Apply
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/nodegroups
-        run: terraform apply -auto-approve tfplan
-  
+ 
+  # DEPLOY LB CERTS
   deploy-certs:
     name: deploy-certs
     runs-on: ubuntu-latest
@@ -476,11 +423,12 @@ jobs:
           echo "Extracting cert ARN from terraform output"
           echo "cert_arn=$(terraform output -json | jq -r '.cert_arn.value')" >> $GITHUB_OUTPUT
           echo "Cert ARN: $(cat $GITHUB_OUTPUT)"
-
+          
+  # DEPLOY APPLICATION WITH HELM
   deploy-app:
     name: deploy-app
     runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, deploy-nodegroups, deploy-certs]
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, deploy-certs]
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
