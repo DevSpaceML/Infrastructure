@@ -26,12 +26,12 @@ data "aws_eks_cluster_auth" "dev_cluster" {
 
 provider "kubernetes" {
    host = module.dev_cluster.cluster_endpoint
-   cluster_ca_certificate = base64decode(module.dev_cluster.certificate_authority[0].data)
+   cluster_ca_certificate = module.dev_cluster.cluster_certificate
 
    exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
-    args        = ["eks", "get-token", "--cluster-name", data.terraform_remote_state.dev_cluster.outputs.cluster_name, "--region", data.terraform_remote_state.dev_network.outputs.region]
+    args        = ["eks", "get-token", "--cluster-name", module.dev_cluster.cluster_name, "--region", data.terraform_remote_state.dev_network.outputs.region]
   }
 }
 
@@ -68,6 +68,25 @@ module "dev_cluster" {
                               })
 }
 
+module "vpc_cni" {
+  depends_on  = [ module.dev_cluster ]
+  source      = "../../../modules/compute/eks/addons/vpc-cni"
+  clustername = module.dev_cluster.cluster_name
+  rolearn     = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
+}
+
+module "kube_proxy" {
+  depends_on = [ module.dev_cluster ]
+  source = "../../../modules/compute/eks/addons/kube_proxy"
+  clustername = module.dev_cluster.cluster_name
+}
+
+module "oidc_auth" {
+  depends_on = [ module.dev_cluster ]
+  source = "../../../modules/compute/eks/addons/oidc"
+  clustername = module.dev_cluster.cluster_name
+}
+
 module "eks_security_groups" {
   depends_on            = [ module.dev_cluster ]
   source                = "../../../modules/network/eks-security-groups"
@@ -76,9 +95,17 @@ module "eks_security_groups" {
   clustername           = module.dev_cluster.cluster_name
 }
 
-module "add_ons" {
-  depends_on  = [ module.dev_cluster ]
-  source      = "../../../modules/compute/eks/addons"
+module "dev_nodes" {
+  source                       = "../../../modules/compute/eks/nodegroups"
+  node_group_mgr_arn           = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
+  nodegroupname                = "${data.terraform_remote_state.dev_cluster.outputs.cluster_name}-nodegroup"
+  clustername                  = data.terraform_remote_state.dev_cluster.outputs.cluster_name
+  k8s_version                  = var.k8s_version
+  instancetype                 = var.instancetype
+  nodegroup_pvt_subnet_id_list = data.terraform_remote_state.dev_network.outputs.nodegroup_subnet_id_list
+}
+
+module "coredns" {
+  source = "../../../modules/compute/eks/addons/coredns"
   clustername = module.dev_cluster.cluster_name
-  rolearn     = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
 }

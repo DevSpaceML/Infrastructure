@@ -1,47 +1,6 @@
-# Network Module, installs network components.
-# IAM ROLES - IAM Roles for : LoadBalancer Controller,  
-# SERVICE ACCOUNTS - Service Account for LoadBalancer Controller
-# Helm Charts for loadBalancer Controller installation
-# LoadBalancer Contoller, Wireless ApplicationFirewall
-
-terraform {
-  required_version = ">= 1.4.0"
-  required_providers {
-    kubernetes = {
-      source  = "hashicorp/kubernetes"
-      version = ">= 2.36.0"
-    }
-  }
-}
-
-data "aws_region" "current" {}
-
-data "aws_eks_cluster" "eks-cluster" {
+data "aws_eks_cluster" "eks" {
   name = var.clustername
 }
-
-data "aws_eks_cluster_auth" "cluster" {
-  name = var.clustername
-}
-
-resource "aws_eks_addon" "vpc_cni" {
-
-  cluster_name = data.aws_eks_cluster.eks-cluster.name
-  addon_name   = "vpc-cni"
-}
-
-resource "aws_eks_addon" "coredns" {
-  
-  cluster_name = data.aws_eks_cluster.eks-cluster.name
-  addon_name   = "coredns"
-}
-
-resource "aws_eks_addon" "kube_proxy" {
-  
-  cluster_name = data.aws_eks_cluster.eks-cluster.name
-  addon_name   = "kube-proxy"
-}
-
 
 resource "aws_iam_openid_connect_provider" "eks_oidc_connect" {
   client_id_list = [ "sts.amazonaws.com" ]
@@ -74,7 +33,7 @@ resource "aws_iam_role" "lb_controller_role"{
     })  
 }
 
-resource "kubernetes_service_account" "svc_acc_lbController" {
+resource "kubernetes_service_account_v1" "svc_acc_lbController" {
   metadata {
     name        = "svcacc-lbc"
     namespace   = "kube-system"
@@ -94,12 +53,3 @@ resource "aws_iam_role_policy_attachment" "attach_lbControllerPolicy" {
   role       = aws_iam_role.lb_controller_role.name
   policy_arn = aws_iam_policy.lb_controller_policy.arn
 }
-
-
-
-
-
-
-
-
-
