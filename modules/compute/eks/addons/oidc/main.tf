@@ -9,7 +9,7 @@ resource "aws_iam_openid_connect_provider" "eks_oidc_connect" {
 
 data "aws_iam_openid_connect_provider" "eks_oidc" {
   depends_on = [ aws_iam_openid_connect_provider.eks_oidc_connect ]
-  url = data.aws_eks_cluster.eks-cluster.identity[0].oidc[0].issuer
+  url        = data.aws_eks_cluster.eks-cluster.identity[0].oidc[0].issuer
 }
 
 resource "aws_iam_role" "lb_controller_role"{
@@ -33,6 +33,19 @@ resource "aws_iam_role" "lb_controller_role"{
     })  
 }
 
+# IRSA for vpc-cni addon
+resource "aws_iam_role" "irsa_vpc_cni" {
+    depends_on = [ aws_iam_openid_connect_provider.eks_oidc_connect ]
+    name = "${var.clustername}-vpc-cni-irsa"
+    assume_role_policy = file("${path.module}/vpcCniAssumeRolePolicy.json")
+}
+
+resource "aws_iam_role_policy_attachment" "attach_vpc_cni_irsa_policy" {
+    role       = aws_iam_role.irsa_vpc_cni.name
+    policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
+}
+
+# kubernetes service account for lbControllerRole
 resource "kubernetes_service_account_v1" "svc_acc_lbController" {
   metadata {
     name        = "svcacc-lbc"
