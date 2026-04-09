@@ -82,7 +82,7 @@ module "kube_proxy" {
 }
 
 module "oidc_auth" {
-  depends_on = [ module.dev_cluster ]
+  depends_on = [ module.dev_cluster, module.vpc_cni, module.kube_proxy ]
   source = "../../../modules/compute/eks/addons/oidc"
   clustername = module.dev_cluster.cluster_name
 }
@@ -96,6 +96,7 @@ module "eks_security_groups" {
 }
 
 module "dev_nodes" {
+  depends_on = [ module.dev_cluster, module.oidc_auth ]
   source                       = "../../../modules/compute/eks/nodegroups"
   node_group_mgr_arn           = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
   nodegroupname                = "${module.dev_cluster.cluster_name}-nodegroup"
@@ -106,6 +107,7 @@ module "dev_nodes" {
 }
 
 module "coredns" {
+  depends_on = [ module.dev_nodes ]
   source = "../../../modules/compute/eks/addons/coredns"
   clustername = module.dev_cluster.cluster_name
 }
