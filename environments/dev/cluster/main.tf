@@ -77,7 +77,7 @@ module "eks_security_groups" {
 }
 
 module "vpc_cni" {
-  depends_on  = [ module.dev_cluster, eks_security_groups ]
+  depends_on  = [ module.dev_cluster, module.eks_security_groups ]
   source      = "../../../modules/compute/eks/addons/vpc-cni"
   clustername = module.dev_cluster.cluster_name
   rolearn     = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
