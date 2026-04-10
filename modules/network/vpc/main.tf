@@ -18,15 +18,6 @@ resource "aws_vpc" "cluster_vpc" {
 	}
 }
 
-data "aws_vpc" "clustervpcdata" {
-	count = length(aws_vpc.cluster_vpc) > 0 ? 1 : 0
-	
-	filter {
-		name = "tag:Name"
-		values = [var.vpcname]
-	}
-}
-
 data "aws_vpc" "existing_vpc" {
 	count = var.createvpc ? 0 : 1
 	id = var.existing_vpc_id
@@ -78,6 +69,17 @@ resource "aws_vpc_dhcp_options_association" "eks_dhcp_options_association" {
 	depends_on = [ aws_vpc_dhcp_options.eks_dhcp_options ]	 
 }
 
+# Public subnet, EIP, Nat Gateway, Route Tables
+
+resource "aws_internet_gateway" "igw_public_eks" {
+	count = var.createvpc ? 1 : 0
+	vpc_id = local.vpc_id
+
+	tags = {
+		Name = "${var.igw_name}"
+	}
+}
+
 resource "aws_subnet" "public_subnet_eks" {
 	vpc_id = local.vpc_id
 	count = length(var.public_subnet_cidr_blocks)
@@ -93,68 +95,9 @@ resource "aws_subnet" "public_subnet_eks" {
 	}	
 }
 
-resource "aws_subnet" "private_subnet_eks" {
-	vpc_id = local.vpc_id
-	count = length(var.private_subnet_cidr_blocks)
-	cidr_block = var.private_subnet_cidr_blocks[count.index]
-	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
-	map_public_ip_on_launch = false
-
-	tags = {
-		Name = "private-subnet-${count.index + 1}"
-		"kubernetes.io/cluster/${var.vpcname}" = "owned"
-		"kubernetes.io/role/internal-elb" = "1"
-		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
-	}	
-}
-
-resource "aws_subnet" "nodegroup_private_subnet" {
-	vpc_id = local.vpc_id
-	count = length(var.nodegroup_pvt_subnet_cidr_blocks)
-	cidr_block = var.nodegroup_pvt_subnet_cidr_blocks[count.index]
-	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
-	map_public_ip_on_launch = false
-
-	tags = {
-		Name = "nodegroup-private-subnet-${count.index + 1}"
-		"kubernetes.io/cluster/${var.vpcname}" = "owned"
-		"kubernetes.io/role/internal-elb" = "1"
-		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
-	}	
-  
-}
-
-resource "aws_subnet" "rds_private_subnet" {
-	vpc_id = local.vpc_id
-	count = length(var.rds_private_subnet_cidr_blocks)
-	cidr_block = var.rds_private_subnet_cidr_blocks[count.index]
-	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
-	map_public_ip_on_launch = false
-
-	tags = {
-		Name = "rds-private-subnet-${count.index + 1}"
-		"kubernetes.io/cluster/${var.vpcname}" = "owned"
-		"kubernetes.io/role/internal-elb" = "1"
-		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
-	}	
-}
-
-locals {
-  public_subnet_ids  = aws_subnet.public_subnet_eks[*].id
-  private_subnet_ids = aws_subnet.private_subnet_eks[*].id
-}
-
-resource "aws_internet_gateway" "igw_public_eks" {
-	count = var.createvpc ? 1 : 0
-	vpc_id = local.vpc_id
-
-	tags = {
-		Name = "${var.igw_name}"
-	}
-}
 
 resource "aws_eip" "nat-eip" {
-	count    = length(aws_subnet.private_subnet_eks)
+	count    = length(aws_subnet.public_subnet_eks)
 	domain   = "vpc"
 
 	tags = {
@@ -189,6 +132,26 @@ resource "aws_route_table_association" "eks_public_route_association" {
   depends_on = [aws_route_table.eks_public_routetable, aws_subnet.public_subnet_eks]
 }
 
+
+
+# Private Subnets #
+
+resource "aws_subnet" "private_subnet_eks" {
+	vpc_id = local.vpc_id
+	count = length(var.private_subnet_cidr_blocks)
+	cidr_block = var.private_subnet_cidr_blocks[count.index]
+	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
+	map_public_ip_on_launch = false
+
+	tags = {
+		Name = "private-subnet-${count.index + 1}"
+		"kubernetes.io/cluster/${var.vpcname}" = "owned"
+		"kubernetes.io/role/internal-elb" = "1"
+		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
+	}	
+}
+
+
 resource "aws_route_table" "eks_private_routetable" {
 	count = length(aws_subnet.private_subnet_eks)
 	vpc_id = local.vpc_id
@@ -209,8 +172,49 @@ resource "aws_route_table_association" "eks_private_route_association" {
 	route_table_id = 	aws_route_table.eks_private_routetable[count.index].id
 }
 
+
+# ------ RDS Private Subnets ------ # 
+resource "aws_subnet" "rds_private_subnet" {
+	vpc_id = local.vpc_id
+	count = length(var.rds_private_subnet_cidr_blocks)
+	cidr_block = var.rds_private_subnet_cidr_blocks[count.index]
+	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
+	map_public_ip_on_launch = false
+
+	tags = {
+		Name = "rds-private-subnet-${count.index + 1}"
+		"kubernetes.io/cluster/${var.vpcname}" = "owned"
+		"kubernetes.io/role/internal-elb" = "1"
+		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
+	}	
+}
+
+locals {
+  public_subnet_ids  = aws_subnet.public_subnet_eks[*].id
+  private_subnet_ids = aws_subnet.private_subnet_eks[*].id
+}
+
+
+/* Nodegroup Subnet, Routetable,   */
+
+resource "aws_subnet" "nodegroup_private_subnet" {
+	vpc_id = local.vpc_id
+	count = length(var.nodegroup_pvt_subnet_cidr_blocks)
+	cidr_block = var.nodegroup_pvt_subnet_cidr_blocks[count.index]
+	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
+	map_public_ip_on_launch = false
+
+	tags = {
+		Name = "nodegroup-private-subnet-${count.index + 1}"
+		"kubernetes.io/cluster/${var.vpcname}" = "owned"
+		"kubernetes.io/role/internal-elb" = "1"
+		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
+	}	
+  
+}
+
 resource "aws_route_table" "nodegroup_private_routetable" {
-	count = length(aws_subnet.public_subnet_eks)
+	count = length(aws_subnet.nodegroup_private_subnet)
 	vpc_id = local.vpc_id
 
   route {
@@ -224,7 +228,7 @@ resource "aws_route_table" "nodegroup_private_routetable" {
 }
 
 resource "aws_route_table_association" "nodegroup_private_route_association" {
-	count          =  length(aws_subnet.public_subnet_eks)
+	count          =  length(aws_subnet.nodegroup_private_subnet)
 	subnet_id      =  aws_subnet.nodegroup_private_subnet[count.index].id
 	route_table_id =  aws_route_table.nodegroup_private_routetable[count.index].id
 }
