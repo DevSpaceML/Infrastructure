@@ -54,7 +54,7 @@ data "aws_subnets" "eks_subnets" {
 
 resource "aws_vpc_dhcp_options" "eks_dhcp_options" {
 	domain_name_servers = ["AmazonProvidedDNS"]
-	domain_name = "ec2.internal"
+	domain_name         = var.region == "us-east-1" ? "ec2.internal" : "${var.region}.compute.internal"
 	
 	tags = {
 		Name = "${var.vpcname}-dhcp-options"
@@ -133,7 +133,6 @@ resource "aws_route_table_association" "eks_public_route_association" {
 }
 
 
-
 # Private Subnets #
 
 resource "aws_subnet" "private_subnet_eks" {
@@ -158,7 +157,7 @@ resource "aws_route_table" "eks_private_routetable" {
 
 	route {
 		cidr_block = "0.0.0.0/0"
-		nat_gateway_id = aws_nat_gateway.eks_nat_gw[count.index].id
+		nat_gateway_id = aws_nat_gateway.eks_nat_gw[count.index % length(aws_nat_gateway.eks_nat_gw)].id
 	}
 
 	tags = {
@@ -219,7 +218,7 @@ resource "aws_route_table" "nodegroup_private_routetable" {
 
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.eks_nat_gw[count.index].id
+    nat_gateway_id = aws_nat_gateway.eks_nat_gw[count.index % length(aws_nat_gateway.eks_nat_gw)].id
   }
 
   tags = {
@@ -234,7 +233,8 @@ resource "aws_route_table_association" "nodegroup_private_route_association" {
 }
 
 
-/*
+/* VPC Flow Logs 
+
 resource "aws_flow_log" "eks-vpc-flow-log" {
 	log_destination = "${var.vpcname}-vpc-flow-logs"
 	vpc_id = local.vpc_id
@@ -247,8 +247,8 @@ resource "aws_flow_log" "eks-vpc-flow-log" {
 		Name = "VPC-Flow-Logs-${var.vpcname}"
 	}
 }
-*/
 
+*/
 
 
 
