@@ -75,8 +75,7 @@ resource "aws_iam_role" "eks_node_manager_role" {
 		Version   = "2012-10-17"
 		Statement = [
 			{
-				Action = ["sts:AssumeRole",
-                    "sts:GetCallerIdentity"]
+				Action = "sts:AssumeRole"
 				Effect = "Allow"
 				Principal = {
 					Service = "ec2.amazonaws.com",
