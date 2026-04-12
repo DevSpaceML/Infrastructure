@@ -61,7 +61,7 @@ module "dev_cluster" {
                                     },
                                     "node_manager" = {
                                       principal_arn = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
-                                      type = "STANDARD"
+                                      type = "EC2_LINUX"
                                       kubernetes_groups = []
                                       user_name = ""
                                     }
