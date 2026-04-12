@@ -36,13 +36,11 @@ resource "aws_iam_policy" "tech_lead_policy" {
   })
 }
 
-
 resource "aws_iam_user_policy_attachment" "techlead" {
   depends_on = [ aws_iam_policy.tech_lead_policy ]
   user = aws_iam_user.developer.name
   policy_arn = aws_iam_policy.tech_lead_policy.arn 
 }
-
 
 # IAM Cluster Role
 resource "aws_iam_role" "eks_cluster_Role" {
@@ -68,7 +66,6 @@ resource "aws_iam_role" "eks_cluster_Role" {
 	)  
 }
 
-
 #IAM Node Manager Role
 resource "aws_iam_role" "eks_node_manager_role" {
 	name = "node-group-manager"
@@ -78,10 +75,11 @@ resource "aws_iam_role" "eks_node_manager_role" {
 		Version   = "2012-10-17"
 		Statement = [
 			{
-				Action = "sts:AssumeRole"
+				Action = ["sts:AssumeRole",
+                    "sts:GetCallerIdentity"]
 				Effect = "Allow"
 				Principal = {
-					Service = "ec2.amazonaws.com"
+					Service = "ec2.amazonaws.com",
 				}
 			},
 		]

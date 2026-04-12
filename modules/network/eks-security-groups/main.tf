@@ -19,8 +19,10 @@ resource "aws_security_group" "nodegroup-sg" {
     }
 }
 
-# allow cluster security group to accept worker node traffic
-resource "aws_security_group_rule" "cluster_allow_ingress_from_nodegroup" {
+# CLUSTER SECURITY GROUP RULES
+
+    # allow cluster security group to accept worker node traffic
+resource "aws_security_group_rule" "cluster-sg_allow_ingress_from_nodegroup" {
     type = "ingress"
     from_port = 443
     to_port = 443
@@ -30,8 +32,32 @@ resource "aws_security_group_rule" "cluster_allow_ingress_from_nodegroup" {
     description = "Allow cluster to accept incoming worker node traffic"
 }
 
-# allow communication between cluster and nodegroup
-resource "aws_security_group_rule" "cluster_to_nodegroup" {
+resource "aws_security_group_rule" "cluster_egress_to_nodegroup" {
+  type                     = "egress"
+  from_port                = 1025
+  to_port                  = 65535
+  protocol                 = "tcp"
+  security_group_id        = data.aws_security_group.cluster-sg.id
+  source_security_group_id = aws_security_group.nodegroup-sg.id
+  description              = "Allow cluster to send traffic to nodes on ephemeral ports"
+}
+
+resource "aws_security_group_rule" "cluster_egress_to_nodegroup_kubelet" {
+  type                     = "egress"
+  from_port                = 10250
+  to_port                  = 10250
+  protocol                 = "tcp"
+  security_group_id        = data.aws_security_group.cluster-sg.id
+  source_security_group_id = aws_security_group.nodegroup-sg.id
+  description              = "Allow cluster to reach kubelet on nodes"
+}
+
+
+# NODEGROUP SECURITY GROUP RULES
+
+
+# allow ingress traffic to nodegroup from cluster on kubelet port
+resource "aws_security_group_rule" "nodegroup-sg_allow_ingress_from_cluster" {
     type                     = "ingress"
     from_port                = 443                
     to_port                  = 443
@@ -42,7 +68,7 @@ resource "aws_security_group_rule" "cluster_to_nodegroup" {
 }
 
 # allow nodes to communicate with cluster
-resource "aws_security_group_rule" "nodegroup_to_cluster" {
+resource "aws_security_group_rule" "nodegroup_egress_to_cluster" {
     type                     = "egress"
     from_port                = 443                        
     to_port                  = 443
@@ -51,6 +77,7 @@ resource "aws_security_group_rule" "nodegroup_to_cluster" {
     source_security_group_id = data.aws_security_group.cluster-sg.id
     description = "Allow nodes to send traffic to cluster"
 }
+
 
 # allow cluster to communicate with nodes on kubelet port
 resource "aws_security_group_rule" "node_ingress_cluster_kubelet" {
@@ -67,14 +94,14 @@ resource "aws_security_group_rule" "node_to_node" {
     type              = "ingress"
     from_port         = 0
     to_port           = 65535
-    protocol          = "udp"
+    protocol          = "-1"
     security_group_id = aws_security_group.nodegroup-sg.id
     source_security_group_id = aws_security_group.nodegroup-sg.id
     description = "Allow nodes to communicate with each other"
 }
 
 # cluster to nodes - extended range 
-resource "aws_security_group_rule" "cluster_to_node_extended" {
+resource "aws_security_group_rule" "node_ingress_from_cluster_extended" {
     type                     = "ingress"
     from_port                = 1025                        
     to_port                  = 65535
