@@ -1,8 +1,3 @@
-variable "security-groups" {
-	description = "security groups of cluster vpc"
-	type = string
-}
-
 variable "private_cidr_block" {
 	description = "private cidr block"
 	type        =  list(string)
