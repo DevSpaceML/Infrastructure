@@ -115,6 +115,7 @@ module "coredns" {
 
 module "external_dns_irsa" {
   source = "terraform-aws-modules/iam/aws/modules/iam-role-for-service-accounts-eks"
+  version = "6.4.0"
 
   role_name = "external-dns-irsa"
   attach_external_dns_policy = true
@@ -131,5 +132,5 @@ module "external_dns_irsa" {
 
 module "helm_external_dns" {
   source = "../../../modules/dns/externalDns"
-  externalDns_irsa = module.external_dns_irsa.iam_role_arn
+  externalDns_irsa = module.external_dns_irsa.arn
 }
