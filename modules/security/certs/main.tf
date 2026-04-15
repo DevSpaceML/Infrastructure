@@ -1,14 +1,5 @@
 #eks networking module. Creates route53 Zones, Creates certs and applies them
 #security group rules
-# Deploy Application LoadBalancer 
-
-data "aws_eks_cluster" "ekscluster" {
-  name = var.clustername
-}
-
-resource "aws_route53_zone" "approute" {
-	name  = "gemmapp.com"
-}
 
 resource "aws_acm_certificate" "eks_certificate" {
   depends_on = [ aws_route53_zone.approute ]
@@ -26,7 +17,7 @@ resource "aws_acm_certificate" "eks_certificate" {
     }
 
 	tags = {
-		DeployedToCluster = data.aws_eks_cluster.ekscluster.name
+		DeployedToCluster = var.clustername
 	}
 }
 
@@ -43,7 +34,7 @@ resource "aws_route53_record" "certvalidation_r53_record" {
    }
     
 	zone_id   = aws_route53_zone.approute.zone_id
-	name      =  each.value.name
+	name      = each.value.name
     type      = each.value.type
     records   = [each.value.record]
     ttl       = 60
@@ -52,6 +43,6 @@ resource "aws_route53_record" "certvalidation_r53_record" {
 
 resource "aws_acm_certificate_validation" "cert_validation" {
   depends_on = [ aws_route53_record.certvalidation_r53_record ]  
-	certificate_arn         = aws_acm_certificate.eks_certificate.arn
-	validation_record_fqdns = [for record in aws_route53_record.certvalidation_r53_record : record.fqdn]
+  certificate_arn         = aws_acm_certificate.eks_certificate.arn
+  validation_record_fqdns = [for record in aws_route53_record.certvalidation_r53_record : record.fqdn]
 }

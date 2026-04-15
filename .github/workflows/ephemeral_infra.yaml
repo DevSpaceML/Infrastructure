@@ -190,7 +190,7 @@ jobs:
       - name: Terraform Apply
         working-directory: ./environments/${{ env.ENVIRONMENT }}/iam
         run: terraform apply -auto-approve    
-  
+
   # DEPLOY CLUSTER
   deploy-cluster:
     name: deploy-eks-cluster
@@ -512,9 +512,7 @@ jobs:
         run: |
           echo "Deployment failed, rolling back release ${HELM_RELEASE_NAME}"
           helm rollback ${{ env.HELM_RELEASE_NAME }} --namespace ${{ env.HELM_NAMESPACE }} || echo "Rollback failed or no previous release to rollback to"
-            
-
-                
+ 
             
 
         

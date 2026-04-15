@@ -1,3 +1,13 @@
+variable "projectname" {
+  description = "Name of application"
+  default = string
+}
+
+variable "environment" {
+  description = "Deployment environment"
+  type = string
+}
+
 variable "securitygroupId" {
     description = "security groups of cluster vpc"
 	type = string

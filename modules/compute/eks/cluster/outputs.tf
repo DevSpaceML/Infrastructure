@@ -16,3 +16,11 @@ output "cluster_token" {
 output "cluster_certificate" {
   value = base64decode(aws_eks_cluster.this.certificate_authority[0].data)
 }
+
+output "projectname" {
+  value = var.projectname
+}
+
+output "environment" {
+  value = var.environment
+}

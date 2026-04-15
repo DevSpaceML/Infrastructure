@@ -112,3 +112,24 @@ module "coredns" {
   source = "../../../modules/compute/eks/addons/coredns"
   clustername = module.dev_cluster.cluster_name
 }
+
+module "external_dns_irsa" {
+  source = "terraform-aws-modules/iam/aws/modules/iam-role-for-service-accounts-eks"
+
+  role_name = "external-dns-irsa"
+  attach_external_dns_policy = true
+  cluster_name = module.dev_cluster.cluster_name
+  
+  oidc_providers = {
+    main ={
+      provider_url = module.dev_cluster.cluster_oidc_issuer_url
+      provider_arn = module.dev_cluster.cluster_oidc_issuer_arn
+      namespace_service_accounts = ["external-dns:external-dns"]
+    }
+  }
+}
+
+module "helm_external_dns" {
+  source = "../../../modules/dns/externalDns"
+  externalDns_irsa = module.external_dns_irsa.iam_role_arn
+}

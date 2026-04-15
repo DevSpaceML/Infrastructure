@@ -29,7 +29,7 @@ variable "namespace" {
   default = "development"
 }
 
-variable "project" {
+variable "projectname" {
 	description = "Project running on cluster"
 	type = string
 	default = "development project"
