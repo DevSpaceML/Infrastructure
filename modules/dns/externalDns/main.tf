@@ -22,9 +22,31 @@ resource "helm_release" "external-dns" {
   chart      = "external-dns"
   version    = "7.3.0"
 
-  set = [ {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = var.externalDns_irsa
-  }
+  set = [ 
+    {
+        name  = "provider"
+        value = "aws"
+    },
+    {
+        name  = "aws.region"
+        value = "us-east-1"
+    },
+    {
+        name  = "policy"
+        value = "upsert-only"
+    },
+
+        {
+        name  = "txtOwnerId"
+        value = "my-cluster"
+        },
+    {
+        name  = "domainFilters[0]"
+        value = "example.com"
+    },
+    {
+        name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+        value = var.externalDns_irsa
+    }
   ]
 }
