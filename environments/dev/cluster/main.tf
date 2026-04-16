@@ -35,6 +35,23 @@ provider "kubernetes" {
   }
 }
 
+provider "helm" {
+  kubernetes = {
+    host                   = module.dev_cluster.cluster_endpoint
+    cluster_ca_certificate = module.dev_cluster.cluster_certificate
+
+    exec = {
+      api_version = "client.authentication.k8s.io/v1beta1"
+      command     = "aws"
+      args = [
+        "eks", "get-token",
+        "--cluster-name", module.dev_cluster.cluster_name,
+        "--region",       data.terraform_remote_state.dev_network.outputs.region
+      ]
+    }
+  }
+}
+
 module "dev_cluster" {
   source                 = "../../../modules/compute/eks/cluster"
   clustername            = var.clustername
