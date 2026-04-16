@@ -7,4 +7,4 @@ output "cluster_cert" {
 }
 output "cluster_name" {
   value = module.dev_cluster.cluster_name
-} 
+}

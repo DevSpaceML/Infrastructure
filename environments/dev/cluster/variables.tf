@@ -41,4 +41,16 @@ variable "k8s_version" {
   default = "1.29"
 }
 
+variable "environment" {
+  description = "Deployment environment"
+  type = string
+  default = "dev"
+}
+
+variable "projectname" {
+  description = "Project running on cluster"
+  type = string
+  default = "dev-eks-project"
+}
+
 

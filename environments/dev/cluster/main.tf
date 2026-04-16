@@ -113,6 +113,12 @@ module "coredns" {
   clustername = module.dev_cluster.cluster_name
 }
 
+module "hosted_zone" {
+  source = "../../../modules/dns/route53hostedZone"
+  projectname = var.projectname
+  environment = var.environment
+}
+
 module "external_dns_irsa" {
   depends_on = [ module.dev_cluster ]
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
@@ -120,6 +126,7 @@ module "external_dns_irsa" {
 
   name = "external-dns-irsa"
   attach_external_dns_policy = true
+  external_dns_hosted_zone_arns = [ module.hosted_zone.arn ]
   
   oidc_providers = {
     main ={
