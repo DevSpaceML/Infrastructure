@@ -46,6 +46,7 @@ jobs:
       private_subnet_cidr: ${{ steps.parse_vars.outputs.private_subnet_cidr }}
       rds_subnet_cidrs: ${{ steps.parse_vars.outputs.rds_subnet_cidrs }}
       nodegroup_subnet_cidrs: ${{ steps.parse_vars.outputs.nodegroup_subnet_cidrs }}
+      projectname: ${{ steps.parse_vars.outputs.projectname }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -202,7 +203,8 @@ jobs:
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
       TF_VAR_vpcname: ${{ needs.configure-variables.outputs.vpcname }}
       TF_VAR_createvpc: ${{ needs.configure-variables.outputs.createvpc }}
-      TF_VAR_existing_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}  
+      TF_VAR_existing_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}
+      TF_VAR_projectname: ${{ needs.configure-variables.outputs.projectname }}  
 
     steps:  
       - name: checkout-code
