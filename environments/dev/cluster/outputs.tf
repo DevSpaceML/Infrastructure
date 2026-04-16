@@ -8,3 +8,11 @@ output "cluster_cert" {
 output "cluster_name" {
   value = module.dev_cluster.cluster_name
 }
+
+output "projectname" {
+  value = var.projectname
+}
+
+output "environment" {
+  value = var.environment
+}
