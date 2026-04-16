@@ -1,10 +1,5 @@
 # Create Hosted Zones for Application
 #get lb data dynamically [change to use variables for tags]
-
-data "aws_lb" "eks-lb" {    	
-    name = "eks-cluster-lb"
-} 
-
 resource "aws_route53_zone" "internal" {
   count = var.environment == "dev" ? 1 : 0	
   name = "internal.${var.projectname}.dev"
