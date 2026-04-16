@@ -115,8 +115,8 @@ module "coredns" {
 
 module "hosted_zone" {
   source = "../../../modules/dns/route53hostedZone"
-  projectname = var.projectname
-  environment = var.environment
+  projectname = module.dev_cluster.projectname
+  environment = module.dev_cluster.environment
 }
 
 module "external_dns_irsa" {
@@ -126,7 +126,7 @@ module "external_dns_irsa" {
 
   name = "external-dns-irsa"
   attach_external_dns_policy = true
-  external_dns_hosted_zone_arns = [ module.hosted_zone.arn ]
+  external_dns_hosted_zone_arns = [ module.hosted_zone.zone_arn ]
   
   oidc_providers = {
     main ={

@@ -9,3 +9,7 @@ output "zone_id" {
 output "zone_name" {
   value = local.zone_name
 }
+
+output "zone_arn" {
+  value = local.zone_arn
+}

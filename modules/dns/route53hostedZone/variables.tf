@@ -1,6 +1,6 @@
 variable "projectname" {
   description = "Name of application"
-  default = string
+  type = string
 }
 
 variable "environment" {
