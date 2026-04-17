@@ -2,9 +2,7 @@
 #security group rules
 
 resource "aws_acm_certificate" "eks_certificate" {
-  depends_on = [ aws_route53_zone.approute ]
-
-	domain_name        = "gemmapp.com"
+	domain_name        = var.appdomain
 	validation_method  = "DNS"
 	subject_alternative_names = []
 

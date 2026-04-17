@@ -1,4 +1,4 @@
-output "deployment" {
+output "domain_name" {
   value = local.deployment
 }
 

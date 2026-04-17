@@ -23,7 +23,13 @@ variable "cluster_vpc_id" {
 	type = string
 }
 
-variable "clustername" {
-	description = "name of cluster"
+variable "appdomain" {
+	description = "name of project"
 	type = string
 }
+
+variable "clustername" {
+ 	description = "name of cluster"
+	type = string  
+}
+

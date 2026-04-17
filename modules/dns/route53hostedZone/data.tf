@@ -1,8 +1,9 @@
-data "terraform_remote_state" "external_dns" {
+
+data "terraform_remote_state" "dns" {
     backend = "s3"
     config = {
         bucket = "dev-terraform-state-586098609239"
-        key    = "dev/externaldns/terraform.tfstate"
+        key    = "dev/dns/terraform.tfstate"
         region = "us-east-1"
     } 
 }

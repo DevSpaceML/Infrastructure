@@ -196,6 +196,8 @@ jobs:
   deploy-cluster:
     name: deploy-eks-cluster
     runs-on: ubuntu-latest
+    outputs:
+      deployment_name: ${{ env.TF_VAR_clustername }}
     needs: [configure-variables, deploy-network, deploy-iam]
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment }}
