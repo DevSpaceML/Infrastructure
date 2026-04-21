@@ -9,6 +9,10 @@ output "cluster_name" {
   value = module.dev_cluster.cluster_name
 }
 
+output "domain_name" {
+  value = module.hosted_zone.domain_name
+}
+
 output "projectname" {
   value = var.projectname
 }
