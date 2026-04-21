@@ -8,4 +8,6 @@ module "certs" {
   cluster_vpc_id     = data.terraform_remote_state.dev_network.outputs.vpc_id
   clustername        = data.terraform_remote_state.dev_cluster.outputs.cluster_name
   appdomain          = data.terraform_remote_state.dev_cluster.outputs.domain_name
+  zoneid             = data.terraform_remote_state.dev_cluster.outputs.zone_id 
+
 }

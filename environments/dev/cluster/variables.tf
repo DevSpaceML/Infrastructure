@@ -50,7 +50,6 @@ variable "environment" {
 variable "projectname" {
   description = "Project running on cluster"
   type = string
-  default = "dev-eks-project"
 }
 
 

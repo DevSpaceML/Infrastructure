@@ -31,7 +31,7 @@ resource "aws_route53_record" "certvalidation_r53_record" {
 	    }
    }
     
-	zone_id   = aws_route53_zone.approute.zone_id
+	zone_id   = var.zoneid
 	name      = each.value.name
     type      = each.value.type
     records   = [each.value.record]

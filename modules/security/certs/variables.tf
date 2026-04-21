@@ -28,6 +28,11 @@ variable "appdomain" {
 	type = string
 }
 
+variable "zoneid" {
+  description = "hosted zone of app"
+  type = string
+}
+
 variable "clustername" {
  	description = "name of cluster"
 	type = string  

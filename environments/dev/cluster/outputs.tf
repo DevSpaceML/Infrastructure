@@ -13,6 +13,10 @@ output "domain_name" {
   value = module.hosted_zone.domain_name
 }
 
+output "zone_id" {
+  value = module.hosted_zone.zone_id
+}
+
 output "projectname" {
   value = var.projectname
 }
