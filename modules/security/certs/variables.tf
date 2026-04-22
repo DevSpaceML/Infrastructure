@@ -23,6 +23,11 @@ variable "cluster_vpc_id" {
 	type = string
 }
 
+variable "use_private_dns" {
+  description = "boolean user choice"
+  type = string
+}
+
 variable "appdomain" {
 	description = "name of project"
 	type = string

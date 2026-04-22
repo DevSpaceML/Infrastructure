@@ -2,9 +2,10 @@
 #security group rules
 
 resource "aws_acm_certificate" "eks_certificate" {
+	count = var.use_private_dns ? 0 : 1
 	domain_name        = var.appdomain
 	validation_method  = "DNS"
-	subject_alternative_names = []
+	subject_alternative_names = ["*.${var.appdomain}"]
 
 	options {
     certificate_transparency_logging_preference = "ENABLED"
@@ -23,7 +24,8 @@ resource "aws_acm_certificate" "eks_certificate" {
 
 resource "aws_route53_record" "certvalidation_r53_record" {
   depends_on = [ aws_acm_certificate.eks_certificate ]
-	for_each = {
+
+	for_each = var.use_private_dns ? {} : {
 	    for dvo in aws_acm_certificate.eks_certificate.domain_validation_options : dvo.domain_name => {
 	      name   = dvo.resource_record_name
 	      type   = dvo.resource_record_type
