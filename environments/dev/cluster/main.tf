@@ -159,3 +159,8 @@ module "helm_external_dns" {
   source = "../../../modules/dns/externalDns"
   externalDns_irsa = module.external_dns_irsa.arn
 }
+
+module "name" {
+  source = "/"
+  depends_on = [ module.external_dns_irsa, module.helm_external_dns ]
+}

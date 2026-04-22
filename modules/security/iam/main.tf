@@ -18,7 +18,7 @@ resource "aws_iam_user" "developer" {
 }
 
 resource "aws_iam_policy" "tech_lead_policy" {
-  depends_on = [ aws_iam_user.developer ]
+  depends_on = [ aws_iam_user.developer ] 
   name = "techleadpolicy"
 
   policy = jsonencode({
