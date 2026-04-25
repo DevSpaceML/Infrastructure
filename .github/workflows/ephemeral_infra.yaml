@@ -362,18 +362,16 @@ jobs:
           aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
           kubectl get nodes
  
-  # DEPLOY LB CERTS
-  deploy-certs:
-    name: deploy-certs
+  install-traefik:
+    name: install-traefik
     runs-on: ubuntu-latest
     needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth]
     outputs:
-      cert_arn: ${{ steps.extract-cert-arn.outputs.cert_arn }}
+      base: ${{ steps.nlb_hostname.outputs.base }}
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
-
 
     steps:  
       - name: checkout-code
@@ -384,7 +382,7 @@ jobs:
         with:
               role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
               role-session-name: GitHub-Actions-OIDC-Session
-              aws-region: ${{ env.TF_VAR_region }}
+              aws-region: ${{ env.AWS_REGION }}
               mask-aws-account-id: false
             
       - name: Prepare Terraform
@@ -393,52 +391,65 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-      - name: Terraform Init
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/certs
+      - name: Update kubeconfig
         run: |
-          terraform init -upgrade
-            
-      - name: Terraform Validate
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/certs
-        run: |
-          terraform validate
-            
-      - name: Terraform Plan
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/certs
-        run: |
-          echo "Running terraform plan for certs configuration of cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
-          terraform plan -out=tfplan
-          terraform show -json tfplan > tfplan.json
-          cat tfplan.json 
-      - name: Upload Certs Plan
-        uses: actions/upload-artifact@v4
-        with:
-          name: certs-tfplan
-          path: ./environments/${{ env.ENVIRONMENT }}/configuration/certs/tfplan.json
-
-      - name: Terraform Apply
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/certs
-        run: terraform apply -auto-approve tfplan
+          echo "Updating kubeconfig for cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
+          kubectl config view    
       
-      - name: Extract Cert ARN output
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/certs
-        id: extract-cert-arn
+      - name: Install Traefik with Helm
+        run : |
+          helm repo add traefik https://helm.traefik.io/traefik
+          helm repo update
+          helm upgrade --install traefik traefik/traefik \
+            --namespace kube-system \
+            --values ./yaml/traefik/traefik-values.yaml \
+            --timeout 10m \
+            --wait \
+            --atomic
+          kubectl rollout status deployment/traefik -n traefik
+      - name: Resolve NLB Hostname
+        id: nlb_hostname
         run: |
-          echo "Extracting cert ARN from terraform output"
-          echo "cert_arn=$(terraform output -json | jq -r '.cert_arn.value')" >> $GITHUB_OUTPUT
-          echo "Cert ARN: $(cat $GITHUB_OUTPUT)"
-          
+          echo "Resolving NLB hostname for Traefik service"
+          HOSTNAME=""
+          TIMEOUT=300  # 5 minutes in seconds
+          INTERVAL=15  # Check every 15 seconds
+          ELAPSED=0
+
+          while [ -z "$HOSTNAME" ] && [ $ELAPSED -lt $TIMEOUT ]; do
+            HOSTNAME=$(kubectl get svc traefik -n kube-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+            
+            if [ -n "$HOSTNAME" ]; then
+              echo "Found NLB hostname: $HOSTNAME"
+              echo "::set-output name=nlb_hostname::$HOSTNAME"
+              NLB_IP=$(dig +short "$HOSTNAME" | grep -E '^[0-9]+\.' | head -1)
+              DASHED=$(echo "$NLB_IP" | tr '.' '-')
+              echo "base=${DASHED}.traefik.me" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+            
+            echo "NLB hostname not found yet. Waiting... ($ELAPSED/$TIMEOUT seconds elapsed)"
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          if [ -z "$HOSTNAME" ]; then
+            echo "ERROR: Failed to resolve NLB hostname for Traefik service within 5 minutes."
+            exit 1
+          fi    
+
   # DEPLOY APPLICATION WITH HELM
   deploy-app:
     name: deploy-app
     runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, deploy-certs]
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-traefik]
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
       TF_VAR_image_repository: 586098609239.dkr.ecr.us-east-1.amazonaws.com/gem/gemapp
-      TF_VAR_cert_arn: ${{ needs.deploy-certs.outputs.cert_arn }}
+      INGRESS_HOST: ${{ needs.install-traefik.outputs.base }} 
       HELM_RELEASE_NAME: "gem-app"
       HELM_CHART_PATH: "./helm-charts/gem-app"
       HELM_NAMESPACE: "gem-app-namespace"
@@ -483,8 +494,8 @@ jobs:
           helm upgrade --install ${{ env.HELM_RELEASE_NAME }} \
             --namespace ${{ env.HELM_NAMESPACE }} --create-namespace \
             --set image.repository=${{ env.TF_VAR_image_repository }} \
-            --set service.annotations."alb\.ingress\.kubernetes\.io/certificate-arn"=${{ env.TF_VAR_cert_arn }} \
-            --set service.annotations."alb\.ingress\.kubernetes\.io/listen-ports"='[{"HTTP":80},{"HTTPS":443}]' \
+            --set ingress.host=${{ env.INGRESS_HOST }} \
+            --set ingress.appName=${{ env.HELM_RELEASE_NAME }} \
             --set ingress.enabled=true \
             --set image.tag=${{ env.APP_VERSION }} \
             --set environment=${ENVIRONMENT} \
@@ -505,6 +516,7 @@ jobs:
           echo "Verifying Ingress and ALB for the deployed app"
           kubectl get ingress -n ${{ env.HELM_NAMESPACE }} -o wide
           kubectl describe ingress -n ${{ env.HELM_NAMESPACE }}
+          echo "app url: http://${{ env.INGRESS_HOST }}"
       
       - name: Show deployed resources
         run: |

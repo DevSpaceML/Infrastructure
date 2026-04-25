@@ -3,11 +3,6 @@ variable "projectname" {
   type = string
 }
 
-variable "root_domain" {
-  description = "Root domain for public hosted zone"
-  type = string
-}
-
 variable "environment" {
   description = "Deployment environment"
   type = string
@@ -24,3 +19,7 @@ variable "vpc_id" {
   type = string
 }
 
+variable "root_domain" {
+  description = "Domain to be used for deployment"
+  type = string
+}

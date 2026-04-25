@@ -134,6 +134,8 @@ module "hosted_zone" {
   source = "../../../modules/dns/route53hostedZone"
   projectname = module.dev_cluster.projectname
   environment = module.dev_cluster.environment
+  vpc_id = data.terraform_remote_state.dev_network.outputs.vpc_id
+  root_domain =   var.data.terraform_state.dev_cluster.outputs.domain_name
 }
 
 module "external_dns_irsa" {

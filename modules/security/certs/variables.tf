@@ -26,6 +26,7 @@ variable "cluster_vpc_id" {
 variable "use_private_dns" {
   description = "boolean user choice"
   type = string
+  default = false
 }
 
 variable "appdomain" {
