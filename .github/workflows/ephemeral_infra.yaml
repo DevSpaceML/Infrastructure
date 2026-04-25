@@ -362,6 +362,7 @@ jobs:
           aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
           kubectl get nodes
  
+  # DEPLOY TRAEFIK INGRESS CONTROLLER WITH HELM        
   install-traefik:
     name: install-traefik
     runs-on: ubuntu-latest
@@ -450,9 +451,9 @@ jobs:
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
       TF_VAR_image_repository: 586098609239.dkr.ecr.us-east-1.amazonaws.com/gem/gemapp
       INGRESS_HOST: ${{ needs.install-traefik.outputs.base }} 
-      HELM_RELEASE_NAME: "gem-app"
+      HELM_RELEASE_NAME: ${{ needs.configure-variables.outputs.projectname }}
       HELM_CHART_PATH: "./helm-charts/gem-app"
-      HELM_NAMESPACE: "gem-app-namespace"
+      HELM_NAMESPACE: "${{ needs.configure-variables.outputs.projectname }}-namespace"
       APP_VERSION: "dev-latest"
 
     steps:  
