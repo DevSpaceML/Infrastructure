@@ -112,7 +112,6 @@ module "oidc_auth" {
   clustername = module.dev_cluster.cluster_name
 }
 
-
 module "dev_nodes" {
   depends_on = [ module.dev_cluster, module.oidc_auth ]
   source                       = "../../../modules/compute/eks/nodegroups"
