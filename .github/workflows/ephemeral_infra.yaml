@@ -496,7 +496,7 @@ jobs:
             --namespace ${{ env.HELM_NAMESPACE }} --create-namespace \
             --set image.repository=${{ env.TF_VAR_image_repository }} \
             --set ingress.host=${{ env.INGRESS_HOST }} \
-            --set ingress.appName=${{ env.HELM_RELEASE_NAME }} \
+            --set ingress.app.name=${{ env.HELM_RELEASE_NAME }} \
             --set ingress.enabled=true \
             --set image.tag=${{ env.APP_VERSION }} \
             --set environment=${ENVIRONMENT} \
