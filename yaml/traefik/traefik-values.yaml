@@ -1,38 +1,30 @@
 # ─────────────────────────────────────────────────────────
 # Traefik Helm chart values for Kubernetes deployment.
 # ─────────────────────────────────────────────────────────
-
 service:
   type: LoadBalancer
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
     service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
-
 ports:
   web:
-    port: 80
+    port: 8080
     expose:
-      default: true        # CHANGED: was 'expose: true' (boolean → object)
+      default: true
     protocol: TCP
-    redirectTo:            # CHANGED: was 'redirections.entrypoint' block
-      port: websecure      # just name the target entrypoint
-      permanent: true      # 308 instead of 302
-
+    redirectTo:
+      port: websecure
+      permanent: true
   websecure:
     port: 443
     expose:
-      default: true        # CHANGED: same boolean → object fix
+      default: true
     protocol: TCP
-    # REMOVED: 'tls.enabled: true' block — TLS termination on websecure
-    # is handled per-route via IngressRoute/Ingress annotations,
-    # not at the entrypoint level in v28+.
-
 providers:
   kubernetesIngress:
     enabled: true
   kubernetesCRD:
     enabled: true
-
 logs:
   general:
     level: INFO
