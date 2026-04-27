@@ -17,11 +17,6 @@ ports:
     expose:
       default: true
     protocol: TCP
-middlewares:
-  - name: redirect-to-https
-    redirectScheme:
-     scheme: https
-     permanent: true   
 providers:
   kubernetesIngress:
     enabled: true
