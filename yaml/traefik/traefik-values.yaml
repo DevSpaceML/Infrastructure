@@ -12,19 +12,21 @@ ports:
     expose:
       default: true
     protocol: TCP
-    redirectTo:
-      port: websecure
-      permanent: true
   websecure:
     port: 443
     expose:
       default: true
     protocol: TCP
+middlewares:
+  - name: redirect-to-https
+    redirectScheme:
+     scheme: https
+     permanent: true   
 providers:
   kubernetesIngress:
     enabled: true
   kubernetesCRD:
-    enabled: true
+    enabled: true    
 logs:
   general:
     level: INFO
