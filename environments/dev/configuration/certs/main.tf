@@ -10,7 +10,6 @@ provider "kubernetes" {
   }
 }
 
-
 module "certs" {
   source             = "../../../../modules/security/certs"
   private_cidr_block = data.terraform_remote_state.dev_network.outputs.private_cidr
