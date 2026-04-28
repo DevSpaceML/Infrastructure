@@ -397,7 +397,7 @@ jobs:
           echo "Updating kubeconfig for cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
           aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
           kubectl config view    
-      
+
       - name: Install Traefik with Helm
         run : |
           helm repo add traefik https://helm.traefik.io/traefik
