@@ -404,7 +404,7 @@ jobs:
           helm repo update
           helm upgrade --install traefik traefik/traefik \
             --namespace kube-system \
-            --values ./yaml/traefik/values.yaml \
+            --values ../yaml/traefik/values.yaml \
             --timeout 10m \
             --wait \
             --atomic
