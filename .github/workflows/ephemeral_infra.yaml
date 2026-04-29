@@ -402,12 +402,13 @@ jobs:
         run : |
           helm repo add traefik https://helm.traefik.io/traefik
           helm repo update
+          kubectl create namespace traefik --dry-run=client -o yaml | kubectl apply -f -
           helm upgrade --install traefik traefik/traefik \
             --namespace traefik \
             --values ./yaml/traefik/values.yaml \
             --timeout 10m \
             --wait \
-            --atomic
+            --debug
           kubectl rollout status deployment/traefik -n traefik
       - name: Resolve NLB Hostname
         id: nlb_hostname
