@@ -403,8 +403,8 @@ jobs:
           helm repo add traefik https://helm.traefik.io/traefik
           helm repo update
           helm upgrade --install traefik traefik/traefik \
-            --namespace kube-system \
-            --values ../yaml/traefik/values.yaml \
+            --namespace traefik \
+            --values ./yaml/traefik/values.yaml \
             --timeout 10m \
             --wait \
             --atomic
@@ -419,7 +419,7 @@ jobs:
           ELAPSED=0
 
           while [ -z "$HOSTNAME" ] && [ $ELAPSED -lt $TIMEOUT ]; do
-            HOSTNAME=$(kubectl get svc traefik -n kube-system -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
+            HOSTNAME=$(kubectl get svc traefik -n traefik -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
             
             if [ -n "$HOSTNAME" ]; then
               echo "Found NLB hostname: $HOSTNAME"
