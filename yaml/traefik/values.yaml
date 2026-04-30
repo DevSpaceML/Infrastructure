@@ -10,6 +10,7 @@ service:
 ports:
   web:
     port: 80
+    targetport: 8080
     expose:
       default: true
     protocol: TCP
@@ -19,6 +20,9 @@ ports:
     expose:
       default: true
     protocol: TCP
+additionalArguments:
+  - "--entryPoints.web.address=:8080"
+  - "--entryPoints.websecure.address=:8443"  
 providers:
   kubernetesIngress:
     enabled: true
