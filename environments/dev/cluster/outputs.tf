@@ -16,3 +16,7 @@ output "projectname" {
 output "environment" {
   value = var.environment
 }
+
+output "controller_role_arn" {
+  value = module.oidc.aws_iam_role_lb_controller_arn
+}
