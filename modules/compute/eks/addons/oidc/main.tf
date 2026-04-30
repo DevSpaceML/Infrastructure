@@ -27,6 +27,7 @@ resource "aws_iam_role" "lb_controller_role"{
             Condition = {
                 StringEquals = {
                     "${replace(data.aws_eks_cluster.eks-cluster.identity[0].oidc[0].issuer, "https://", "")}:sub" = "system:serviceaccount:kube-system:svcacc-lbc"
+                    "${replace(data.aws_eks_cluster.eks-cluster.identity[0].oidc[0].issuer, "https://", "")}:aud" = "sts.amazonaws.com"
                 }
             }
        }]

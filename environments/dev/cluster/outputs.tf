@@ -20,3 +20,7 @@ output "environment" {
 output "controller_role_arn" {
   value = module.oidc_auth.aws_iam_role_lb_controller_arn
 }
+
+output "k8_svc_acc" {
+  value = module.oidc_auth.k8_svc_acc
+}
