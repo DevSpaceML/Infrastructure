@@ -18,5 +18,5 @@ output "environment" {
 }
 
 output "controller_role_arn" {
-  value = module.oidc.aws_iam_role_lb_controller_arn
+  value = module.oidc_auth.aws_iam_role_lb_controller_arn
 }
