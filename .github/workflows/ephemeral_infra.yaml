@@ -197,7 +197,7 @@ jobs:
     name: deploy-eks-cluster
     runs-on: ubuntu-latest
     outputs:
-      deployment_name: ${{ env.TF_VAR_clustername }}
+      ctrlr_role_arn: ${{ steps.verify_cluster.outputs.ctrlr_role_arn }}
     needs: [configure-variables, deploy-network, deploy-iam]
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment }}
@@ -264,6 +264,7 @@ jobs:
           exit 1
         
       - name: Verify Cluster Deployment
+        id: verify_cluster
         working-directory: ./environments/${{ env.ENVIRONMENT }}/cluster
         run: |
           echo "Verifying EKS Cluster Creation"
@@ -282,6 +283,8 @@ jobs:
           
           if [ "$STATUS" = "ACTIVE" ]; then
             echo "EKS Cluster $CLUSTER_NAME is active."
+            echo "setting outputs..."
+            echo "ctrlr_role_arn=$(terraform output -raw controller_role_arn)" >> $GITHUB_OUTPUT
             exit 0
           fi
           
@@ -361,6 +364,59 @@ jobs:
           echo "Verifying kubectl access to EKS Cluster"
           aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
           kubectl get nodes
+          
+  # INSTALL LBC CONTROLLER WITH HELM
+  install-lbc:
+    name: install-lbc
+    runs-on: ubuntu-latest
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+      TF_VAR_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}
+      Ctrlr_Role_Arn: ${{ needs.deploy-cluster.outputs.ctrlr_role_arn }}
+
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+              role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.AWS_REGION }}
+              mask-aws-account-id: false
+            
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Update kubeconfig
+        run: |
+          echo "Updating kubeconfig for cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
+          kubectl config view
+
+      - name: Install AWS Load Balancer Controller with Helm
+        run : |
+          helm repo add eks https://aws.github.io/eks-charts
+          helm repo update
+          helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
+            --namespace kube-system \
+            --set clusterName=${TF_VAR_clustername} \
+            --set serviceAccount.create=false \
+            --set serviceAccount.name=aws-load-balancer-controller \
+            --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=${{ env.Ctrlr_Role_Arn }} \
+            --set region=${TF_VAR_region} \
+            --set vpcId=${TF_VAR_vpc_id} \
+            --timeout 10m \
+            --wait \
+            --debug
+          kubectl rollout status deployment/aws-load-balancer-controller -n kube-system    
  
   # DEPLOY TRAEFIK INGRESS CONTROLLER WITH HELM        
   install-traefik:
