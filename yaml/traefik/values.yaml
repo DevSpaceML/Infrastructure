@@ -24,7 +24,9 @@ providers:
   kubernetesIngress:
     enabled: true
   kubernetesCRD:
-    enabled: true    
+    enabled: true
+additionalArguments:
+  - "--providers.kubernetesingress.ingressendpoint.publishedservice=traefik/traefik"
 logs:
   general:
     level: INFO
