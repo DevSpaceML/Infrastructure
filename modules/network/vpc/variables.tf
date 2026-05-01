@@ -1,4 +1,9 @@
 #EKS VPC variables for VPC module
+variable "clustername" {
+  description = "cluster name for subnet tags"
+  type = string
+  default = null
+}
 
 variable "region" {
 	description = "aws region"

@@ -1,4 +1,8 @@
-
+variable "clustername" {
+  description = "cluster name for subnet tags"
+  type = string
+  default = ""
+}
 
 variable "region" {
   description = "aws region"

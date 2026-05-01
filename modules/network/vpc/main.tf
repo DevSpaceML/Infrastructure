@@ -14,7 +14,7 @@ resource "aws_vpc" "cluster_vpc" {
 
 	tags = {
 		Name = var.vpcname
-		"kubernetes.io/cluster/${var.vpcname}" = "shared"
+		"kubernetes.io/cluster/${var.clustername}" = "shared"
 	}
 }
 
@@ -90,7 +90,7 @@ resource "aws_subnet" "public_subnet_eks" {
 	tags = {
 		Name = "public-subnet-${count.index + 1}"
 		"kubernetes.io/role/elb" = "1"
-		"kubernetes.io/cluster/${var.vpcname}" = "shared"
+		"kubernetes.io/cluster/${var.clustername}" = "shared"
 		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	}	
 }
@@ -144,7 +144,7 @@ resource "aws_subnet" "private_subnet_eks" {
 
 	tags = {
 		Name = "private-subnet-${count.index + 1}"
-		"kubernetes.io/cluster/${var.vpcname}" = "shared"
+		"kubernetes.io/cluster/${var.clustername}" = "shared"
 		"kubernetes.io/role/internal-elb" = "1"
 		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	}	
@@ -182,7 +182,7 @@ resource "aws_subnet" "rds_private_subnet" {
 
 	tags = {
 		Name = "rds-private-subnet-${count.index + 1}"
-		"kubernetes.io/cluster/${var.vpcname}" = "shared"
+		"kubernetes.io/cluster/${var.clustername}" = "shared"
 		"kubernetes.io/role/internal-elb" = "1"
 		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	}	
@@ -204,7 +204,7 @@ resource "aws_subnet" "nodegroup_private_subnet" {
 
 	tags = {
 		Name = "nodegroup-private-subnet-${count.index + 1}"
-		"kubernetes.io/cluster/${var.vpcname}" = "shared"
+		"kubernetes.io/cluster/${var.clustername}" = "shared"
 		"kubernetes.io/role/internal-elb" = "1"
 		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	}	
@@ -230,7 +230,6 @@ resource "aws_route_table_association" "nodegroup_private_route_association" {
 	subnet_id      =  aws_subnet.nodegroup_private_subnet[count.index].id
 	route_table_id =  aws_route_table.nodegroup_private_routetable[count.index].id
 }
-
 
 /* VPC Flow Logs 
 

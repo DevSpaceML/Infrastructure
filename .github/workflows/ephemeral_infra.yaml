@@ -106,6 +106,7 @@ jobs:
       TF_VAR_private_subnet_cidr_blocks: ${{ needs.configure-variables.outputs.private_subnet_cidr }}
       TF_VAR_rds_private_subnet_cidr_blocks: ${{ needs.configure-variables.outputs.rds_subnet_cidrs }}
       TF_VAR_nodegroup_pvt_subnet_cidr_blocks: ${{ needs.configure-variables.outputs.nodegroup_subnet_cidrs }}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
 
     steps:
       - name: Checkout Repo
