@@ -589,10 +589,3 @@ jobs:
         run: |
           echo "Deployment failed, rolling back release ${HELM_RELEASE_NAME}"
           helm rollback ${{ env.HELM_RELEASE_NAME }} --namespace ${{ env.HELM_NAMESPACE }} || echo "Rollback failed or no previous release to rollback to"
- 
-            
-
-        
-          
-
-        
