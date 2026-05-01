@@ -144,7 +144,7 @@ resource "aws_subnet" "private_subnet_eks" {
 
 	tags = {
 		Name = "private-subnet-${count.index + 1}"
-		"kubernetes.io/cluster/${var.vpcname}" = "owned"
+		"kubernetes.io/cluster/${var.vpcname}" = "shared"
 		"kubernetes.io/role/internal-elb" = "1"
 		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	}	
@@ -182,7 +182,7 @@ resource "aws_subnet" "rds_private_subnet" {
 
 	tags = {
 		Name = "rds-private-subnet-${count.index + 1}"
-		"kubernetes.io/cluster/${var.vpcname}" = "owned"
+		"kubernetes.io/cluster/${var.vpcname}" = "shared"
 		"kubernetes.io/role/internal-elb" = "1"
 		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	}	
@@ -192,7 +192,6 @@ locals {
   public_subnet_ids  = aws_subnet.public_subnet_eks[*].id
   private_subnet_ids = aws_subnet.private_subnet_eks[*].id
 }
-
 
 /* Nodegroup Subnet, Routetable,   */
 
@@ -205,7 +204,7 @@ resource "aws_subnet" "nodegroup_private_subnet" {
 
 	tags = {
 		Name = "nodegroup-private-subnet-${count.index + 1}"
-		"kubernetes.io/cluster/${var.vpcname}" = "owned"
+		"kubernetes.io/cluster/${var.vpcname}" = "shared"
 		"kubernetes.io/role/internal-elb" = "1"
 		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	}	
