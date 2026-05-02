@@ -467,10 +467,10 @@ jobs:
           helm upgrade --install traefik traefik/traefik \
             --namespace traefik \
             --values ./yaml/traefik/values.yaml \
-            --set "service.annotations.eks\.amazonaws\.com/role-arn=${{ env.Ctrlr_Role_Arn }}" \
+            --set "serviceAccount.annotations.eks\.amazonaws\.com/role-arn=${{ env.Ctrlr_Role_Arn }}" \
             --timeout 10m \
             --wait \
-            --debug debug || {
+            --debug || {
               echo "=== Helm failed — dumping pod logs ==="
               kubectl describe pod -n traefik -l app.kubernetes.io/name=traefik
               kubectl logs -n traefik -l app.kubernetes.io/name=traefik --previous 2>/dev/null || true
