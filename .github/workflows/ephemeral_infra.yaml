@@ -433,6 +433,7 @@ jobs:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+      Ctrlr_Role_Arn: ${{ needs.deploy-cluster.outputs.ctrlr_role_arn }}
 
     steps:  
       - name: checkout-code
@@ -466,10 +467,17 @@ jobs:
           helm upgrade --install traefik traefik/traefik \
             --namespace traefik \
             --values ./yaml/traefik/values.yaml \
+            --set "service.annotations.eks\.amazonaws\.com/role-arn=${{ env.Ctrlr_Role_Arn }}" \
             --timeout 10m \
             --wait \
-            --debug
+            --debug debug || {
+              echo "=== Helm failed — dumping pod logs ==="
+              kubectl describe pod -n traefik -l app.kubernetes.io/name=traefik
+              kubectl logs -n traefik -l app.kubernetes.io/name=traefik --previous 2>/dev/null || true
+              exit 1
+            }
           kubectl rollout status deployment/traefik -n traefik
+
       - name: Resolve NLB Hostname
         id: nlb_hostname
         run: |
