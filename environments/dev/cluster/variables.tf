@@ -32,7 +32,7 @@ variable "max_node_count" {
 variable "instancetype" {
   description = "Instance type for the nodegroup"
   type = string
-  default = "t3.small"
+  default = "t4g.medium"
 }
 
 variable "k8s_version" {
