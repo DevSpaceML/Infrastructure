@@ -1,6 +1,10 @@
 # ─────────────────────────────────────────────────────────
 # Traefik Helm chart values for Kubernetes deployment.
 # ─────────────────────────────────────────────────────────
+app:
+  name: my-app
+  port: 8080
+ingress:
 service:
   type: LoadBalancer
   annotations:
@@ -9,10 +13,10 @@ service:
     service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
 ports:
   web:
-    port: 8080
+    port: 8000
     exposedPort: 80
-    containerPort: 8080
-    targetPort: 8080
+    containerPort: 8000
+    targetPort: 8000
     expose:
       default: true
     protocol: TCP
