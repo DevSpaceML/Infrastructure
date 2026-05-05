@@ -1,0 +1,84 @@
+# Default values for gem-app.
+
+replicaCount: 2
+image:
+  repository: 586098609239.dkr.ecr.us-east-1.amazonaws.com/dev/gemapp
+  tag: "latest"
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+podAnnotations: {}
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+securityContext:
+  allowPrivilegeEscalation: true
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+ingress:
+  enabled: true
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/healthcheck-path: /health
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    #empty for evnrionment values
+    alb.ingress.kubernetes.io/certificate-arn: ""
+    alb.ingress.kubernetes.io/subnets: ""
+    alb.ingress.kubernetes.io/security-groups: ""
+  hosts:
+    - host: gemapp.devspace.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+nodeSelector: {}
+tolerations: []
+affinity: {}
+env:
+  - name: app_env
+    value: "production"
+  - name: log_level
+    value: "info"
+envFrom:
+  - configMapRef:
+      name: gem-app-config
+secrets:
+  DATABASE_URL: ""
+  API_KEY: ""

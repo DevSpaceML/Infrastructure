@@ -1,0 +1,25 @@
+image:
+  tag: 
+ingress:
+  annotations:
+    alb.ingress.kubernetes.io/certificate-arn: #"{ALB_CERTIFICATE_ARN}"
+    alb.ingress.kubernetes.io/subnets: #"{ALB_SUBNETS}"
+    alb.ingress.kubernetes.io/security-groups: #"{ALB_SECURITY_GROUPS}"
+  hosts:
+    - host: 
+      - path: /
+        pathType: Prefix
+resources:
+  limits:
+    cpu: 200m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+autoscaling:
+  enabled: false
+env:
+  - name: APP_ENV
+    value: "development"
+  - name: LOG_LEVEL
+    value: "debug"  

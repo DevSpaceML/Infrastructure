@@ -24,8 +24,8 @@ on:
 
 env:
   TF_VERSION: "1.8.5"
-  AWS_REGION: "us-east-1"
   ENVIRONMENT: ${{ github.event.client_payload.config.environment }}
+  REGION: ${{ github.event.client_payload.config.region }}
 
 permissions:
   id-token: write
@@ -56,7 +56,7 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
           role-session-name: GitHub-Actions-OIDC-Session
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ env.REGION  }}
           mask-aws-account-id: false
 
       - name: config_variables
@@ -117,7 +117,7 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
           role-session-name: GitHub-Actions-OIDC-Session
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ env.TF_VAR_region}}
           mask-aws-account-id: false
 
       - name: Setup Terraform
@@ -219,7 +219,7 @@ jobs:
         with:
               role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
               role-session-name: GitHub-Actions-OIDC-Session
-              aws-region: ${{ env.AWS_REGION }}
+              aws-region: ${{ env.region }}
               mask-aws-account-id: false
             
       - name: Prepare Terraform
@@ -319,7 +319,7 @@ jobs:
         with:
               role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
               role-session-name: GitHub-Actions-OIDC-Session
-              aws-region: ${{ env.AWS_REGION }}
+              aws-region: ${{ env.region }}
               mask-aws-account-id: false
             
       - name: Prepare Terraform
@@ -390,7 +390,7 @@ jobs:
         with:
               role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
               role-session-name: GitHub-Actions-OIDC-Session
-              aws-region: ${{ env.AWS_REGION }}
+              aws-region: ${{ env.TF_VAR_region }}
               mask-aws-account-id: false
             
       - name: Prepare Terraform
@@ -444,7 +444,7 @@ jobs:
         with:
               role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
               role-session-name: GitHub-Actions-OIDC-Session
-              aws-region: ${{ env.AWS_REGION }}
+              aws-region: ${{ env.TF_VAR_region }}
               mask-aws-account-id: false
             
       - name: Prepare Terraform
@@ -466,7 +466,7 @@ jobs:
           kubectl create namespace traefik --dry-run=client -o yaml | kubectl apply -f -
           helm upgrade --install traefik traefik/traefik \
             --namespace traefik \
-            --values ./yaml/traefik/values.yaml \
+            --values ./helm-charts/dev/gem-app/ephmrl/values.yaml \
             --set "serviceAccountAnnotations.eks\.amazonaws\.com/role-arn=${{ env.Ctrlr_Role_Arn }}" \
             --timeout 10m \
             --wait \
@@ -492,7 +492,6 @@ jobs:
             
             if [ -n "$HOSTNAME" ]; then
               echo "Found NLB hostname: $HOSTNAME"
-              echo "::set-output name=nlb_hostname::$HOSTNAME"
               NLB_IP=$(dig +short "$HOSTNAME" | grep -E '^[0-9]+\.' | head -1)
               DASHED=$(echo "$NLB_IP" | tr '.' '-')
               echo "base=${DASHED}.traefik.me" >> $GITHUB_OUTPUT
@@ -521,7 +520,7 @@ jobs:
       TF_VAR_image_repository: 586098609239.dkr.ecr.us-east-1.amazonaws.com/gem/gemapp
       INGRESS_HOST: ${{ needs.install-traefik.outputs.base }} 
       HELM_RELEASE_NAME: ${{ needs.configure-variables.outputs.projectname }}
-      HELM_CHART_PATH: "./helm-charts/gem-app"
+      HELM_CHART_PATH: "./helm-charts/gem-app/dev/ephmrl"
       HELM_NAMESPACE: "${{ needs.configure-variables.outputs.projectname }}-namespace"
       APP_VERSION: "dev-latest"
 
@@ -534,7 +533,7 @@ jobs:
         with:
               role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
               role-session-name: GitHub-Actions-OIDC-Session
-              aws-region: ${{ env.AWS_REGION }}
+              aws-region: ${{ env.TF_VAR_region }}
               mask-aws-account-id: false
       
       - name: Update kubeconfig
@@ -547,7 +546,7 @@ jobs:
         uses: azure/setup-helm@v1
         with:
           version: v3.12.0
-      
+
       - name: Login to ECR
         id: ecr-login
         run: |
@@ -563,14 +562,13 @@ jobs:
         run : |
           helm upgrade --install ${{ env.HELM_RELEASE_NAME }} \
             --namespace ${{ env.HELM_NAMESPACE }} --create-namespace \
+            --values ${HELM_CHART_PATH}/values.yaml \
             --set image.repository=${{ env.TF_VAR_image_repository }} \
             --set ingress.host=${{ env.INGRESS_HOST }} \
-            --set ingress.app.name=${{ env.HELM_RELEASE_NAME }} \
+            --set app.name=${{ env.HELM_RELEASE_NAME }} \
             --set ingress.enabled=true \
             --set image.tag=${{ env.APP_VERSION }} \
             --set environment=${ENVIRONMENT} \
-            --values ${HELM_CHART_PATH}/values.yaml \
-            --values ${HELM_CHART_PATH}/values-${ENVIRONMENT}.yaml \
             --timeout 10m \
             --wait \
             --atomic

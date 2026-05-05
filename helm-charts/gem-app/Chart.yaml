@@ -1,0 +1,15 @@
+apiVersion: v2
+name: gem-app
+description: A Helm chart for EKS deployment of the gem-app application
+type: application
+version: 0.1.0
+appVersion: 0.1.0
+keywords:
+  - gem-app
+  - eks
+  - helm
+  - kubernetes
+  - deployment
+maintainers:
+  - name: DevSpace
+    email: devspaceml@gmail.com
