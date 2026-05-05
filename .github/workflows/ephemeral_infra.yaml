@@ -34,6 +34,9 @@ permissions:
 jobs:
   configure-variables:
     runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: ${{ github.event.client_payload.config.environment }}
+      REGION: ${{ github.event.client_payload.config.region }}
     outputs:
       environment: ${{ steps.parse_vars.outputs.environment }}
       clustername: ${{ steps.parse_vars.outputs.clustername }}
@@ -219,7 +222,7 @@ jobs:
         with:
               role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
               role-session-name: GitHub-Actions-OIDC-Session
-              aws-region: ${{ env.region }}
+              aws-region: ${{ env.TF_VAR_region }}
               mask-aws-account-id: false
             
       - name: Prepare Terraform
@@ -319,7 +322,7 @@ jobs:
         with:
               role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
               role-session-name: GitHub-Actions-OIDC-Session
-              aws-region: ${{ env.region }}
+              aws-region: ${{ env.TF_VAR_region }}
               mask-aws-account-id: false
             
       - name: Prepare Terraform
