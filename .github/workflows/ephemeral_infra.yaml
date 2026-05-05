@@ -563,22 +563,22 @@ jobs:
 
       - name: Deploy App with Helm
         run : |
-          helm upgrade --install ${{ env.HELM_RELEASE_NAME }} \
+          helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
             --namespace ${{ env.HELM_NAMESPACE }} --create-namespace \
-            --values ${HELM_CHART_PATH}/values.yaml \
+            --values ${{ env.HELM_CHART_PATH }}/values.yaml \
             --set image.repository=${{ env.TF_VAR_image_repository }} \
             --set ingress.host=${{ env.INGRESS_HOST }} \
             --set app.name=${{ env.HELM_RELEASE_NAME }} \
             --set ingress.enabled=true \
             --set image.tag=${{ env.APP_VERSION }} \
-            --set environment=${ENVIRONMENT} \
+            --set environment=${{ env.ENVIRONMENT }} \
             --timeout 10m \
             --wait \
             --atomic
       
       - name: Verify App Deployment
         run: |
-          echo "Verifying app deployment in namespace ${HELM_NAMESPACE}"
+          echo "Verifying app deployment in namespace ${{ env.HELM_NAMESPACE }}"
           kubectl rollout status deployment/${{ env.HELM_RELEASE_NAME }} -n ${{ env.HELM_NAMESPACE }} --timeout=5m
           kubectl get all -n ${{ env.HELM_NAMESPACE }} --timeout=120s
       
