@@ -542,7 +542,7 @@ jobs:
       
       - name: Update kubeconfig
         run: |
-          echo "Updating kubeconfig for cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          echo "Updating kubeconfig for cluster ${{ env.TF_VAR_clustername }} in environment ${{ env.ENVIRONMENT }}"
           aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
           kubectl config view
       
@@ -554,7 +554,7 @@ jobs:
       - name: Login to ECR
         id: ecr-login
         run: |
-          echo "Logging in to ECR for region ${TF_VAR_region}"
+          echo "Logging in to ECR for region ${{ env.TF_VAR_region }}"
           aws ecr get-login-password --region ${{ env.TF_VAR_region }} | helm registry login --username AWS --password-stdin 586098609239.dkr.ecr.${{ env.TF_VAR_region }}.amazonaws.com    
       
       - name: Create Namespace
