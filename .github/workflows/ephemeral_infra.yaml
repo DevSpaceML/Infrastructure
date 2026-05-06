@@ -50,6 +50,7 @@ jobs:
       rds_subnet_cidrs: ${{ steps.parse_vars.outputs.rds_subnet_cidrs }}
       nodegroup_subnet_cidrs: ${{ steps.parse_vars.outputs.nodegroup_subnet_cidrs }}
       projectname: ${{ steps.parse_vars.outputs.projectname }}
+      appversion: ${{ steps.parse_vars.outputs.app_version }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -524,8 +525,8 @@ jobs:
       INGRESS_HOST: ${{ needs.install-traefik.outputs.base }} 
       HELM_RELEASE_NAME: ${{ needs.configure-variables.outputs.projectname }}
       HELM_CHART_PATH: "./helm-charts/gem-app/dev/ephmrl"
-      HELM_NAMESPACE: "${{ needs.configure-variables.outputs.projectname }}-namespace"
-      APP_VERSION: "dev-latest"
+      HELM_NAMESPACE: "ns-${{ needs.configure-variables.outputs.projectname }}"
+      APP_VERSION: ${{ needs.configure-variables.outputs.appversion }}
 
     steps:  
       - name: Checkout Helm Repository
