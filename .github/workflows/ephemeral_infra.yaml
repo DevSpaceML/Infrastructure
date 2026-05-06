@@ -497,8 +497,10 @@ jobs:
             if [ -n "$HOSTNAME" ]; then
               echo "Found NLB hostname: $HOSTNAME"
               NLB_IP=$(dig +short "$HOSTNAME" | grep -E '^[0-9]+\.' | head -1)
+              echo "Resolved NLB IP: $NLB_IP"
               DASHED=$(echo "$NLB_IP" | tr '.' '-')
               echo "base=${DASHED}.traefik.me" >> $GITHUB_OUTPUT
+              echo "base url: http://${DASHED}.traefik.me"
               exit 0
             fi
             
@@ -592,11 +594,11 @@ jobs:
       
       - name: Show deployed resources
         run: |
-          echo "Showing all resources in namespace ${HELM_NAMESPACE}"
+          echo "Showing all resources in namespace ${{ env.HELM_NAMESPACE }}"
           kubectl get all -n ${{ env.HELM_NAMESPACE }} -o wide
       
       - name: Rollback on Failure
         if: failure()
         run: |
-          echo "Deployment failed, rolling back release ${HELM_RELEASE_NAME}"
+          echo "Deployment failed, rolling back release ${{ env.HELM_RELEASE_NAME }} in namespace ${{ env.HELM_NAMESPACE }}"
           helm rollback ${{ env.HELM_RELEASE_NAME }} --namespace ${{ env.HELM_NAMESPACE }} || echo "Rollback failed or no previous release to rollback to"
