@@ -2,8 +2,8 @@
 
 replicaCount: 2
 image:
-  repository: 586098609239.dkr.ecr.us-east-1.amazonaws.com/dev/gemapp
-  tag: "latest"
+  repository: ""
+  tag: ""
   pullPolicy: IfNotPresent
 imagePullSecrets: []
 nameOverride: ""
@@ -41,7 +41,7 @@ ingress:
     alb.ingress.kubernetes.io/subnets: ""
     alb.ingress.kubernetes.io/security-groups: ""
   hosts:
-    - host: gemapp.devspace.com
+    - host: ""
       paths:
         - path: /
           pathType: Prefix
@@ -72,13 +72,13 @@ nodeSelector: {}
 tolerations: []
 affinity: {}
 env:
-  - name: app_env
-    value: "production"
+  - name: ""
+    value: "dev"
   - name: log_level
     value: "info"
 envFrom:
   - configMapRef:
-      name: gem-app-config
+      name: ""
 secrets:
   DATABASE_URL: ""
   API_KEY: ""

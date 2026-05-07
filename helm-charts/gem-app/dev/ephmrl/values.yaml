@@ -1,6 +1,18 @@
 # ─────────────────────────────────────────────────────────
 # Traefik Helm chart values for Kubernetes deployment.
 # ─────────────────────────────────────────────────────────
+replicaCount: 2
+image:
+  repository: ""
+  tag: ""
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount:
+  create: false
+  annotations: {}
+  name: ""
 service:
   type: LoadBalancer
   annotations:

@@ -8,7 +8,7 @@ variable "clustername" {
 variable "k8s_version" {
 	description = "Version to be used with the cluster"
 	type = string
-	default = "1.29"
+	default = "1.35"
 }
 
 variable "aws_region" {
