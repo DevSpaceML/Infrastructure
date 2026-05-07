@@ -118,7 +118,6 @@ module "dev_nodes" {
   node_group_mgr_arn           = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
   nodegroupname                = "${module.dev_cluster.cluster_name}-nodegroup"
   clustername                  = module.dev_cluster.cluster_name
-  k8s_version                  = var.k8s_version
   instancetype                 = var.instancetype
   nodegroup_pvt_subnet_id_list = data.terraform_remote_state.dev_network.outputs.nodegroup_subnet_id_list
 }

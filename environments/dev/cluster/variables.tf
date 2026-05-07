@@ -35,12 +35,6 @@ variable "instancetype" {
   default = "t4g.medium"
 }
 
-variable "k8s_version" {
-  description = "Kubernetes version for the nodegroup"
-  type = string
-  default = "1.29"
-}
-
 variable "environment" {
   description = "Deployment environment"
   type = string
