@@ -1,11 +1,11 @@
 apiVersion: v2
-name: gem-app
-description: A Helm chart for EKS deployment of the gem-app application
+name: ephmrl-k8s
+description: A reusable Helm chart for ephmemeral EKS deployments with Traefik ingress and cert-manager TLS
 type: application
 version: 0.1.0
 appVersion: 0.1.0
 keywords:
-  - gem-app
+  - ephmrl
   - eks
   - helm
   - kubernetes
