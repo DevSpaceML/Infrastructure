@@ -496,11 +496,8 @@ jobs:
             
             if [ -n "$HOSTNAME" ]; then
               echo "Found NLB hostname: $HOSTNAME"
-              NLB_IP=$(dig +short "$HOSTNAME" | grep -E '^[0-9]+\.' | head -1)
-              echo "Resolved NLB IP: $NLB_IP"
-              DASHED=$(echo "$NLB_IP" | tr '.' '-')
-              echo "base=${DASHED}.traefik.me" >> $GITHUB_OUTPUT
-              echo "base url: http://${DASHED}.traefik.me"
+              echo "base=${HOSTNAME}" >> $GITHUB_OUTPUT
+              echo "base url: $base"
               exit 0
             fi
             
@@ -588,8 +585,8 @@ jobs:
       - name: Verify Ingress and ALB
         run: |
           echo "Verifying Ingress and ALB for the deployed app"
-          kubectl get ingress -n ${{ env.HELM_NAMESPACE }} -o wide
-          kubectl describe ingress -n ${{ env.HELM_NAMESPACE }}
+          kubectl get ingressroute -n ${{ env.HELM_NAMESPACE }} -o wide
+          kubectl describe ingressroute -n ${{ env.HELM_NAMESPACE }}
           echo "app url: http://${{ env.INGRESS_HOST }}"
       
       - name: Show deployed resources
