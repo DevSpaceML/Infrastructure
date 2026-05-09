@@ -27,7 +27,7 @@ ports:
 providers:
   kubernetesIngress:
     enabled: true
-    allowCrossNamespace: true
+    allowCrossNamespaces: true
   kubernetesCRD:
     enabled: true
 additionalArguments:
