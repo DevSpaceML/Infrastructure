@@ -555,11 +555,11 @@ jobs:
         run: |
           echo "Logging in to ECR for region ${{ env.TF_VAR_region }}"
           aws ecr get-login-password --region ${{ env.TF_VAR_region }} | helm registry login --username AWS --password-stdin 586098609239.dkr.ecr.${{ env.TF_VAR_region }}.amazonaws.com    
-      
+
       - name: Create Namespace
         run: |
-          echo "Creating namespace ${HELM_NAMESPACE} for app deployment"
-          kubectl create namespace ${HELM_NAMESPACE} || echo "Namespace ${HELM_NAMESPACE} already exists"    
+          echo "Creating namespace ${{ env.HELM_NAMESPACE }} for app deployment"
+          kubectl create namespace ${{ env.HELM_NAMESPACE }} || echo "Namespace ${{ env.HELM_NAMESPACE }} already exists"    
 
       - name: Deploy App with Helm
         run : |
