@@ -496,11 +496,19 @@ jobs:
             
             if [ -n "$HOSTNAME" ]; then
               echo "Found NLB hostname: $HOSTNAME"
-              echo "base=${HOSTNAME}" >> $GITHUB_OUTPUT
-              echo "base url: $base"
+              # Wait for stable IP
+                for i in {1..10}; do
+                  NLB_IP=$(dig +short "$HOSTNAME" | grep -E '^[0-9]+\.' | head -1)
+                  [ -n "$NLB_IP" ] && break
+                  sleep 15
+                done
+              DASHED-IP = $(echo "$NLB_IP" | tr '.' '-')
+              BASE=$("{DASHED-IP}.traefik.me")
+              echo "base=${BASE}" >> $GITHUB_OUTPUT
+              echo "Resolved base URL: $base"
               exit 0
             fi
-            
+
             echo "NLB hostname not found yet. Waiting... ($ELAPSED/$TIMEOUT seconds elapsed)"
             sleep $INTERVAL
             ELAPSED=$((ELAPSED + INTERVAL))
