@@ -31,7 +31,6 @@ providers:
     enabled: true
 additionalArguments:
   - "--providers.kubernetesingress.ingressendpoint.publishedservice=traefik/traefik"
-  - "--providers.kubernetescrd.allowAllNamespaces=true"
 logs:
   general:
     level: INFO
