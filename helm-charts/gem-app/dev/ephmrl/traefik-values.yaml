@@ -29,9 +29,9 @@ providers:
     enabled: true
   kubernetesCRD:
     enabled: true
-    allowCrossNamespaces: true
 additionalArguments:
   - "--providers.kubernetesingress.ingressendpoint.publishedservice=traefik/traefik"
+  - "--providers.kubernetescrd.allowCrossNamespaces=true"
 logs:
   general:
     level: INFO
