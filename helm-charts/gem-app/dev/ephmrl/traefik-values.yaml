@@ -27,9 +27,9 @@ ports:
 providers:
   kubernetesIngress:
     enabled: true
-    allowCrossNamespaces: true
   kubernetesCRD:
     enabled: true
+    allowCrossNamespaces: true
 additionalArguments:
   - "--providers.kubernetesingress.ingressendpoint.publishedservice=traefik/traefik"
 logs:
