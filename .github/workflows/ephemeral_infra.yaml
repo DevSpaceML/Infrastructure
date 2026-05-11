@@ -503,8 +503,8 @@ jobs:
                   [ -n "$NLB_IP" ] && break
                   sleep 15
                 done
-              DASHED-IP = $(echo "$NLB_IP" | tr '.' '-')
-              BASE=$("{DASHED-IP}.traefik.me")
+              DASHED-IP=$(echo "$NLB_IP" | tr '.' '-')
+              BASE="${DASHED-IP}.traefik.me"
               echo "base=${BASE}" >> $GITHUB_OUTPUT
               echo "Resolved base URL: $base"
               exit 0
