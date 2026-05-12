@@ -584,7 +584,12 @@ jobs:
             --set environment=${{ env.ENVIRONMENT }} \
             --timeout 10m \
             --wait \
-            --atomic
+            --debug || {
+              echo "=== Helm deployment failed — dumping pod logs ==="
+              kubectl describe pods -n ${{ env.HELM_NAMESPACE }} -l app.kubernetes.io/name=${{ env.HELM_RELEASE_NAME }}
+              kubectl logs -n ${{ env.HELM_NAMESPACE }} -l app.kubernetes.io/name=${{ env.HELM_RELEASE_NAME }} --previous 2>/dev/null || true
+              exit 1
+            }
       
       - name: Verify App Deployment
         run: |
