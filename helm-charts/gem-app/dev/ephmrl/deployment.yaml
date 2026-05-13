@@ -17,4 +17,17 @@ spec:
       - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
         name: {{ .Release.Name }}
         ports: 
-        - containerPort: 8080
+        - containerPort: {{ .Values.app.port | int }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-service
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    app: {{ .Release.Name }}
+  ports:  
+    - protocol : TCP
+      port : {{ .Values.app.port | int }}
+      targetPort: {{ .Values.app.port | int }}
