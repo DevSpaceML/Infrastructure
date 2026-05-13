@@ -28,6 +28,6 @@ spec:
   selector:
     app: {{ .Release.Name }}
   ports:  
-    - protocol : TCP
+    - protocol: TCP
       port: {{ .Values.app.port | int }}
       targetPort: {{ .Values.app.port | int }}
