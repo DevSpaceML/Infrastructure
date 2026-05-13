@@ -587,15 +587,14 @@ jobs:
             --set image.repository=${{ env.TF_VAR_image_repository }} \
             --set ingress.host=${{ env.INGRESS_HOST }} \
             --set app.name=${{ env.HELM_RELEASE_NAME }} \
-            --set ingress.enabled=true \
             --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
             --set environment=${{ env.ENVIRONMENT }} \
             --timeout 10m \
             --wait \
             --debug || {
               echo "=== Helm deployment failed — dumping pod logs ==="
-              kubectl describe pods -n ${{ env.HELM_NAMESPACE }} -l app.kubernetes.io/name=${{ env.HELM_RELEASE_NAME }}
-              kubectl logs -n ${{ env.HELM_NAMESPACE }} -l app.kubernetes.io/name=${{ env.HELM_RELEASE_NAME }} --previous 2>/dev/null || true
+              kubectl describe pods -n ${{ env.HELM_NAMESPACE }} -l app=${{ env.HELM_RELEASE_NAME }}
+              kubectl logs -n ${{ env.HELM_NAMESPACE }} -l app=${{ env.HELM_RELEASE_NAME }} --previous 2>/dev/null || true
               exit 1
             }
 
