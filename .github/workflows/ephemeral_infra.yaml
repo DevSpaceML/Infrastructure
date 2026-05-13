@@ -471,7 +471,7 @@ jobs:
           helm upgrade --install traefik traefik/traefik \
             --namespace traefik \
             --version 32.1.0 \
-            --values ./helm-charts/gem-app/dev/ephmrl/traefik-values.yaml \
+            --values ./helm-charts/gem-app/dev/ephmrl/templates/traefik-values.yaml \
             --set "serviceAccountAnnotations.eks\.amazonaws\.com/role-arn=${{ env.Ctrlr_Role_Arn }}" \
             --timeout 10m \
             --wait \
@@ -583,7 +583,7 @@ jobs:
         run : |
           helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
             --namespace ${{ env.HELM_NAMESPACE }} --create-namespace \
-            --values ${{ env.HELM_CHART_PATH }}/values.yaml \
+            --values ${{ env.HELM_CHART_PATH }}/templates/values.yaml \
             --set image.repository=${{ env.TF_VAR_image_repository }} \
             --set ingress.host=${{ env.INGRESS_HOST }} \
             --set app.name=${{ env.HELM_RELEASE_NAME }} \
