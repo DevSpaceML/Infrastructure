@@ -1,7 +1,7 @@
 replicaCount: 2
 app:
   name: ""
-  port: 8000
+  port: 8080
 image:
   repository: ""
   tag: ""
