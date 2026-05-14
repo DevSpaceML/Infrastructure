@@ -456,7 +456,10 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
-
+      
+      - name: Install dns tools 
+        run: sudo apt-get install -y dnsutils
+    
       - name: Update kubeconfig
         run: |
           echo "Updating kubeconfig for cluster ${{ env.TF_VAR_clustername }} in environment ${{ env.ENVIRONMENT }}"
@@ -489,26 +492,28 @@ jobs:
           set -euo pipefail
 
           TIMEOUT=300
-          INTERVAL=15
-          ELAPSED=0
+          INTERVAL=30
+         
 
-          echo "Waiting for Traefik NLB hostname (timeout: ${TIMEOUT}s)..."
-
+          echo "Waiting for Traefik NLB hostname (timeout: ${TIMEOUT}s)..."   
           DEADLINE=$(( $(date +%s) + TIMEOUT ))
           while (( $(date +%s) < DEADLINE )); do
-            HOSTNAME=$(kubectl get svc traefik -n traefik \
-              -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null) \
-              && [ -n "$HOSTNAME" ] && break
-            echo "  hostname not yet assigned, retrying in ${INTERVAL}s..."
+            NLB_HOSTNAME="" 
+            NLB_HOSTNAME=$(kubectl get svc traefik -n traefik \
+              -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+            && [[ -n "$NLB_HOSTNAME" ]] && break
+            echo "**>>> hostname not yet assigned, retrying in ${INTERVAL}s..."
             sleep "$INTERVAL"
           done
 
-          [[ -n "${HOSTNAME:-}" ]] || { echo "ERROR: NLB hostname not assigned after ${TIMEOUT}s."; exit 1; }
-          echo "Found hostname: $HOSTNAME"
+          [[ -n "$NLB_HOSTNAME" ]] || { echo "ERROR: NLB hostname not assigned after ${TIMEOUT}s."; exit 1; }
+          echo "Found hostname: $NLB_HOSTNAME"
 
-          echo "Waiting for DNS to resolve $HOSTNAME..."
-          while ($ELAPSED -lt $TIMEOUT); do
-            NLB_IP=$(dig +short "$HOSTNAME" | grep -m1 -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
+          echo "Waiting for DNS to resolve $NLB_HOSTNAME..."
+          ELAPSED=0
+          NLB_IP=""
+          while (($ELAPSED -lt $TIMEOUT)); do
+            NLB_IP=$(dig +short "$NLB_HOSTNAME" | grep -m1 -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' || true)
             if [[ -n "$NLB_IP" ]]; then
               echo "Resolved IP: $NLB_IP"
               break
@@ -518,7 +523,7 @@ jobs:
             ELAPSED=$((ELAPSED + INTERVAL))
           done
 
-          [[ -n "${NLB_IP:-}" ]] || { echo "ERROR: Failed to resolve stable IP for $HOSTNAME."; exit 1; }
+          [[ -n "${NLB_IP:-}" ]] || { echo "ERROR: Failed to resolve stable IP for $NLB_HOSTNAME."; exit 1; }
           echo "Resolved IP: $NLB_IP"
 
           BASE="$(echo "$NLB_IP" | tr '.' '-').traefik.me"
