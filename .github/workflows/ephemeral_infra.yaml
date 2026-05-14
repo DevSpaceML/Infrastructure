@@ -497,11 +497,16 @@ jobs:
 
           echo "Waiting for Traefik NLB hostname (timeout: ${TIMEOUT}s)..."   
           DEADLINE=$(( $(date +%s) + TIMEOUT ))
+          NLB_HOSTNAME="" 
           while (( $(date +%s) < DEADLINE )); do
-            NLB_HOSTNAME="" 
             NLB_HOSTNAME=$(kubectl get svc traefik -n traefik \
               -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
-            && [[ -n "$NLB_HOSTNAME" ]] && break
+            
+            if [[ -n "$NLB_HOSTNAME" ]]; then
+              echo "Found NLB hostname: $NLB_HOSTNAME"
+              break
+            fi
+            
             echo "**>>> hostname not yet assigned, retrying in ${INTERVAL}s..."
             sleep "$INTERVAL"
           done
