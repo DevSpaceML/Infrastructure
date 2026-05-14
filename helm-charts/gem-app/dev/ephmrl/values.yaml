@@ -2,7 +2,7 @@ replicaCount: 2
 app:
   port: 8080
 image:
-  repository: ""
-  tag: ""
+  repository: ~
+  tag: ~
 ingress:
   host: ""
