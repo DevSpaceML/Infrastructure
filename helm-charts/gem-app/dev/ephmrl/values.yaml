@@ -1,8 +1,16 @@
 replicaCount: 2
+
 app:
   port: 8080
+
 image:
   repository: ~
   tag: ~
-ingress:
-  host: ""
+
+ingressRoute:
+  enabled: true
+  entryPoints:
+    - websecure
+  host: ~
+  tls: {}
+  middlewares: []
