@@ -486,40 +486,38 @@ jobs:
       - name: Resolve NLB Hostname
         id: nlb_hostname
         run: |
-          echo "Resolving NLB hostname for Traefik service"
-          HOSTNAME=""
-          TIMEOUT=300  # 5 minutes in seconds
-          INTERVAL=15  # Check every 15 seconds
-          ELAPSED=0
+          set -euo pipefail
 
-          while [ -z "$HOSTNAME" ] && [ $ELAPSED -lt $TIMEOUT ]; do
-            HOSTNAME=$(kubectl get svc traefik -n traefik -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || echo "")
-            
-            if [ -n "$HOSTNAME" ]; then
-              echo "Found NLB hostname: $HOSTNAME"
-              # Wait for stable IP
-                for i in {1..10}; do
-                  NLB_IP=$(dig +short "$HOSTNAME" | grep -E '^[0-9]+\.' | head -1)
-                  [ -n "$NLB_IP" ] && break
-                  sleep 15
-                done
-              echo "Resolved NLB IP: $NLB_IP"  
-              DASHED_IP=$(echo "$NLB_IP" | tr '.' '-')
-              BASE="${DASHED_IP}.traefik.me"
-              echo "base=${BASE}" >> $GITHUB_OUTPUT
-              cat $GITHUB_OUTPUT
-              exit 0
-            fi
+          TIMEOUT=300
+          INTERVAL=15
 
-            echo "NLB hostname not found yet. Waiting... ($ELAPSED/$TIMEOUT seconds elapsed)"
-            sleep $INTERVAL
-            ELAPSED=$((ELAPSED + INTERVAL))
+          echo "Waiting for Traefik NLB hostname (timeout: ${TIMEOUT}s)..."
+
+          DEADLINE=$(( $(date +%s) + TIMEOUT ))
+          while (( $(date +%s) < DEADLINE )); do
+            HOSTNAME=$(kubectl get svc traefik -n traefik \
+              -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null) \
+              && [ -n "$HOSTNAME" ] && break
+            echo "  hostname not yet assigned, retrying in ${INTERVAL}s..."
+            sleep "$INTERVAL"
           done
 
-          if [ -z "$HOSTNAME" ]; then
-            echo "ERROR: Failed to resolve NLB hostname for Traefik service within 5 minutes."
-            exit 1
-          fi    
+          [[ -n "${HOSTNAME:-}" ]] || { echo "ERROR: NLB hostname not assigned after ${TIMEOUT}s."; exit 1; }
+          echo "Found hostname: $HOSTNAME"
+
+          echo "Waiting for DNS to resolve $HOSTNAME..."
+          for (( i=1; i<=10; i++ )); do
+            NLB_IP=$(dig +short "$HOSTNAME" | grep -m1 -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+')
+            [[ -n "$NLB_IP" ]] && break
+            echo "  attempt $i/10 failed, retrying in ${INTERVAL}s..."
+            sleep "$INTERVAL"
+          done
+
+          [[ -n "${NLB_IP:-}" ]] || { echo "ERROR: Failed to resolve stable IP for $HOSTNAME."; exit 1; }
+          echo "Resolved IP: $NLB_IP"
+
+          BASE="$(echo "$NLB_IP" | tr '.' '-').traefik.me"
+          echo "base=${BASE}" >> "$GITHUB_OUTPUT"
 
   # DEPLOY APPLICATION WITH HELM
   deploy-app:

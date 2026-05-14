@@ -16,7 +16,7 @@ spec:
       containers:
       - image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
         name: {{ .Release.Name }}
-        ports: 
+        ports:
         - containerPort: {{ .Values.app.port | int }}
 ---
 apiVersion: v1
@@ -27,7 +27,7 @@ metadata:
 spec:
   selector:
     app: {{ .Release.Name }}
-  ports:  
+  ports:
     - protocol: TCP
       port: {{ .Values.app.port | int }}
       targetPort: {{ .Values.app.port | int }}
