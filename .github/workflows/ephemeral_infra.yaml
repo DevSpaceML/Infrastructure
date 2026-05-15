@@ -517,7 +517,7 @@ jobs:
           echo "Waiting for DNS to resolve $NLB_HOSTNAME..."
           ELAPSED=0
           NLB_IP=""
-          while (( ELAPSED < TIMEOUT)); do
+          while (( ELAPSED < TIMEOUT )); do
             NLB_IP=$(dig +short "$NLB_HOSTNAME" | grep -m1 -E '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' || true)
             if [[ -n "$NLB_IP" ]]; then
               echo "Resolved IP: $NLB_IP"
