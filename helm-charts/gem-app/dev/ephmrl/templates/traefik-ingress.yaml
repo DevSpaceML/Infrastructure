@@ -1,3 +1,4 @@
+{{ - if .Values.ingressRoute.enabled }}
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -7,12 +8,13 @@ metadata:
     cert-manager.io/cluster-issuer: "letsencrypt-dev"
 spec:
   entryPoints:
-    - websecure
+    {{- toYaml .Values.ingressRoute.entryPoints | nindent 4 }}
   routes:
-    - match: "Host(`{{ .Values.ingress.host }}`)"
+    - match: "Host(`{{ .Values.ingressRoute.host }}`)"
       kind: Rule
       services:
         - name: {{ .Release.Name }}-service
           port: {{ .Values.app.port }}
   tls:
     secretName: {{ .Release.Name }}-tls
+{{ - end }}

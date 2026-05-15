@@ -598,7 +598,7 @@ jobs:
             --namespace ${{ env.HELM_NAMESPACE }} --create-namespace \
             --values ${{ env.HELM_CHART_PATH }}/values.yaml \
             --set image.repository=${{ env.TF_VAR_image_repository }} \
-            --set ingress.host=${{ env.INGRESS_HOST }} \
+            --set ingressRoute.host=${{ env.INGRESS_HOST }} \
             --set app.name=${{ env.HELM_RELEASE_NAME }} \
             --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
             --set environment=${{ env.ENVIRONMENT }} \
