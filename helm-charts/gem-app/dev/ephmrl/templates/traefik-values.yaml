@@ -1,20 +1,39 @@
-{{- if .Values.ingressRoute.enabled }}
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
-metadata:
-  name: {{ .Release.Name }}-ingress
-  namespace: {{ .Release.Namespace }}
+# ─────────────────────────────────────────────────────────
+# Traefik Helm chart values for Kubernetes deployment.
+# ─────────────────────────────────────────────────────────
+service:
+  type: LoadBalancer
   annotations:
-    cert-manager.io/cluster-issuer: "letsencrypt-dev"
-spec:
-  entryPoints:
-    {{- toYaml .Values.ingressRoute.entryPoints | nindent 4 }}
-  routes:
-    - match: "Host(`{{ .Values.ingressRoute.host }}`)"
-      kind: Rule
-      services:
-        - name: {{ .Release.Name }}-service
-          port: {{ .Values.app.port }}
-  tls:
-    secretName: {{ .Release.Name }}-tls
-{{- end }}
+    service.beta.kubernetes.io/aws-load-balancer-type: "external"
+    service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+    service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
+ports:
+  web:
+    port: 8000
+    exposedPort: 80
+    containerPort: 8000
+    targetPort: 8000
+    expose:
+      default: true
+    protocol: TCP
+  websecure:
+    port: 8443
+    exposedPort: 443
+    containerPort: 8443
+    targetPort: 8443
+    expose:
+      default: true
+    protocol: TCP
+providers:
+  kubernetesIngress:
+    enabled: true
+  kubernetesCRD:
+    enabled: true
+additionalArguments:
+  - "--providers.kubernetesingress.ingressendpoint.publishedservice=traefik/traefik"
+logs:
+  general:
+    level: INFO
+  access:
+    enabled: true
+    format: common
