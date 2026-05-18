@@ -304,7 +304,7 @@ jobs:
           echo "Final status: $STATUS"
           exit 1
 
-  # CLUSTER AUTHENTICATION FOR USERS/ROLES
+  #CLUSTER AUTHENTICATION FOR USERS/ROLES
   configure-auth:
     name: configure-auth
     runs-on: ubuntu-latest
@@ -371,8 +371,8 @@ jobs:
           echo "Verifying kubectl access to EKS Cluster"
           aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
           kubectl get nodes
-          
-  # INSTALL LBC CONTROLLER WITH HELM
+
+  #INSTALL LBC CONTROLLER WITH HELM
   install-lbc:
     name: install-lbc
     runs-on: ubuntu-latest
@@ -424,13 +424,67 @@ jobs:
             --timeout 10m \
             --wait \
             --debug
-          kubectl rollout status deployment/aws-load-balancer-controller -n kube-system    
- 
+          kubectl rollout status deployment/aws-load-balancer-controller -n kube-system
+
+  #INSTALL CRDs for Traefik Ingress Controller
+  install-crds:
+    name: install-crds
+    runs-on: ubuntil-latest
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region : ${{ needs.configure-variables.outputs.region }}
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+              role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.TF_VAR_region }}
+              mask-aws-account-id: false
+            
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      
+      - name: Update kubeconfig
+        run: |
+          echo "Updating kubeconfig for cluster ${{ env.TF_VAR_clustername}} in environment ${{ env.ENVIRONMENT }}"
+          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
+          kubectl config view    
+
+      - name: Install cert-manager CRDs
+        run: |
+          helm install cert-manager jetstack/cert-manager \
+            --namespace cert-manager \
+            --create-namespace \
+            --version v1.12.2 \
+            --set installCRDs=true \
+            --wait \
+            --timeout 10m
+
+      - name: Wait for cert-manager CRDs
+        run: |
+          kubectl wait --for condition=established \
+          crd/clusterissuers.cert-manager.io \
+          crd/certificates.cert-manager.io \
+          --timeout=60s 
+
+      - name: Install Traefik CRDs
+        run : |
+          kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v2.10.3/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml
+
   # DEPLOY TRAEFIK INGRESS CONTROLLER WITH HELM        
   install-traefik:
     name: install-traefik
     runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc]
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc, install-crds]
     outputs:
       base: ${{ steps.nlb_hostname.outputs.base }}
     env:
