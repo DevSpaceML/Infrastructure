@@ -727,9 +727,23 @@ jobs:
       - name: Verify App Deployment
         run: |
           echo "Verifying app deployment in namespace ${{ env.HELM_NAMESPACE }}"
-          kubectl rollout status deployment/${{ env.HELM_RELEASE_NAME }} -n ${{ env.HELM_NAMESPACE }} --timeout=5m
-          kubectl get all -n ${{ env.HELM_NAMESPACE }} --timeout=120s
-      
+          DEPLOYMENT=$(kubectl get deployment -n ${{ env.HELM_NAMESPACE }} \
+          -l "app.kubernetes.io/instance=${{ env.HELM_RELEASE_NAME }}" \
+          -o jsonpath='{.items[0].metadata.name}')
+
+          if [ -z "$DEPLOYMENT" ]; then
+          echo "ERROR: No deployment found for release ${{ env.HELM_RELEASE_NAME }}"
+          kubectl get all -n ${{ env.HELM_NAMESPACE }}
+          exit 1
+          fi
+
+          echo "Found deployment: $DEPLOYMENT"
+          kubectl rollout status deployment/$DEPLOYMENT \
+          -n ${{ env.HELM_NAMESPACE }} \
+          --timeout=5m
+            
+          kubectl get all -n ${{ env.HELM_NAMESPACE }}
+
       - name: Verify Ingress and ALB
         run: |
           echo "Verifying Ingress and ALB for the deployed app"
@@ -741,9 +755,3 @@ jobs:
         run: |
           echo "Showing all resources in namespace ${{ env.HELM_NAMESPACE }}"
           kubectl get all -n ${{ env.HELM_NAMESPACE }} -o wide
-      
-      - name: Rollback on Failure
-        if: failure()
-        run: |
-          echo "Deployment failed, rolling back release ${{ env.HELM_RELEASE_NAME }} in namespace ${{ env.HELM_NAMESPACE }}"
-          helm rollback ${{ env.HELM_RELEASE_NAME }} --namespace ${{ env.HELM_NAMESPACE }} || echo "Rollback failed or no previous release to rollback to"
