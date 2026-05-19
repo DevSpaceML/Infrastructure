@@ -11,4 +11,11 @@ terraform {
 resource "aws_eks_addon" "coredns" {
   cluster_name = var.clustername
   addon_name   = "coredns"
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  timeouts {
+    create = "5m"
+    update = "5m"
+  }
 }
