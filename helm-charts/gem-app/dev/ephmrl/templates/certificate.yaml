@@ -6,7 +6,7 @@ metadata:
 spec:
   secretName: {{ .Release.Name }}-tls
   issuerRef:
-    name: letsencrypt-dev
+    name: selfsigned-issuer
     kind: ClusterIssuer
   commonName: {{ .Values.ingressRoute.host }}
   dnsNames:
