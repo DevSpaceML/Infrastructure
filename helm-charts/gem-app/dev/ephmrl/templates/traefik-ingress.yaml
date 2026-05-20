@@ -5,12 +5,13 @@ metadata:
   name: {{ .Release.Name }}-ingress
   namespace: {{ .Release.Namespace }}
   annotations:
-    cert-manager.io/cluster-issuer: "selfsigned-issuer"
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "5"
 spec:
   entryPoints:
     {{- toYaml .Values.ingressRoute.entryPoints | nindent 4 }}
   routes:
-    - match: "Host(`{{ .Values.ingressRoute.host }}`)"
+    - match: "Host(`{{ .Values.ingressRoute.host }}`) && PathPrefix(`/{{ .Release.Name }}`)"
       kind: Rule
       services:
         - name: {{ .Release.Name }}-service
