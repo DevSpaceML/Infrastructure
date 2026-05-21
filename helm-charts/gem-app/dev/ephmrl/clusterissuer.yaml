@@ -3,7 +3,7 @@ kind: ClusterIssuer
 metadata:
   name: selfsigned-issuer
   annotations:
-  "helm.sh/hook": pre-install,pre-upgrade
-  "helm.sh/hook-weight": "-10"   # runs before the Certificate at -5
+   "helm.sh/hook": pre-install,pre-upgrade
+   "helm.sh/hook-weight": "-10"   # runs before the Certificate at -5
 spec:
   selfSigned: {}
