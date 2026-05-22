@@ -11,8 +11,8 @@ ports:
   web:
     port: 8000
     exposedPort: 80
-    containerPort: 8000
-    targetPort: 8000
+    containerPort: 8080
+    targetPort: 8080
     expose:
       default: true
     protocol: TCP
