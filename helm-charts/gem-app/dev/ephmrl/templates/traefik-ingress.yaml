@@ -22,14 +22,14 @@ spec:
   entryPoints:
     {{- toYaml .Values.ingressRoute.entryPoints | nindent 4 }}
   routes:
+    kind: Rule
     - match: "Host(`{{ .Values.ingressRoute.host }}`) && PathPrefix(`/{{ .Release.Name }}`)"
-      kind: Rule
+      middlewares:
+        - name: {{ .Release.Name }}-strip-prefix
+          namespace: {{ .Release.Namespace }}
       services:
         - name: {{ .Release.Name }}-service
           port: {{ .Values.app.port }}
   tls:
     secretName: {{ .Release.Name }}-tls
-  logs:
-    general:
-      level: DEBUG  
 {{- end }}
