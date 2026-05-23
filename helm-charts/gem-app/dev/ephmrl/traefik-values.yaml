@@ -9,10 +9,10 @@ service:
     service.beta.kubernetes.io/aws-load-balancer-scheme: "internet-facing"
 ports:
   web:
-    port: 8000
+    port: 8080
     exposedPort: 80
-    containerPort: 8080
-    targetPort: 8080
+    containerPort: 8000
+    targetPort: 8000
     expose:
       default: true
     protocol: TCP
