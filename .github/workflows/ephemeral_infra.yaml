@@ -478,10 +478,6 @@ jobs:
           crd/certificates.cert-manager.io \
           --timeout=60s 
 
-      - name: Install Traefik CRDs
-        run : |
-          kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v2.10.3/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml
-
   # DEPLOY TRAEFIK INGRESS CONTROLLER WITH HELM        
   install-traefik:
     name: install-traefik
@@ -709,21 +705,31 @@ jobs:
       - name: Verify App Deployment
         run: |
           echo "Verifying app deployment in namespace ${{ env.HELM_NAMESPACE }}"
-          DEPLOYMENT=$(kubectl get deployment -n ${{ env.HELM_NAMESPACE }} \
-          -l "app.kubernetes.io/instance=${{ env.HELM_RELEASE_NAME }}" \
-          -o jsonpath='{.items[0].metadata.name}')
+          echo "Looking for release: ${{ env.HELM_RELEASE_NAME }}"
+
+          # Dump all deployments + their labels first — helps debug selector mismatches
+          echo "--- All deployments in namespace ---"
+          kubectl get deployments -n ${{ env.HELM_NAMESPACE }} --show-labels
+
+          # Use --ignore-not-found so an empty result is "" rather than a jsonpath crash
+          DEPLOYMENT=$(kubectl get deployment \
+            -n ${{ env.HELM_NAMESPACE }} \
+            -l "app.kubernetes.io/instance=${{ env.HELM_RELEASE_NAME }}" \
+            --ignore-not-found \
+            -o jsonpath='{.items[0].metadata.name}')
 
           if [ -z "$DEPLOYMENT" ]; then
-          echo "ERROR: No deployment found for release ${{ env.HELM_RELEASE_NAME }}"
-          kubectl get all -n ${{ env.HELM_NAMESPACE }}
-          exit 1
+            echo "ERROR: No deployment found matching label app.kubernetes.io/instance=${{ env.HELM_RELEASE_NAME }}"
+            echo "--- Helm release status ---"
+            helm status ${{ env.HELM_RELEASE_NAME }} -n ${{ env.HELM_NAMESPACE }} || true
+            exit 1
           fi
 
           echo "Found deployment: $DEPLOYMENT"
           kubectl rollout status deployment/$DEPLOYMENT \
           -n ${{ env.HELM_NAMESPACE }} \
-          --timeout=5m
-            
+           --timeout=5m
+
           kubectl get all -n ${{ env.HELM_NAMESPACE }}
 
       - name: Verify Ingress and ALB

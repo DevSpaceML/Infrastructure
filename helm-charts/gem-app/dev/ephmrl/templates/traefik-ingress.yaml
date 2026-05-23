@@ -29,4 +29,7 @@ spec:
           port: {{ .Values.app.port }}
   tls:
     secretName: {{ .Release.Name }}-tls
+  logs:
+    general:
+      level: DEBUG  
 {{- end }}
