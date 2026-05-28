@@ -13,7 +13,7 @@ spec:
     region: ${{ .Values.region }}
 
   remoteWrite:
-    - url: "http://localhost:8005/workspaces/${AMP_WORKSPACE_ID}/api/v1/remote_write"
+    - url: "${AMP_REMOTE_WRITE_URL}api/v1/remote_write"
       queueConfig:
         capacity: 10000
         maxShards: 200
