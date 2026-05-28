@@ -7,3 +7,8 @@ variable "environment" {
   description = "deployment environment"
   type = string
 }
+
+variable "oidc_arn" {
+  description = "oidc arn"
+  type = string
+}
