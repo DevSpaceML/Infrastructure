@@ -12,6 +12,7 @@ data "aws_iam_openid_connect_provider" "eks_oidc" {
   url        = data.aws_eks_cluster.eks-cluster.identity[0].oidc[0].issuer
 }
 
+# ---- lbController IRSA ----
 resource "aws_iam_role" "lb_controller_role"{
     depends_on = [ aws_iam_openid_connect_provider.eks_oidc_connect ]
     name = "lbControllerRole"
@@ -34,17 +35,6 @@ resource "aws_iam_role" "lb_controller_role"{
     })  
 }
 
-# IRSA for vpc-cni addon
-resource "aws_iam_role" "irsa_vpc_cni" {
-    depends_on = [ aws_iam_openid_connect_provider.eks_oidc_connect ]
-    name = "${var.clustername}-vpc-cni-irsa"
-    assume_role_policy = file("${path.module}/vpcCniAssumeRolePolicy.json")
-}
-
-resource "aws_iam_role_policy_attachment" "attach_vpc_cni_irsa_policy" {
-    role       = aws_iam_role.irsa_vpc_cni.name
-    policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
-}
 
 # kubernetes service account for lbControllerRole
 resource "kubernetes_service_account_v1" "svc_acc_lbController" {
@@ -57,6 +47,7 @@ resource "kubernetes_service_account_v1" "svc_acc_lbController" {
   }
 }
 
+# lbControllerRole policy and attachment
 resource "aws_iam_policy" "lb_controller_policy" {
     name        = "lbControllerPolicy"
     description = "IAM policy for lbControllerRole"
@@ -66,4 +57,16 @@ resource "aws_iam_policy" "lb_controller_policy" {
 resource "aws_iam_role_policy_attachment" "attach_lbControllerPolicy" {
   role       = aws_iam_role.lb_controller_role.name
   policy_arn = aws_iam_policy.lb_controller_policy.arn
+}
+
+# ---- IRSA for vpc-cni addon ----
+resource "aws_iam_role" "irsa_vpc_cni" {
+    depends_on = [ aws_iam_openid_connect_provider.eks_oidc_connect ]
+    name = "${var.clustername}-vpc-cni-irsa"
+    assume_role_policy = file("${path.module}/vpcCniAssumeRolePolicy.json")
+}
+
+resource "aws_iam_role_policy_attachment" "attach_vpc_cni_irsa_policy" {
+    role       = aws_iam_role.irsa_vpc_cni.name
+    policy_arn = "arn:aws:iam::aws:policy/AmazonEKS_CNI_Policy"
 }

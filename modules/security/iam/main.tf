@@ -86,6 +86,8 @@ resource "aws_iam_role" "eks_node_manager_role" {
     )  
 }
 
+
+/* Attach policies to the EKS Cluster Roles */
 resource "aws_iam_role_policy_attachment" "eks_cluster_role_policy" {
 	role = aws_iam_role.eks_cluster_Role.name
 	policy_arn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"

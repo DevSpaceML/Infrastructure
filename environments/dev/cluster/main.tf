@@ -127,3 +127,27 @@ module "coredns" {
   source = "../../../modules/compute/eks/addons/coredns"
   clustername = module.dev_cluster.cluster_name
 }
+
+module "prometheus" {
+  depends_on = [ module.dev_cluster, module.oidc_auth ]
+  source = "../../../modules/monitoring/prometheus"
+  clustername = module.dev_cluster.cluster_name
+  environment = var.environment
+}
+
+module "irsa_prometheus" {
+  source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts-eks"
+  version = "~> 5.0"
+  role_name = "prometheusagent-irsa-${var.clustername }"
+  oidc_providers = {
+    provider_arn = module.oidc_auth.oidc_provider_arn
+    namespace_service_account = {
+      namespace = module.prometheus.monitor_namespace
+      service_account_name = module.prometheus.prometheus_svc_acc
+    }
+  role_policy_arns = {
+    amp_write_policy = aws_iam_policy.amp_write_policy.arn
+  }
+
+ }
+}

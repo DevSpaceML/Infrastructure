@@ -45,7 +45,6 @@ resource "kubernetes_cluster_role_binding_v1" "k8_cluster_role_Binding" {
 }
 
 # Developer Role and RoleBinding
-
 resource "kubernetes_role_v1" "Developer" {
 
   metadata {
@@ -104,7 +103,6 @@ resource "kubernetes_role_binding_v1" "Developer_Role_Binding" {
 }
 
 # DevOps-SRE Role and RoleBinding
-
 resource "kubernetes_role_v1" "Devops-SRE" {
   metadata {
 	name = "DevopsSRE"
@@ -168,7 +166,6 @@ resource "kubernetes_role_binding_v1" "DevOps_SRE_Role_Binding" {
 }
 
 # Monitoring Role and RoleBinding
-
 resource "kubernetes_cluster_role_v1" "k8_monitor" {
   metadata {
 	name = "k8_monitor"
