@@ -166,7 +166,7 @@ resource "kubernetes_role_binding_v1" "DevOps_SRE_Role_Binding" {
 }
 
 # Monitoring Role and RoleBinding
-resource "kubernetes_cluster_role_v1" "k8_monitor" {
+resource "kubernetes_cluster_role_v1" "k8monitor" {
   metadata {
 	name = "k8_monitor"
   }
