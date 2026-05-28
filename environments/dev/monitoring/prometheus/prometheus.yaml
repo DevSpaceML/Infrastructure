@@ -1,0 +1,37 @@
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: prometheus
+  namespace: monitoring
+spec:
+ image: quay.io/prometheus/prometheus:v2.37.0
+ nodesSelector:
+   kubernetes.io/os: linux
+ replicas: 2
+ resources:
+   requests:
+     memory: 400Mi
+     cpu: 200m
+   limits:
+     memory: 800Mi
+     cpu: 500m
+ securityContext:
+   fsGroup: 2000
+   runAsNonRoot: true
+   runAsUser: 1000
+ serviceAccountName: ${{ .Values.serviceAccountName }}
+ version: v2.37.0
+ serviceMonitorSelector: {}
+ remoteWrite:
+  - url: http://remote-write-receiver.monitoring.svc.cluster.local:9090/api/v1/write
+    basicAuth:
+      username:
+        name: kubepromsecret
+        key: username
+      password:
+        name: kubepromsecret
+        key: password
+ replicaExternalLabelName: "__replica__"          
+ externalLabels:
+  cluster: "**$prometheus_clustername**"
+  

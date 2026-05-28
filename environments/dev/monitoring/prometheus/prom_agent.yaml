@@ -1,0 +1,43 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusAgent
+metadata:
+  name: prom-agent
+  namespace: monitoring
+spec:
+  replicas: 1
+  serviceAccountName: ${{ .Values.serviceAccountName }}
+
+  externalLabels:
+    cluster: ${{ .Values.prometheus_clustername }}
+    env: dev
+    region: ${{ .Values.region }}
+
+  remoteWrite:
+    - url: "http://localhost:8005/workspaces/${AMP_WORKSPACE_ID}/api/v1/remote_write"
+      queueConfig:
+        capacity: 10000
+        maxShards: 200
+        maxSamplesPerSend: 1000
+        batchSendDeadline: 5s
+        minBackoff: 100ms
+        maxBackoff: 5s
+
+  serviceMonitorSelector: {}
+  serviceMonitorNamespaceSelector: {}
+  podMonitorSelector: {}
+
+  containers:
+    - name: sigv4-proxy
+      image: public.ecr.aws/aws-observability/aws-sigv4-proxy:1.0
+      args:
+        - --name
+        - aps
+        - --region
+        - ${AWS_REGION}
+        - --host
+        - aps-workspaces.${AWS_REGION}.amazonaws.com
+        - --port
+        - :8005
+      ports:
+        - containerPort: 8005
+      

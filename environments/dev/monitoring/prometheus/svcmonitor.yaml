@@ -1,0 +1,14 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: prometheus-self-monitor
+  namespace: monitoring
+  labels:
+    app: prometheus
+spec:
+  endpoints:
+  - interval: 15s
+    port: web
+  selector:
+    matchLabels:
+      app: prometheus
