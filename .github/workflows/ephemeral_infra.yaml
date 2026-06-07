@@ -195,8 +195,8 @@ jobs:
           terraform plan
       - name: Terraform Apply
         working-directory: ./environments/${{ env.ENVIRONMENT }}/iam
-        run: terraform apply -auto-approve    
-
+        run: terraform apply -auto-approve 
+           
   # DEPLOY CLUSTER
   deploy-cluster:
     name: deploy-eks-cluster
@@ -303,6 +303,9 @@ jobs:
           echo "ERROR: EKS Cluster $CLUSTER_NAME did not become active within 15 minutes."
           echo "Final status: $STATUS"
           exit 1
+  
+  # deploy monitoring stack with kube-prometheus-stack helm chart
+  
 
   #CLUSTER AUTHENTICATION FOR USERS/ROLES
   configure-auth:
@@ -538,7 +541,7 @@ jobs:
             }
           kubectl rollout status deployment/traefik -n traefik
 
-      - name: Resolve NLB Hostname
+      - name: Resolve NLB Hostname and write Cname record to Cloudflare DNS
         id: nlb_hostname
         run: |
           set -euo pipefail
@@ -564,6 +567,8 @@ jobs:
 
           [[ -n "$NLB_HOSTNAME" ]] || { echo "ERROR: NLB hostname not assigned after ${TIMEOUT}s."; exit 1; }
           echo "Found hostname: $NLB_HOSTNAME"
+
+          # Write Cname record to Cloudflare DNS
 
           echo "nlb_hostname=${NLB_HOSTNAME}" >> "$GITHUB_OUTPUT"
 
