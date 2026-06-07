@@ -1,0 +1,9 @@
+# This workflow deploys the corporate environment infrastructure, which includes an EC2 instance with nginx installed 
+# and a CNAME record in Cloudflare DNS 
+
+#job1:  deploy-corp-iam
+
+#job2 : deploy ec2-instance, intall nginx and other utilities (bash), write Cname record to Cloudflare DNS, 
+#        Run terraform apply to deploy the infrastructure, and then run a script to install nginx and other utilities on the EC2 instance.
+
+#job3 : deploy-application

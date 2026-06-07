@@ -3,11 +3,9 @@ replicaCount: 2
 app:
   port: 8080
   targetPort: 8000
-
 image:
   repository: ~
   tag: ~
-
 ingressRoute:
   enabled: true
   entryPoints:

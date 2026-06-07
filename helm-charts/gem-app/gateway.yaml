@@ -1,0 +1,15 @@
+apiVersion: kubernetes.gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: gemapp-gateway
+spec:
+  gatewayClassName: gemapp-gw-class
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostnames:
+        - "salientapps.com"
+      allowedRoutes:
+        namespaces:
+          from: All

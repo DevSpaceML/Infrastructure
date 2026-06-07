@@ -30,6 +30,12 @@ spec:
       services:
         - name: {{ .Release.Name }}-service
           port: {{ .Values.app.port }}
+    kind: Rule
+    - match: "Host(`{{ .Values.ingressRoute.host }}`) && PathPrefix(`/monitoring/grafana`)"
+      services:
+        - name: grafana
+          namespace: monitoring
+          port: 80
   tls:
     secretName: {{ .Release.Name }}-tls
 {{- end }}
