@@ -8,9 +8,9 @@ spec:
   serviceAccountName: ${{ .Values.serviceAccountName }}
 
   externalLabels:
-    cluster: ${{ .Values.prometheus_clustername }}
-    env: dev
-    region: ${{ .Values.region }}
+    cluster: ${clustername}
+    env: ${environment}
+    app_namespace: ${namespace}
 
   remoteWrite:
     - url: "${AMP_REMOTE_WRITE_URL}api/v1/remote_write"
