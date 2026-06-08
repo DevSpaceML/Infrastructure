@@ -8,7 +8,7 @@ terraform {
 }
 
 data "cloudflare_zone" "main" {
-  name = var.root_domain  # "salientapps.com"
+  name = var.root_domain
 }
 
 resource "cloudflare_dns_record" "main" {

@@ -3,7 +3,11 @@
 
 #job1:  deploy-corp-iam
 
-#job2 : deploy ec2-instance, intall nginx and other utilities (bash), write Cname record to Cloudflare DNS, 
+#job2: deploy-networking
+
+#job3-deploy S3 bucket for static website hosting --> GHA runs script to upload the static website files to the S3 bucket.
+
+#job2 : deploy ec2-instance for selfservice site, intall nginx and other utilities (bash), write Cname record to Cloudflare DNS, 
 #        Run terraform apply to deploy the infrastructure, and then run a script to install nginx and other utilities on the EC2 instance.
 
-#job3 : deploy-application
+#job3 : deploy-selfservice-application

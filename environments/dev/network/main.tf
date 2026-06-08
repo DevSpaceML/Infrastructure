@@ -25,7 +25,7 @@ module "dev_vpc" {
   cidr                               = var.dev_cidr
   vpcname                            = var.vpcname
   region                             = var.region
-  createvpc = var.createvpc
+  createvpc                          = var.createvpc
   existing_vpc_id                    = var.existing_vpc_id
   public_subnet_cidr_blocks          = var.public_subnet_cidr_blocks
   private_subnet_cidr_blocks         = var.private_subnet_cidr_blocks
