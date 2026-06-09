@@ -569,6 +569,7 @@ jobs:
           echo "Found hostname: $NLB_HOSTNAME"
 
           # Write Cname record to Cloudflare DNS
+          
 
           echo "nlb_hostname=${NLB_HOSTNAME}" >> "$GITHUB_OUTPUT"
 

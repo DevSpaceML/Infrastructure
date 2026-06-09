@@ -132,9 +132,7 @@ resource "aws_route_table_association" "eks_public_route_association" {
   depends_on = [aws_route_table.eks_public_routetable, aws_subnet.public_subnet_eks]
 }
 
-
 # Private Subnets #
-
 resource "aws_subnet" "private_subnet_eks" {
 	vpc_id = local.vpc_id
 	count = length(var.private_subnet_cidr_blocks)
@@ -193,7 +191,7 @@ locals {
   private_subnet_ids = aws_subnet.private_subnet_eks[*].id
 }
 
-/* Nodegroup Subnet, Routetable,   */
+/* Nodegroup Subnet, Routetable */
 
 resource "aws_subnet" "nodegroup_private_subnet" {
 	vpc_id = local.vpc_id

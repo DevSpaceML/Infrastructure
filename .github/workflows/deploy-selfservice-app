@@ -1,7 +1,0 @@
-# Nginx server for self-service app is persistent inside dev vpc. 
-
-# GHA to deploy selfservice-application
-
-# job1 : deploy ec2-instance for selfservice site, intall nginx and other utilities (bash), write Cname record to Cloudflare DNS, 
-
-# job2 : deploy-selfservice-application
