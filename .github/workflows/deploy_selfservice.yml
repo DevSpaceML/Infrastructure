@@ -1,0 +1,86 @@
+name: deploy-selfservice
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to (e.g., dev, staging, prod)'
+        required: true
+        default: 'dev'
+env:
+  TF_VERSION: "1.5.0"
+  AWS_REGION: "us-east-1"
+
+permissions:
+    contents: read
+    id-token: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      DEPLOYMENT_KEY: ${{ steps.upload.outputs.DEPLOYMENT_KEY }}
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: us-east-1
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run tests
+        run: |
+          pip install -r requirements.txt
+          pytest tests/
+          
+      - name: Build Tarball
+        run: |
+          tar --exclude='.git'\
+              --exclude ='*.pyc'\
+              --exclude='__pycache__'\
+              --exclude='venv'\
+              -czvf deployment.tar.gz -C .
+              
+      - name: Upload Tarball to S3
+        id: upload
+        run: |
+          KEY="releases/${{ github.sha }}.tar.gz"
+          aws s3 cp deployment.tar.gz s3://${{ secrets.deployment_bucket }}/${KEY} --region $AWS_REGION
+          echo "Tarball uploaded to s3:///${{ secrets.deployment_bucket }}/${KEY}"
+          echo "DEPLOYMENT_KEY=${KEY}" >> $GITHUB_OUTPUTS
+
+  deploy-app:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        host: ${{ fromJson(vars.AppHosts) }}
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      DEPLOYMENT_KEY: ${{ needs.build.outputs.DEPLOYMENT_KEY }}
+      DEPLOYMENT_BUCKET: ${{ secrets.deployment_bucket }}
+      AWS_REGION: us-east-1
+    steps:
+      - name: Deploy Application to ${{ matrix.host }}
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ matrix.host }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            RELEASE_DIR="/release-${{ github.sha }}"
+            TARGET_DIR="/app/current"
+
+            mkdir -p $RELEASE_DIR
+            aws s3 cp s3://${{ secrets.deployment_bucket }}/$DEPLOYMENT_KEY /tmp/deployment.tar.gz --region $AWS_REGION
+            tar -xzvf /tmp/deployment.tar.gz -C $RELEASE_DIR
+          
+            # set up virtial environment and install dependencies
+
+            python3 -m venv $RELEASE_DIR/venv
+            $RELEASE_DIR/venv/bin/pip install -r $RELEASE_DIR/requirements.txt --quiet
+            source $RELEASE_DIR/venv/bin/activate
+            
+            # update symlink to point to new release
+            ln -sfn $RELEASE_DIR $TARGET_DIR
+
