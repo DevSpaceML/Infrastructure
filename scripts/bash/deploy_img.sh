@@ -1,42 +1,30 @@
-# Create Docker Image
-#RepoName=$1, ImgName=$2
+# Create and Push Image
+set -x
+set -e
 
-set -v
-echo "checking for existing repo..."
-r=$(aws ecr describe-repositories)
-count=$(echo "$r" | jq '.repositories | length')
-tag=$(date +%Y%m%d-%H%M%S)
-platform="linux/arm64"
-appname="gemapp"
-
-echo $count
-echo "------------------"
-
-for ((i=0; i<$count;i++))
-do      
-    repo_name=$(echo "$r" | jq -r ".repositories[$i].repositoryName")
-    repo_uri=$(echo "$r" | jq -r ".repositories[$i].repositoryUri")
-    img_tag=$(echo "$repo_uri/${repo_name}:$tag")
-    echo $repo_name
-    echo $repo_uri
-    echo $img_tag
-    echo "********"
-
-    #Build docker image and push to repo
-done
-
-createdockerimg (){
-    app_location='/Library/WebServer/Documents/LindoTofo'
-    repouri="586098609239.dkr.ecr.us-east-1.amazonaws.com/gem/gemapp"
-    ImgTag="$repouri:$tag"
-    cd $app_location
-
-    docker buildx build  --platform $platform -t $appname . 
-    docker tag "$appname:$img_tag" $ImgTag
-   # docker push $ImgTag    
+ecr_login(){
+    local ecr_root=$1
+    aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ecr_root
 }
 
-createdockerimg
+build_image (){
+    local appname=$1
+    local env=$2
+    local platform="linux/arm64"
+    local ecr_home="488347380548.dkr.ecr.us-east-1.amazonaws.com"
+    local repo="$env/$appname"
+    local app_root="/Library/WebServer/Documents/$appname" # store in guthub secrets or SSM parameter store
+    local img_name="$appname"
+    local tag="$appname-$(date +%Y%m%d-%H%M%S)"
+    local destination="$ecr_home/$repo:$tag"
 
+    cd $app_root
 
+    docker buildx build  --platform $platform -t $img_name .
+    docker tag $img_name $destination
 
+    ecr_login $ecr_home
+    docker push $destination
+}
+
+build_image $1 $2

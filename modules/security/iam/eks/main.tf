@@ -6,11 +6,11 @@
 # data of existing DevOpsAdmin Account
 
 data "aws_iam_user" "DevOpsAdmin" {
-  user_name = "DevOpsAdmin"
+  user_name = "SteveB_devops"
 }
 
-data "aws_iam_role" "github_actions_role" {
-  name = "GitHubActionsRole" 
+data "aws_iam_role" "deployment_role" {
+  name = "deployment_role" 
 }
 
 resource "aws_iam_user" "developer" {

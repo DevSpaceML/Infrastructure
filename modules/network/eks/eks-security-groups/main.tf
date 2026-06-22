@@ -21,7 +21,7 @@ resource "aws_security_group" "nodegroup-sg" {
 
 # CLUSTER SECURITY GROUP RULES
 
-    # allow cluster security group to accept worker node traffic
+# allow cluster security group to accept worker node traffic
 resource "aws_security_group_rule" "cluster-sg_allow_ingress_from_nodegroup" {
     type = "ingress"
     from_port = 443

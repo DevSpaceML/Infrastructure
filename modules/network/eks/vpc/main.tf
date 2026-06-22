@@ -69,6 +69,7 @@ resource "aws_vpc_dhcp_options_association" "eks_dhcp_options_association" {
 	depends_on = [ aws_vpc_dhcp_options.eks_dhcp_options ]	 
 }
 
+
 # Public subnet, EIP, Nat Gateway, Route Tables
 
 resource "aws_internet_gateway" "igw_public_eks" {
@@ -94,7 +95,6 @@ resource "aws_subnet" "public_subnet_eks" {
 		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	}	
 }
-
 
 resource "aws_eip" "nat-eip" {
 	count    = length(aws_subnet.public_subnet_eks)
@@ -171,6 +171,7 @@ resource "aws_route_table_association" "eks_private_route_association" {
 
 
 # ------ RDS Private Subnets ------ # 
+
 resource "aws_subnet" "rds_private_subnet" {
 	vpc_id = local.vpc_id
 	count = length(var.rds_private_subnet_cidr_blocks)
