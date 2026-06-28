@@ -2,8 +2,9 @@ data "aws_ecr_repository" "selfservice" {
   name = "dev/selfservice"
 }
 
+data "aws_caller_identity" "current" {}
 
-/* IAM Role Trust Policies  */
+/* ECS IAM Role Trust Policies  */
 
 data "aws_iam_policy_document" "ecs_task_trust" {
   statement {
@@ -34,9 +35,9 @@ data "aws_iam_policy_document" "ecs_execution_trust" {
   }
 }
 
-/* Role Permissions */
+/* Create Execution Role Permissions */
 
-data "aws_iam_policy_document" "ecs-execution" {
+data "aws_iam_policy_document" "ecs_execution_permissions" {
   statement {  
     sid     = "ECRGetAuthToken"
     effect  = "Allow"
@@ -56,7 +57,50 @@ data "aws_iam_policy_document" "ecs-execution" {
   }
 }
 
-/* IAM Roles and Policy Attachments */
+/* Create ECS-Task Role Permissions */
+
+data "aws_iam_policy_document" "ecs_execution_permissions" {
+
+  # ECR Authentication
+  statement {
+    sid     = "ECRGetAuthToken"
+    effect  = "Allow"
+    actions = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  # Pull Image from ECR
+  statement {
+    sid    = "ECRPullImage"
+    effect = "Allow"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:BatchGetImage",
+    ]
+    resources = [data.aws_ecr_repository.selfservice.arn]
+  }
+
+/*
+  # CloudWatch Logs — scoped to the log group defined in your task definition
+  statement {
+    sid    = "CloudWatchLogs"
+    effect = "Allow"
+    actions = [
+      "logs:CreateLogStream",
+      "logs:PutLogEvents",
+    ]
+    resources = [
+      "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/selfservice/nginx:*",
+    ]
+  }
+*/
+
+}
+
+
+# ------------- IAM Roles and Policy Attachments ---------------------- #
+
 # IAM roles for ECS tasks and execution
 resource "aws_iam_role" "ecs-execution" {
   name = "ecs-task-execution-role"
@@ -66,10 +110,8 @@ resource "aws_iam_role" "ecs-execution" {
 resource "aws_iam_role_policy" "ecs_execution_policy" {
   name   = "selfservice-execution-policy"
   role   = aws_iam_role.ecs-execution.id
-  policy = data.aws_iam_policy_document.ecs-execution.json
+  policy = data.aws_iam_policy_document.ecs_execution_permissions.json
 }
-
-# ---
 
 resource "aws_iam_role" "ecs_task" {
   name = "ecs-task-role"
@@ -82,7 +124,7 @@ resource "aws_iam_role_policy" "ecs_task_policy" {
   policy = data.aws_iam_policy_document.ecs_task_permissions.json
 }
 
-
+# ------------------------------------------------------------------- #
 
 /* ECS Cluster and Tasks */
 
