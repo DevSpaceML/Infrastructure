@@ -20,7 +20,6 @@ provider "aws" {
   region = "us-east-1"
 }
 
-
-module "dev_network" {
-  source = "../../../../modules/network/dev"
+module "iam" {
+  source = "../../../../modules/security/iam/dev"
 }

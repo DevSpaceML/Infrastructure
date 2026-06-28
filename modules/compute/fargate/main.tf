@@ -2,50 +2,99 @@ data "aws_ecr_repository" "selfservice" {
   name = "dev/selfservice"
 }
 
-# IAM roles for ECS tasks and execution
-resource "aws_iam_role" "ecs_execution" {
-  name = "ecs-task-execution-role"
 
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
+/* IAM Role Trust Policies  */
+
+data "aws_iam_policy_document" "ecs_task_trust" {
+  statement {
+    sid     = "AllowAssumeRole-EcsTask"
+    effect  = "Allow"
+    actions = ["sts:AssumeRole"]
+    
+    principals {
+      type = "Service"
+      identifiers = ["ecs-tasks.awsamazon.com"]
+    }
+
+    resources = ["*"]
+  }
+
 }
+
+data "aws_iam_policy_document" "ecs_execution_trust" {
+  statement {
+    sid = "AllowAssumeRole-EcsExecution"
+    effect = "Allow"
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+  }
+}
+
+/* Role Permissions */
+
+data "aws_iam_policy_document" "ecs-execution" {
+  statement {  
+    sid     = "ECRGetAuthToken"
+    effect  = "Allow"
+    actions = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "ECRPullImage"
+    effect = "Allow"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:BatchGetImage",
+    ]
+    resources = [data.aws_ecr_repository.selfservice.arn]
+  }
+}
+
+/* IAM Roles and Policy Attachments */
+# IAM roles for ECS tasks and execution
+resource "aws_iam_role" "ecs-execution" {
+  name = "ecs-task-execution-role"
+  assume_role_policy = data.aws_iam_policy_document.ecs_execution_trust.json
+}
+
+resource "aws_iam_role_policy" "ecs_execution_policy" {
+  name   = "selfservice-execution-policy"
+  role   = aws_iam_role.ecs-execution.id
+  policy = data.aws_iam_policy_document.ecs-execution.json
+}
+
+# ---
 
 resource "aws_iam_role" "ecs_task" {
   name = "ecs-task-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "ecs-tasks.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
+  assume_role_policy = data.aws_iam_policy_document.ecs_task_trust.json  
 }
 
+resource "aws_iam_role_policy" "ecs_task_policy" {
+  name = "selfservice-task-policy"
+  role = aws_iam_role.ecs_task
+  policy = data.aws_iam_policy_document.ecs_task_permissions.json
+}
+
+
+
+/* ECS Cluster and Tasks */
+
 resource "aws_ecs_cluster" "slfsvc-cluster" {
-  name = "selfservice-app"
+  name = "selfservice-app-cluster"
 
   setting {
     name  = "containerInsights"
     value = "enabled"
   }
 }
-
+ 
 resource "aws_ecs_task_definition" "slfsvc-app" {
   family                   = "selfservice-app"
   network_mode             = "awsvpc"
@@ -72,3 +121,6 @@ resource "aws_ecs_task_definition" "slfsvc-app" {
     }
   ])
 }
+
+
+

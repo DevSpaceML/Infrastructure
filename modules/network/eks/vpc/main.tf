@@ -148,7 +148,6 @@ resource "aws_subnet" "private_subnet_eks" {
 	}	
 }
 
-
 resource "aws_route_table" "eks_private_routetable" {
 	count = length(aws_subnet.private_subnet_eks)
 	vpc_id = local.vpc_id
@@ -166,7 +165,7 @@ resource "aws_route_table" "eks_private_routetable" {
 resource "aws_route_table_association" "eks_private_route_association" {
 	count          =  length(aws_subnet.private_subnet_eks)
 	subnet_id      =  aws_subnet.private_subnet_eks[count.index].id
-	route_table_id = 	aws_route_table.eks_private_routetable[count.index].id
+	route_table_id =  aws_route_table.eks_private_routetable[count.index].id
 }
 
 

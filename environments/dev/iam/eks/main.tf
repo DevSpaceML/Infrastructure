@@ -21,5 +21,5 @@ provider "aws" {
 }
 
 module "iam" {
-  source = "../../../modules/security/iam"
+  source = "../../../modules/security/iam/eks"
 }

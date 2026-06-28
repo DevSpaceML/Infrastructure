@@ -6,7 +6,7 @@ on:
     paths: ['infrastructure/environments/dev/**']
   workflow_dispatch:
     inputs:
-      cluster_name:
+      environments:
         description: 'EKS Cluster Name'
         required: true
         type: string

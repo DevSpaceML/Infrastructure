@@ -5,13 +5,17 @@ resource "aws_vpc" "corp_vpc" {
   cidr_block = "10.0.0.0/16"
 }
 
-
 resource "aws_subnet" "corp_subnet" {
   vpc_id            = data.aws_vpc.corp_vpc.id
   cidr_block        = "10.0.1.0/24"
 }
 
 */
+
+data "aws_availability_zones" "available"{
+	state = "available"
+}
+
 
 /* --- Dev Resources --- */
 
@@ -21,7 +25,7 @@ resource "aws_vpc" "dev_vpc" {
 
 resource "aws_internet_gateway" "salient_igw" {
   depends_on = [ aws_vpc.dev_vpc ]
-  vpc_id = aws_vpc.dev_vpc.id
+  vpc_id     = aws_vpc.dev_vpc.id
 }
 
 /* security groups */
@@ -73,6 +77,7 @@ resource "aws_lb" "dev_alb" {
 resource "aws_subnet" "public_dev_subnet" {
   vpc_id            = aws_vpc.dev_vpc.id
   cidr_block        = "10.1.1.0/24"
+  availability_zone = data.aws_availability_zones.available.names[0]
 }
 
 resource "aws_route_table" "dev_public_route" {
@@ -145,22 +150,25 @@ resource "aws_security_group_rule" "ecs_egress" {
 resource "aws_subnet" "private_dev_subnet" {
   vpc_id            = aws_vpc.dev_vpc.id
   cidr_block        = "10.1.2.0/24"
+  availability_zone = data.aws_availability_zones.available.names[1]
 }
 
 resource "aws_subnet" "private_eks_subnet1" {
   vpc_id            = aws_vpc.dev_vpc.id
   cidr_block        = "10.1.10.0/24"
+  availability_zone = data.aws_availability_zones.available.names[2]
 }
 
 resource "aws_subnet" "private_eks_subnet2" {
   vpc_id            = aws_vpc.dev_vpc.id
   cidr_block        = "10.1.11.0/24"
+  availability_zone = data.aws_availability_zones.available.names[3]
 }
 
 resource "aws_route_table" "dev_private_route" {
   vpc_id = aws_vpc.dev_vpc.id
 
-  route = {
+  route {
     cidr_block = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.dev_nat_gateway.id
   }
