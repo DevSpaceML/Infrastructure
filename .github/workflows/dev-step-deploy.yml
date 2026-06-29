@@ -3,7 +3,7 @@ name: Deploy Dev Infrastructure
 on:
   push:
     branches: [develop]
-    paths: ['infrastructure/environments/dev/**']
+    paths: ['infrastructure/environments/dev/fake']
   workflow_dispatch:
     inputs:
       environments:
