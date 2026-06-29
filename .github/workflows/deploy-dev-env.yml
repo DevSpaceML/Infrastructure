@@ -57,7 +57,7 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init
-        working-directory: ./environments/$TARGET_ENV/network
+        working-directory: ./environments/$TARGET_ENV/network/main
         run: |
               terraform init -upgrade
       
@@ -71,6 +71,11 @@ jobs:
           terraform plan -out=netwrk_tfplan
           terraform show -json tfplan > netwrk_tfplan.json
           cat netwrk_tfplan.json
+
+#      - name: Terraform Apply
+#        working-directory: ./environments/$TARGET_ENV/network
+#        run: |
+#          terraform apply "netwrk_tfplan"      
 
   deploy-iam:
     name: deploy-iam
@@ -99,16 +104,16 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init
-        working-directory: ./environments/$TARGET_ENV/iam
+        working-directory: ./environments/$TARGET_ENV/iam/main
         run: |
               terraform init -upgrade
       
       - name: Terraform Validate
-        working-directory: ./environments/$TARGET_ENV/iam
+        working-directory: ./environments/$TARGET_ENV/iam/main
         run: terraform validate 
 
       - name: Terraform Plan
-        working-directory: ./environments/$TARGET_ENV/iam
+        working-directory: ./environments/$TARGET_ENV/iam/main
         run: |
           terraform plan -out=tfplan
           terraform show -json tfplan > iam_tfplan.json

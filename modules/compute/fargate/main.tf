@@ -35,7 +35,7 @@ data "aws_iam_policy_document" "ecs_execution_trust" {
   }
 }
 
-/* Create Execution Role Permissions */
+/* Create ecs-execution Role Permissions */
 
 data "aws_iam_policy_document" "ecs_execution_permissions" {
   statement {  
@@ -57,29 +57,17 @@ data "aws_iam_policy_document" "ecs_execution_permissions" {
   }
 }
 
-/* Create ECS-Task Role Permissions */
+/* ecs-task permissions */
 
-data "aws_iam_policy_document" "ecs_execution_permissions" {
+data "aws_iam_policy_document" "ecs_task_permissions" {
+  # No AWS API calls at runtime — GitHub and Postgres are
+  # plain TCP/HTTPS connections, not IAM-authenticated.
+  #
+  # If you later add RDS IAM auth, S3, SQS, etc., add
+  # scoped statements here rather than broadening this.
+}
 
-  # ECR Authentication
-  statement {
-    sid     = "ECRGetAuthToken"
-    effect  = "Allow"
-    actions = ["ecr:GetAuthorizationToken"]
-    resources = ["*"]
-  }
 
-  # Pull Image from ECR
-  statement {
-    sid    = "ECRPullImage"
-    effect = "Allow"
-    actions = [
-      "ecr:BatchCheckLayerAvailability",
-      "ecr:GetDownloadUrlForLayer",
-      "ecr:BatchGetImage",
-    ]
-    resources = [data.aws_ecr_repository.selfservice.arn]
-  }
 
 /*
   # CloudWatch Logs — scoped to the log group defined in your task definition
@@ -96,20 +84,18 @@ data "aws_iam_policy_document" "ecs_execution_permissions" {
   }
 */
 
-}
-
 
 # ------------- IAM Roles and Policy Attachments ---------------------- #
 
 # IAM roles for ECS tasks and execution
-resource "aws_iam_role" "ecs-execution" {
+resource "aws_iam_role" "ecs_execution" {
   name = "ecs-task-execution-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_execution_trust.json
 }
 
 resource "aws_iam_role_policy" "ecs_execution_policy" {
   name   = "selfservice-execution-policy"
-  role   = aws_iam_role.ecs-execution.id
+  role   = aws_iam_role.ecs_execution.id
   policy = data.aws_iam_policy_document.ecs_execution_permissions.json
 }
 
@@ -120,7 +106,7 @@ resource "aws_iam_role" "ecs_task" {
 
 resource "aws_iam_role_policy" "ecs_task_policy" {
   name = "selfservice-task-policy"
-  role = aws_iam_role.ecs_task
+  role = aws_iam_role.ecs_task.id
   policy = data.aws_iam_policy_document.ecs_task_permissions.json
 }
 
