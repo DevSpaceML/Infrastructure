@@ -24,3 +24,9 @@ provider "aws" {
 module "dev_network" {
   source = "../../../../modules/network/dev"
 }
+
+module "dev_certs" {
+  source = "../../../../modules/security/certs/alb-certs"
+  api-token = var.apitoken
+  alb_dns_name = module.dev_network.dev_alb_dns_name
+}

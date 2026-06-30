@@ -21,7 +21,7 @@ provider "aws" {
 }
 
 module "dev_vpc" {
-  source                             = "../../../modules/network/vpc"
+  source                             = "../../../modules/network/dev/eks/vpc"
   cidr                               = var.dev_cidr
   vpcname                            = var.vpcname
   region                             = var.region

@@ -2,9 +2,9 @@
 #security group rules
 
 resource "aws_acm_certificate" "eks_certificate" {
-	count = var.use_private_dns ? 0 : 1
-	domain_name        = var.appdomain
-	validation_method  = "DNS"
+	count                     = var.use_private_dns ? 0 : 1
+	domain_name               = var.appdomain
+	validation_method         = "DNS"
 	subject_alternative_names = ["*.${var.appdomain}"]
 
 	options {
