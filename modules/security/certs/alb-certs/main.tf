@@ -17,13 +17,16 @@ data "cloudflare_zone" "this" {
   }
 }
 
-data "cloudflare_account_api_token_permission_groups" "all" {}  
+data "cloudflare_api_token_permission_groups_list" "dns_write" {
+    name = "DNS Write"
+    scope = "com.cloudflare.api.account.zone"
+}  
 
 resource "cloudflare_api_token" "dns_update" {
   name = "dns-update-token"
   policies = [{
     permission_groups = [
-      { id = data.cloudflare_api_token_permission_groups.all.zone["DNS Write"] }
+      { id = data.cloudflare_api_token_permission_groups_list.dns_write.result[0].id  }
     ]
     resources = {
       "com.cloudflare.api.account.zone.${data.cloudflare_zone.this.zone_id}" = "*"
@@ -61,7 +64,7 @@ resource "aws_acm_certificate" "this" {
 
 resource "cloudflare_dns_record" "acm_cert_validation" {
   for_each = {
-    for dvo in aws_aws_acm_certificate.this.domain_validation_options : dvo.domain_name => dvo 
+    for dvo in aws_acm_certificate.this.domain_validation_options : dvo.domain_name => dvo 
   }
 
   zone_id = data.cloudflare_zone.this.id
