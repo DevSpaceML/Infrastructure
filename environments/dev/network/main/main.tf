@@ -27,6 +27,7 @@ module "dev_network" {
 
 module "dev_certs" {
   source = "../../../../modules/security/certs/alb-certs"
-  api-token = var.apitoken
   alb_dns_name = module.dev_network.dev_alb_dns_name
+  appdomain = var.appdomain
 }
+

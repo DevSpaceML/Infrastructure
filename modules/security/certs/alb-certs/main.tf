@@ -7,30 +7,21 @@ terraform {
   }
 }
 
-provider "cloudflare" {
-  api_token = var.api-token
-}
-
 data "cloudflare_zone" "this" {
   filter = {
     name = var.appdomain
   }
 }
 
-data "cloudflare_api_token_permission_groups_list" "dns_write" {
-    name = "DNS Write"
-    scope = "com.cloudflare.api.account.zone"
-}  
-
 resource "cloudflare_api_token" "dns_update" {
   name = "dns-update-token"
   policies = [{
     permission_groups = [
-      { id = data.cloudflare_api_token_permission_groups_list.dns_write.result[0].id  }
+      { id = "d755e40fc5815ba85a23bb7c45a6a66b"  }
     ]
-    resources = {
+    resources = jsonencode({
       "com.cloudflare.api.account.zone.${data.cloudflare_zone.this.zone_id}" = "*"
-    }
+    })
     effect = "allow"
   }]
 }
@@ -77,5 +68,5 @@ resource "cloudflare_dns_record" "acm_cert_validation" {
 
 resource "aws_acm_certificate_validation" "this" {
   certificate_arn = aws_acm_certificate.this.arn
-  validation_record_fqdns = [for record in cloudflare_dns_record.acm_cert_validation : record.hostname]
+  validation_record_fqdns = [for record in cloudflare_dns_record.acm_cert_validation : record.name]
 }
