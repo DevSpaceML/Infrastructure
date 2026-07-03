@@ -61,23 +61,30 @@ resource "aws_security_group_rule" "alb_egress" {
 
 /* Public subnet resources */
 
+resource "aws_subnet" "public_dev_subnet" {
+  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 2) : az => idx }
+  vpc_id            = aws_vpc.dev_vpc.id
+  cidr_block        = cidrsubnet(aws_vpc.dev_vpc.cidr_block, 4, each.value)
+  availability_zone = each.key
+  map_public_ip_on_launch = true
+
+  tags = {
+    Name        = "public-dev-subnet-${each.key}"
+    Environment = "Dev"
+  }
+}
+
 resource "aws_lb" "dev_alb" {
   name               = "dev-alb"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = [aws_subnet.public_dev_subnet.id]
+  subnets            = [for s in aws_subnet.public_dev_subnet : s.id]
 
   tags = {
     Name        = "dev-alb"
     Environment = "Dev"
   }
-}
-
-resource "aws_subnet" "public_dev_subnet" {
-  vpc_id            = aws_vpc.dev_vpc.id
-  cidr_block        = "10.1.1.0/24"
-  availability_zone = data.aws_availability_zones.available.names[0]
 }
 
 resource "aws_route_table" "dev_public_route" {
@@ -105,7 +112,7 @@ resource "aws_eip" "dev_eip" {
 
 resource "aws_nat_gateway" "dev_nat_gateway" {
   allocation_id = aws_eip.dev_eip.id
-  subnet_id     = aws_subnet.public_dev_subnet.id
+  subnet_id     = [ for s in aws_subnet.public_dev_subnet : s.id ][0]
 
   tags = {
     Name        = "dev-nat-gateway"
@@ -148,21 +155,28 @@ resource "aws_security_group_rule" "ecs_egress" {
 /** Private subnet resources */
 
 resource "aws_subnet" "private_dev_subnet" {
+  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 2) : az => idx }
   vpc_id            = aws_vpc.dev_vpc.id
-  cidr_block        = "10.1.2.0/24"
-  availability_zone = data.aws_availability_zones.available.names[1]
+  cidr_block        = cidrsubnet(aws_vpc.dev_vpc.cidr_block, 4, each.value + 2)
+  availability_zone = each.key
+
+  tags = {
+    Name        = "private-dev-subnet-${each.key}"
+    Environment = "Dev"
+  }
+  
 }
 
-resource "aws_subnet" "private_eks_subnet1" {
+resource "aws_subnet" "private_eks_subnet" {
+  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 2) : az => idx }
   vpc_id            = aws_vpc.dev_vpc.id
-  cidr_block        = "10.1.10.0/24"
-  availability_zone = data.aws_availability_zones.available.names[2]
-}
+  cidr_block        = cidrsubnet(aws_vpc.dev_vpc.cidr_block, 4, each.value + 4)
+  availability_zone = each.key
 
-resource "aws_subnet" "private_eks_subnet2" {
-  vpc_id            = aws_vpc.dev_vpc.id
-  cidr_block        = "10.1.11.0/24"
-  availability_zone = data.aws_availability_zones.available.names[3]
+  tags = {
+    Name        = "private-eks-subnet-${each.key}"
+    Environment = "Dev"
+  }
 }
 
 resource "aws_route_table" "dev_private_route" {
