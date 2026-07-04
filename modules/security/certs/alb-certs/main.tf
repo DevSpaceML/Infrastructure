@@ -53,15 +53,24 @@ resource "aws_acm_certificate" "this" {
 	}
 }
 
+locals {
+  domain_validation_options = {
+    for dvo in aws_acm_certificate.this.domain_validation_options : dvo.resource_record_name => {
+      type   = dvo.resource_record_type
+      record = dvo.resource_record_value
+    }
+  }
+}
+
 resource "cloudflare_dns_record" "acm_cert_validation" {
   for_each = {
-    for dvo in aws_acm_certificate.this.domain_validation_options : dvo.domain_name => dvo 
+    for name, record in local.domain_validation_options : name => record[0]
   }
 
   zone_id = data.cloudflare_zone.this.id
-  name = each.value.resource_record_name
-  type = each.value.resource_record_type
-  content = each.value.resource_record_value
+  name = each.key
+  type = each.value.type
+  content = each.value.content
   ttl = 300
   proxied = false
 }
