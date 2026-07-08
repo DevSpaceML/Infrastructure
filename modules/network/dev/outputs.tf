@@ -2,19 +2,26 @@ output "dev_vpc_id" {
   value = aws_vpc.dev_vpc.id
 }
 
-output "public_dev_subnet_id" {
+/** Public subnet IDs */
+output "public_subnet_id_list" {
   description = "Public subnet IDs for dev environment"
-  value = {for az, subnet in aws_subnet.public_dev_subnet : az => subnet.id}
+  value = [for subnet in aws_subnet.public_dev_subnet : subnet.id]
 }
 
-output "private_dev_subnet_id" {
+output "private_subnet_id_list" {
   description = "Private subnet IDs for dev environment"
-  value = {for az, subnet in aws_subnet.private_dev_subnet : az => subnet.id}
+  value = [for subnet in aws_subnet.private_dev_subnet : subnet.id]
 }
 
-output "private_eks_subnet_id" {
-  description = "Private EKS subnet IDs for dev environment"
-  value = {for az, subnet in aws_subnet.private_eks_subnet : az => subnet.id}
+output "private_ecs_subnet_id_list" {
+  description = "Private ECS subnet IDs for dev environment"
+  value = [for subnet in aws_subnet.private_ecs_subnet : subnet.id]
+}
+
+/* Security group IDs */
+output "ecs_security_group_id" {
+  description = "Security group ID for dev ECS"
+  value = aws_security_group.ecs_sg.id
 }
 
 output "dev_alb_dns_name" {

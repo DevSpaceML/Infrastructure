@@ -7,11 +7,11 @@ data "terraform_remote_state" "dev_network" {
     }
 }
 
-data "terraform_remote_state" "dev_iam" {
+data "terraform_remote_state" "dev_alb" {
     backend = "s3"
     config = {
         bucket = "dev-tf-state-488347380548"
-        key    = "dev/iam/terraform.tfstate"
+        key    = "dev/alb/terraform.tfstate"
         region = "us-east-1"
     }
 }

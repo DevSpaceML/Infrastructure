@@ -5,6 +5,12 @@ variable "appdomain" {
   default = "salientapps.com"
 }
 
+variable "subj_alt_names" {
+  description = "subject alternative names for the cert"
+  type = list(string)
+  default = []
+}
+
 variable "alb_dns_name" {
   description = "load balancer dns name"
   type = string
@@ -15,3 +21,4 @@ variable "target" {
   type = string
   default = "alb"
 }
+

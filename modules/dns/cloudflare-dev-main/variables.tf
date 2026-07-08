@@ -4,6 +4,11 @@ variable "appdomain" {
   default = "salientapps.com"
 }
 
+variable "domain_names" {
+    description = "domain names for the cert"
+    type = list(string)
+}
+
 variable "api-token" {
   description = "cloudflare auth token"
   type = string

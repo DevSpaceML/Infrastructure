@@ -74,18 +74,7 @@ resource "aws_subnet" "public_dev_subnet" {
   }
 }
 
-resource "aws_lb" "dev_alb" {
-  name               = "dev-alb"
-  internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]
-  subnets            = [for s in aws_subnet.public_dev_subnet : s.id]
-
-  tags = {
-    Name        = "dev-alb"
-    Environment = "Dev"
-  }
-}
+/* Public Subnet Route Table */
 
 resource "aws_route_table" "dev_public_route" {
   vpc_id = aws_vpc.dev_vpc.id
@@ -166,7 +155,7 @@ resource "aws_subnet" "private_dev_subnet" {
   
 }
 
-resource "aws_subnet" "private_eks_subnet" {
+resource "aws_subnet" "private_ecs_subnet" {
   for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 2) : az => idx }
   vpc_id            = aws_vpc.dev_vpc.id
   cidr_block        = cidrsubnet(aws_vpc.dev_vpc.cidr_block, 4, each.value + 4)

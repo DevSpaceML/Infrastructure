@@ -27,12 +27,19 @@ module "dev_network" {
 module "dev_certs" {
   source = "../../../../modules/security/certs/alb-certs"
   alb_dns_name = module.dev_network.dev_alb_dns_name
-}
+} 
 
 module "dev_dns" {
   source = "../../../../modules/dns/cloudflare-dev-main"
   alb_dns_name = module.dev_network.dev_alb_dns_name
-  cert_arn = module.dev_certs.dev_acm_cert_arn
+  cert_arn     = module.dev_certs.dev_acm_cert_arn
   cert_validation_options = module.dev_certs.dev_acm_cert_validation_options
+  domain_names = module.dev_certs.domain_names
 }
 
+module "dev-alb" {
+  source   = "../../../../modules/alb/dev"
+  cert_arn = data.terraform.remote_state.dev_network.outputs.dev_acm_cert_arn
+  alb_sg_id = data.terraform_remote_state.dev_network.outputs.dev_alb_security_group_id
+  vpc_id = data.terraform_remote_state.dev_network.outputs.dev_vpc_id 
+}

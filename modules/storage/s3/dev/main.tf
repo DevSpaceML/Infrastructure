@@ -1,8 +1,7 @@
-resource "aws_s3_bucket" "app_artifacts" {
-    bucket = "dev-app-artifacts"
-
+resource "aws_s3_bucket" "terraform_tf_state" {
+    bucket = "dev-tf-state-488347380548"
     tags = {
-    Name        = "dev-artifacts"
+    Name        = "dev-terraform-tf-state"
     Environment = "Dev"
   }
 }

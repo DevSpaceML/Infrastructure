@@ -8,23 +8,22 @@ data "aws_caller_identity" "current" {}
 
 data "aws_iam_policy_document" "ecs_task_trust" {
   statement {
-    sid     = "AllowAssumeRole-EcsTask"
+    sid     = "AllowAssumeRoleEcsTask"
     effect  = "Allow"
     actions = ["sts:AssumeRole"]
     
     principals {
       type = "Service"
-      identifiers = ["ecs-tasks.awsamazon.com"]
+      identifiers = ["ecs-tasks.amazonaws.com"]
     }
 
-    resources = ["*"]
   }
 
 }
 
 data "aws_iam_policy_document" "ecs_execution_trust" {
   statement {
-    sid = "AllowAssumeRole-EcsExecution"
+    sid = "AllowAssumeRoleEcsExecution"
     effect = "Allow"
     actions = ["sts:AssumeRole"]
 
@@ -55,22 +54,7 @@ data "aws_iam_policy_document" "ecs_execution_permissions" {
     ]
     resources = [data.aws_ecr_repository.selfservice.arn]
   }
-}
 
-/* ecs-task permissions */
-
-data "aws_iam_policy_document" "ecs_task_permissions" {
-  # No AWS API calls at runtime — GitHub and Postgres are
-  # plain TCP/HTTPS connections, not IAM-authenticated.
-  #
-  # If you later add RDS IAM auth, S3, SQS, etc., add
-  # scoped statements here rather than broadening this.
-}
-
-
-
-/*
-  # CloudWatch Logs — scoped to the log group defined in your task definition
   statement {
     sid    = "CloudWatchLogs"
     effect = "Allow"
@@ -82,6 +66,17 @@ data "aws_iam_policy_document" "ecs_task_permissions" {
       "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/selfservice/nginx:*",
     ]
   }
+}
+
+/* ecs-task permissions  
+
+data "aws_iam_policy_document" "ecs_task_permissions" {
+  # No AWS API calls at runtime — GitHub and Postgres are
+  # plain TCP/HTTPS connections, not IAM-authenticated.
+  #
+  # If you later add RDS IAM auth, S3, SQS, etc., add
+  # scoped statements here rather than broadening this.
+}
 */
 
 
@@ -104,11 +99,13 @@ resource "aws_iam_role" "ecs_task" {
   assume_role_policy = data.aws_iam_policy_document.ecs_task_trust.json  
 }
 
+/*
 resource "aws_iam_role_policy" "ecs_task_policy" {
   name = "selfservice-task-policy"
   role = aws_iam_role.ecs_task.id
   policy = data.aws_iam_policy_document.ecs_task_permissions.json
 }
+*/
 
 # ------------------------------------------------------------------- #
 
@@ -148,6 +145,28 @@ resource "aws_ecs_task_definition" "slfsvc-app" {
       }
     }
   ])
+}
+
+resource "aws_ecs_service" "slfsvc-app" {
+  name            = "selfservice-app-service"
+  cluster         = aws_ecs_cluster.slfsvc-cluster.id
+  task_definition = aws_ecs_task_definition.slfsvc-app.arn
+  desired_count   = 1
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets         = var.private_ecs_subnet_ids
+    security_groups = [var.ecs_security_group_id]
+    assign_public_ip = false
+  }
+
+  load_balancer {
+    target_group_arn = var.target_group_arn
+    container_name   = "slfsvc-app"
+    container_port   = 80
+  }
+
+  depends_on = [aws_lb_listener_rule.slfsrv-listener-rule]
 }
 
 

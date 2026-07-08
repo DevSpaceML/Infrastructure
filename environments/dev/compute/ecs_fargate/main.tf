@@ -19,4 +19,7 @@ provider "aws" {
 module "ecs_fargate" {
   source = "../../../../modules/compute/fargate"
   aws_region = var.region
+  ecs_security_group_id = data.terraform_remote_state.dev_network.outputs.dev_ecs_security_group_id
+  private_ecs_subnet_ids = data.terraform_remote_state.dev_network.outputs.dev_private_subnet_id_list
+  target_group_arn = data.terraform_remote_state.dev_alb.outputs.dev_target_group_arn
 }

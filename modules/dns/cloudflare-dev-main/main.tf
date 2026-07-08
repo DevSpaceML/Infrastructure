@@ -36,22 +36,18 @@ resource "cloudflare_dns_record" "this" {
 }
 
 locals {
-  cert_validation_records = { for dvo in var.cert_validation_options : dvo.resource_record_name => {
-      type   = dvo.resource_record_type
-      content = dvo.resource_record_value
-    }...
-  } 
+  cert_validation_map = {
+    for dvo in var.cert_validation_options : dvo.domain_name => dvo
+  }
 }
 
 resource "cloudflare_dns_record" "acm_cert_validation" {
-  for_each = {
-    for name, record in local.cert_validation_records : name => record[0]
-  }
+  for_each = toset(var.domain_names)
 
   zone_id = data.cloudflare_zone.this.id
-  name = each.key
-  type = each.value.type
-  content = each.value.content
+  name = local.cert_validation_map[each.value].resource_record_name
+  type = local.cert_validation_map[each.value].resource_record_type
+  content = local.cert_validation_map[each.value].resource_record_value
   ttl = 300
   proxied = false
 }

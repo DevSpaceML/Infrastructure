@@ -33,7 +33,7 @@ data "aws_iam_policy_document" "deployment_role_trust" {
 
 data "aws_iam_policy_document" "deploy_ecr_images" {
   statement {
-    sid = "ECR-Authentication"
+    sid = "EcrAuthentication"
     effect = "Allow"
 
     actions = ["ecr:GetAuthorizationToken"]
@@ -41,7 +41,7 @@ data "aws_iam_policy_document" "deploy_ecr_images" {
   }
 
   statement {
-    sid = "ECRPushPull"
+    sid = "EcrPushPull"
     effect = "Allow"
 
     actions = [
@@ -57,7 +57,7 @@ data "aws_iam_policy_document" "deploy_ecr_images" {
       "ecr:ListImages",
     ]
 
-    resources = ["arn:aws:488347380548.dkr.ecr.us-east-1.amazonaws.com/dev/selfservice"]
+    resources = ["arn:aws:ecr:us-east-1:488347380548:repository/dev/selfservice"]
   }
   
 }
