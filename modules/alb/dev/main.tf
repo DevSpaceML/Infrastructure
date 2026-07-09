@@ -2,10 +2,10 @@
 /* ALB, target-groups, listeners */
 
 resource "aws_lb" "dev_alb" {
-  name               = "dev-alb"
+  name               = "dev-shared-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]
+  security_groups    = [var.alb_sg_id]
   subnets            = [for s in var.public_dev_subnet_list : s.id]
 
   tags = {

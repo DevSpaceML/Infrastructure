@@ -11,11 +11,6 @@ variable "subj_alt_names" {
   default = []
 }
 
-variable "alb_dns_name" {
-  description = "load balancer dns name"
-  type = string
-}
-
 variable "target" {
   description = "target resource for cert deployment"
   type = string

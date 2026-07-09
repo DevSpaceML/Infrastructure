@@ -24,10 +24,11 @@ output "ecs_security_group_id" {
   value = aws_security_group.ecs_sg.id
 }
 
-output "dev_alb_dns_name" {
-  description = "DNS name for dev ALB"
-  value = aws_lb.dev_alb.dns_name
+output "alb_security_group_id" {
+  description = "Security group ID for dev ALB"
+  value = aws_security_group.alb_sg.id
 }
+
 
 output "dev_nat_gateway_id" {
   description = "ID for dev NAT gateway"
