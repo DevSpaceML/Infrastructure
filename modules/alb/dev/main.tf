@@ -6,7 +6,7 @@ resource "aws_lb" "dev_alb" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [var.alb_sg_id]
-  subnets            = [for s in var.public_dev_subnet_list : s.id]
+  subnets            = var.public_dev_subnet_list
 
   tags = {
     Name        = "dev-alb"
@@ -37,10 +37,25 @@ resource "aws_alb_target_group" "ecs-slfsvc-tg" {
   
 }
 
+resource "aws_lb_listener" "http-redirect" {
+  load_balancer_arn = aws_lb.dev_alb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+  }
+}
+
 resource "aws_lb_listener" "slfsvc-listener" {
   load_balancer_arn = aws_lb.dev_alb.arn  
   port              = 443
-  protocol          = "HTTP"
+  protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
   certificate_arn    = var.cert_arn
 
@@ -50,6 +65,22 @@ resource "aws_lb_listener" "slfsvc-listener" {
       content_type = "text/plain"
       message_body = "404: Not Found"
       status_code  = "404"
+    }
+  }
+}
+
+resource "aws_lb_listener_rule" "slfsrv-listener-rule" {
+  listener_arn = aws_lb_listener.slfsvc-listener.arn
+  priority     = 100
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_alb_target_group.ecs-slfsvc-tg.arn
+  }
+
+  condition {
+    host_header {
+      values = ["var.domain_name"]
     }
   }
 }

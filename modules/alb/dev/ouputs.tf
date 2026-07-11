@@ -5,5 +5,5 @@ output "dev_alb_dns_name" {
 
 output "ecs-slfsvc-tg_arn" {
   description = "ARN of the AWS ALB target group"
-  value       = aws_lb_target_group.dev_alb_target_group.arn
+  value       = aws_alb_target_group.ecs-slfsvc-tg.arn
 }

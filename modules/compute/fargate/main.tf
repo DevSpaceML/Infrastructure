@@ -166,7 +166,6 @@ resource "aws_ecs_service" "slfsvc-app" {
     container_port   = 80
   }
 
-  depends_on = [aws_lb_listener_rule.slfsrv-listener-rule]
 }
 
 

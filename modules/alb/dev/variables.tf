@@ -18,3 +18,8 @@ variable "alb_sg_id" {
   description = "ALB security group ID"
   type = string
 }
+
+variable "domain_name" {
+  description = "Domain name for the ALB"
+  type = string
+}

@@ -9,3 +9,7 @@ output "dev_acm_cert_arn" {
 output "domain_names" {
   value = local.domain_names
 }
+
+output "appdomain" {
+  value = var.appdomain
+}
