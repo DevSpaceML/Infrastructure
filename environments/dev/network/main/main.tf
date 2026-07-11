@@ -39,7 +39,7 @@ module "dev_cert_validation" {
 }
 
 module "dev-alb" {
-  depends_on = [module.dev_network, module.dev_certs, module.dev_cert_validation]
+  depends_on = [module.dev_cert_validation, module.dev_certs, module.dev_network ]
 
   source   = "../../../../modules/alb/dev"
   cert_arn = module.dev_certs.dev_acm_cert_arn
