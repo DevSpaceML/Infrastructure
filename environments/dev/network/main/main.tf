@@ -39,7 +39,7 @@ module "dev_cert_validation" {
 }
 
 module "dev-alb" {
-  depends_on = [module.dev_network, module.dev_certs]
+  depends_on = [module.dev_network, module.dev_certs, module.dev_cert_validation]
 
   source   = "../../../../modules/alb/dev"
   cert_arn = module.dev_certs.dev_acm_cert_arn
@@ -50,7 +50,7 @@ module "dev-alb" {
 }
 
 module "dev_dns" {
-  depends_on = [module.dev-alb, module.dev_certs]
+  depends_on = [module.dev-alb, module.dev_certs, module.dev_cert_validation]
 
   source = "../../../../modules/dns/cloudflare-dev-main"
   alb_dns_name = module.dev-alb.dev_alb_dns_name
