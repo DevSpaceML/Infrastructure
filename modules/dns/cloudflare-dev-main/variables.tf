@@ -9,7 +9,7 @@ variable "domain_names" {
     type = list(string)
 }
 
-variable "api-token" {
+variable "cf_api_token" {
   description = "cloudflare auth token"
   type = string
   default = null

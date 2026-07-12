@@ -13,12 +13,18 @@ terraform {
       source  = "hashicorp/helm"
       version = ">= 2.0.0"
     }
+    cloudflare = {
+      source = "cloudflare/cloudflare"
+      version = ">= 5.21"
+    }
   }
 }
 
 provider "aws" {
   region = "us-east-1"
 }
+
+provider "cloudflare" {}
 
 module "dev_network" {
   source = "../../../../modules/network/dev"
@@ -30,12 +36,13 @@ module "dev_certs" {
 }
 
 module "dev_cert_validation" {
-  depends_on = [module.dev_certs]
+  depends_on = [module.dev_certs, module.dev_network]
   source     = "../../../../modules/dns/cloudflare-cert-validation"
 
   cert_validation_options = module.dev_certs.dev_acm_cert_validation_options
   domain_names            = module.dev_certs.domain_names
   cert_arn                = module.dev_certs.dev_acm_cert_arn
+  appdomain                = module.dev_certs.appdomain
 }
 
 module "dev-alb" {

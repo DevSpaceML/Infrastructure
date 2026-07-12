@@ -5,9 +5,14 @@ variable "appdomain" {
   default = "salientapps.com"
 }
 
-
-
 /*
+
+variable "cf_api_token" {
+  description = "Cloudflare API token for authentication"
+  type = string
+  default = null
+}
+  
 variable "alb_dns_name" {
   description = "DNS name of the ALB"
   type = string
@@ -24,4 +29,5 @@ variable "cert_validation_options" {
     resource_record_value = string
   }))
 }
+
 */
