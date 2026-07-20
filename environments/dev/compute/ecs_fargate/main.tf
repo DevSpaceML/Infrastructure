@@ -21,5 +21,5 @@ module "ecs_fargate" {
   aws_region = var.region
   ecs_security_group_id = data.terraform_remote_state.dev_network.outputs.ecs_security_group_id
   private_ecs_subnet_ids = data.terraform_remote_state.dev_network.outputs.private_ecs_subnet_id_list
-  target_group_arn = data.terraform_remote_state.dev_alb.outputs.ecs-slfsvc-tg_arn
+  target_group_arn = data.terraform_remote_state.dev_alb.outputs.ecs_slfsvc_tg_arn
 }

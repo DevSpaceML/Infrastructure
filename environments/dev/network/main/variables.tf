@@ -19,15 +19,4 @@ variable "alb_dns_name" {
   default = ""
 }
 
-
-variable "cert_validation_options" {
-  description = "Certificate validation options"
-  type = list(object({
-    domain_name = string
-    resource_record_name = string
-    resource_record_type = string
-    resource_record_value = string
-  }))
-}
-
 */

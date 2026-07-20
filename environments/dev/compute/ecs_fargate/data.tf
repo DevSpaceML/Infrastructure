@@ -7,6 +7,7 @@ data "terraform_remote_state" "dev_network" {
     }
 }
 
+
 data "terraform_remote_state" "dev_alb" {
     backend = "s3"
     config = {

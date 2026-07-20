@@ -1,8 +1,8 @@
-data "terraform_remote_state" "iam" {
+data "terraform_remote_state" "dev_certs" {
     backend = "s3"
     config = {
         bucket = "dev-tf-state-488347380548"
-        key    = "dev/iam/terraform.tfstate"
+        key    = "dev/certs/main/terraform.tfstate"
         region = "us-east-1"
     }
 }

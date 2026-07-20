@@ -18,7 +18,7 @@ resource "cloudflare_api_token" "dns_update" {
   name = "dns-update-token"
   policies = [{
     permission_groups = [
-      { id = "d755e40fc5815ba85a23bb7c45a6a66b"  }
+      { id = "4755a26eedb94da69e1066d98aa820be"  }
     ]
     resources = jsonencode({
       "com.cloudflare.api.account.zone.${data.cloudflare_zone.this.zone_id}" = "*"

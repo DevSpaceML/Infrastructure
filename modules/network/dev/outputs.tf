@@ -2,13 +2,6 @@ output "dev_vpc_id" {
   value = aws_vpc.dev_vpc.id
 }
 
-/* domain_name 
-output "domain_name" {
-  description = "Domain name for the dev environment"
-  value = var.appdomain
-}
-*/
-
 /** Public subnet IDs */
 output "public_subnet_id_list" {
   description = "Public subnet IDs for dev environment"

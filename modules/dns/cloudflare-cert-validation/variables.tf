@@ -6,6 +6,13 @@ variable "cert_validation_options" {
     resource_record_type = string
     resource_record_value = string
   }))
+
+  default = []
+}
+
+variable "domain_names" {
+  description = "domain names for the cert"
+  type = list(string)
 }
 
 variable "cert_arn"{

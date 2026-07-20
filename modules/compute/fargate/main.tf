@@ -4,6 +4,13 @@ data "aws_ecr_repository" "selfservice" {
 
 data "aws_caller_identity" "current" {}
 
+
+/* CloudWatch Log Group for Nginx */
+resource "aws_cloudwatch_log_group" "selfservice_nginx" {
+  name              = "/ecs/selfservice/nginx"
+  retention_in_days = 14
+}
+
 /* ECS IAM Role Trust Policies  */
 
 data "aws_iam_policy_document" "ecs_task_trust" {
@@ -61,10 +68,12 @@ data "aws_iam_policy_document" "ecs_execution_permissions" {
     actions = [
       "logs:CreateLogStream",
       "logs:PutLogEvents",
+      "logs:CreateLogGroup",
+      "logs:DescribeLogStreams",
+      "logs:DescribeLogGroups",
     ]
-    resources = [
-      "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/selfservice/nginx:*",
-    ]
+    resources = ["arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/selfservice/nginx:*",
+                 "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/selfservice/nginx:log-stream:*"]
   }
 }
 
@@ -83,16 +92,23 @@ data "aws_iam_policy_document" "ecs_task_permissions" {
 # ------------- IAM Roles and Policy Attachments ---------------------- #
 
 # IAM roles for ECS tasks and execution
-resource "aws_iam_role" "ecs_execution" {
-  name = "ecs-task-execution-role"
+resource "aws_iam_role" "ecs_exec" {
+  name = "task-execution-role"
   assume_role_policy = data.aws_iam_policy_document.ecs_execution_trust.json
 }
 
+resource "aws_iam_role_policy_attachment" "ecs_exec_managed_policy" {
+  role       = aws_iam_role.ecs_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+/*
 resource "aws_iam_role_policy" "ecs_execution_policy" {
   name   = "selfservice-execution-policy"
-  role   = aws_iam_role.ecs_execution.id
-  policy = data.aws_iam_policy_document.ecs_execution_permissions.json
+  role   = aws_iam_role.ecs_exec.id
+  policy = AmazonECSTaskExecutionRolePolicy
 }
+*/
 
 resource "aws_iam_role" "ecs_task" {
   name = "ecs-task-role"
@@ -119,15 +135,25 @@ resource "aws_ecs_cluster" "slfsvc-cluster" {
     value = "enabled"
   }
 }
- 
+
 resource "aws_ecs_task_definition" "slfsvc-app" {
+  depends_on = [
+    aws_cloudwatch_log_group.selfservice_nginx,
+    aws_iam_role_policy_attachment.ecs_exec_managed_policy,
+  ]
+
   family                   = "selfservice-app"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"
   memory                   = "1024"
-  execution_role_arn       = aws_iam_role.ecs_execution.arn
-  task_role_arn            = aws_iam_role.ecs_task.arn  # for app AWS calls
+  execution_role_arn       = aws_iam_role.ecs_exec.arn
+  task_role_arn            = aws_iam_role.ecs_task.arn
+
+  runtime_platform {
+    cpu_architecture        = "ARM64"
+    operating_system_family = "LINUX"
+  }  
 
   container_definitions = jsonencode([
     {
@@ -138,7 +164,7 @@ resource "aws_ecs_task_definition" "slfsvc-app" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = "/ecs/selfservice/nginx"
+          awslogs-group         = aws_cloudwatch_log_group.selfservice_nginx.name
           awslogs-region        = var.aws_region
           awslogs-stream-prefix = "slfsvc-app"
         }

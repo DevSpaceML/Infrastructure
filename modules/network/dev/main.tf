@@ -50,6 +50,18 @@ resource "aws_security_group_rule" "alb_rules" {
   cidr_blocks              = ["0.0.0.0/0"]
 }
 
+# 1. Internet -> ALB (this is the one you just added manually via CLI)
+resource "aws_security_group_rule" "sgr-alb-ingress-443" {
+  type              = "ingress"
+  from_port         = 443
+  to_port           = 443
+  protocol          = "tcp"
+  security_group_id = aws_security_group.alb_sg.id
+  cidr_blocks       = ["0.0.0.0/0"]
+}
+
+# -- 
+
 resource "aws_security_group_rule" "alb_egress" {
   type                     = "egress"
   from_port                = 0
@@ -58,6 +70,17 @@ resource "aws_security_group_rule" "alb_egress" {
   security_group_id        = aws_security_group.alb_sg.id
   cidr_blocks              = ["0.0.0.0/0"]
 }
+
+# 2. ALB -> ECS tasks (mirrors your existing port-80 pattern)
+resource "aws_security_group_rule" "sgr-ecs-ingress-443" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.ecs_sg.id
+  source_security_group_id = aws_security_group.alb_sg.id
+}
+
 
 /* Public subnet resources */
 
@@ -74,7 +97,17 @@ resource "aws_subnet" "public_dev_subnet" {
   }
 }
 
-/* Public Subnet Route Table */
+/* Dev Gateway and Public Subnet Routes and Tables */
+
+resource "aws_nat_gateway" "dev_nat_gateway" {
+  allocation_id = aws_eip.dev_eip.id
+  subnet_id     = [ for s in aws_subnet.public_dev_subnet : s.id ][0]
+
+  tags = {
+    Name        = "dev-nat-gateway"
+    Environment = "Dev"
+  }
+}
 
 resource "aws_route_table" "dev_public_route" {
   vpc_id = aws_vpc.dev_vpc.id
@@ -99,14 +132,10 @@ resource "aws_eip" "dev_eip" {
   }
 }
 
-resource "aws_nat_gateway" "dev_nat_gateway" {
-  allocation_id = aws_eip.dev_eip.id
-  subnet_id     = [ for s in aws_subnet.public_dev_subnet : s.id ][0]
-
-  tags = {
-    Name        = "dev-nat-gateway"
-    Environment = "Dev"
-  }
+resource "aws_route_table_association" "public_dev_rta" {
+  for_each       = aws_subnet.public_dev_subnet
+  subnet_id      = each.value.id
+  route_table_id = aws_route_table.dev_public_route.id
 }
 
 /** ECS Security Groups and Rules */
@@ -181,4 +210,8 @@ resource "aws_route_table" "dev_private_route" {
   }
 }
 
-
+resource "aws_route_table_association" "private_ecs_rta" {
+  for_each       = aws_subnet.private_ecs_subnet
+  subnet_id      = each.value.id
+  route_table_id = aws_route_table.dev_private_route.id
+}
