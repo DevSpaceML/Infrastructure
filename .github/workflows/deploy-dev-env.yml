@@ -1,21 +1,16 @@
 # =========================================================================================================================
-# -- Deploys Non-Prod environment [Dev/Staging] infrastructure
+# -- Deploys main Dev infrastructure
 # -- Resources: env IAM, Network, ALB
-# -- CNAME record in Cloudflare DNS for DEV [or staging] environments. 
+# -- CNAME records in Cloudflare DNS for DEV [or staging] environments. 
 # =========================================================================================================================
 
-name: Deploy NonProd Environment
+name: Deploy Dev Environment
 on:
   push:
     branches: [develop]
     paths: ['infrastructure/environments/dev/**']
   workflow_dispatch:
     inputs:
-      environment:
-        description: 'Choose a non-prod environment'
-        type: choice
-        options: [dev, staging]
-        required: true
       region:
         description: 'Deployment region'
         type: choice
@@ -35,8 +30,6 @@ jobs:
   deploy-network:
     name: deploy-network
     runs-on: ubuntu-latest
-    env:
-      TARGET_ENV: ${{ github.event.inputs.environment }}  
     
     steps:  
       - name: checkout-code
@@ -57,32 +50,32 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init
-        working-directory: ./environments/$TARGET_ENV/network/main
+        working-directory: ./environments/dev/network/main
         run: |
               terraform init -upgrade
       
       - name: Terraform Validate
-        working-directory: ./environments/$TARGET_ENV/network
+        working-directory: ./environments/dev/network/main
         run: terraform validate 
 
       - name: Terraform Plan
-        working-directory: ./environments/$TARGET_ENV/network
+        working-directory: ./environments/dev/network/main
         run: |
-          terraform plan -out=netwrk_tfplan
-          terraform show -json tfplan > netwrk_tfplan.json
-          cat netwrk_tfplan.json
+          terraform plan -out=network_tfplan
+          terraform show -json tfplan > network_tfplan.json
+          cat network_tfplan.json
 
 #      - name: Terraform Apply
-#        working-directory: ./environments/$TARGET_ENV/network
+#        if: ${{ github.event.inputs.dry-run == 'false' }} 
+#        working-directory: ./environments/dev/network/main
 #        run: |
-#          terraform apply "netwrk_tfplan"      
+#          terraform apply -auto-approve network_tfplan
 
-  deploy-iam:
-    name: deploy-iam
+  deploy-certs:
+    name: deploy-certs
     runs-on: ubuntu-latest
     needs: [deploy-network]
     env:
-      ENVIRONMENT: ${{ github.event.inputs.environment}}
       region: ${{ github.event.inputs.region }}
 
     steps:  
@@ -94,7 +87,7 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
           role-session-name: GitHub-Actions-OIDC-Session
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ env.region }}
           mask-aws-account-id: false
       
       - name: Prepare Terraform
@@ -104,30 +97,253 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init
-        working-directory: ./environments/$TARGET_ENV/iam/main
+        working-directory: ./environments/dev/configuration/certs/main
         run: |
               terraform init -upgrade
       
       - name: Terraform Validate
-        working-directory: ./environments/$TARGET_ENV/iam/main
+        working-directory: ./environments/dev/configuration/certs/main
         run: terraform validate 
 
       - name: Terraform Plan
-        working-directory: ./environments/$TARGET_ENV/iam/main
+        working-directory: ./environments/dev/configuration/certs/main
+        run: |
+          terraform plan -out=tfplan
+          terraform show -json tfplan > certs_tfplan.json
+          cat certs_tfplan.json
+
+  validate-certs:
+    name: validate-certs
+    runs-on: ubuntu-latest
+    needs: [deploy-certs]
+    env:
+      region: ${{ github.event.inputs.region }}
+
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+            
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.region }}
+          mask-aws-account-id: false
+      
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: ./environments/dev/configuration/cert-validation
+        run: |
+              terraform init -upgrade
+      
+      - name: Terraform Validate
+        working-directory: ./environments/dev/configuration/cert-validation
+        run: terraform validate 
+
+      - name: Terraform Plan
+        working-directory: ./environments/dev/configuration/cert-validation
+        run: |
+          terraform plan -out=tfplan
+          terraform show -json tfplan > certs_tfplan.json
+          cat certs_tfplan.json
+
+#      - name: Terraform Apply
+#        if: ${{ github.event.inputs.dry-run == 'false' }}
+#        working-directory: ./environments/dev/configuration/cert-validation
+#        run: |
+#          terraform apply -auto-approve tfplan    
+  
+  deploy-alb:
+    name: deploy-alb
+    runs-on: ubuntu-latest
+    needs: [deploy-network]
+    env:
+      region: ${{ github.event.inputs.region }}
+
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+            
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.region }}
+          mask-aws-account-id: false
+      
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: ./environments/dev/alb/dev
+        run: |
+              terraform init -upgrade
+      
+      - name: Terraform Validate
+        working-directory: ./environments/dev/alb/dev
+        run: terraform validate 
+
+      - name: Terraform Plan
+        working-directory: ./environments/dev/alb/dev
+        run: |
+          terraform plan -out=tfplan
+          terraform show -json tfplan > alb_tfplan.json
+          cat alb_tfplan.json
+          
+#      - name: Terraform Apply
+#        if: ${{ github.event.inputs.dry-run == 'false' }}
+#        working-directory: ./environments/dev/alb/dev
+#        run: |
+#          terraform apply -auto-approve tfplan
+
+  deploy-dns:
+    name: deploy-dns
+    runs-on: ubuntu-latest
+    needs: [deploy-alb]
+    env:
+      region: ${{ github.event.inputs.region }}
+
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+            
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.region }}
+          mask-aws-account-id: false
+      
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: ./environments/dev/dns/main
+        run: |
+              terraform init -upgrade
+      
+      - name: Terraform Validate
+        working-directory: ./environments/dev/dns/main
+        run: terraform validate 
+
+      - name: Terraform Plan
+        working-directory: ./environments/dev/dns/main
+        run: |
+          terraform plan -out=tfplan
+          terraform show -json tfplan > dns_tfplan.json
+          cat dns_tfplan.json
+      
+#      - name: Terraform Apply
+#        if: ${{ github.event.inputs.dry-run == 'false' }}
+#        working-directory: ./environments/dev/dns/main
+#        run: |
+#          terraform apply -auto-approve tfplan
+
+  deploy-iam:
+    name: deploy-iam
+    runs-on: ubuntu-latest
+    needs: [deploy-network]
+    env:
+      region: ${{ github.event.inputs.region }}
+
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+            
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.region }}
+          mask-aws-account-id: false
+      
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: ./environments/dev/iam/main
+        run: |
+              terraform init -upgrade
+      
+      - name: Terraform Validate
+        working-directory: ./environments/dev/iam/main
+        run: terraform validate 
+
+      - name: Terraform Plan
+        working-directory: ./environments/dev/iam/main
         run: |
           terraform plan -out=tfplan
           terraform show -json tfplan > iam_tfplan.json
-          cat iam_tfplan.json  
+          cat iam_tfplan.json
+      
+#      - name: Terraform Apply
+#        if: ${{ github.event.inputs.dry-run == 'false' }}
+#        working-directory: ./environments/dev/iam/main
+#        run: |
+#          terraform apply -auto-approve tfplan    
 
-        
+  deploy-fargate:
+    name: deploy-fargate
+    runs-on: ubuntu-latest
+    needs: [deploy-network, deploy-alb, deploy-iam]
+    env:
+      region: ${{ github.event.inputs.region }}
 
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+            
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::586098609239:role/GitHubActionsRole
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.region }}
+          mask-aws-account-id: false
+      
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
 
+      - name: Terraform Init
+        working-directory: ./environments/dev/compute/ecs_fargate/main
+        run: |
+              terraform init -upgrade
+      
+      - name: Terraform Validate
+        working-directory: ./environments/dev/compute/ecs_fargate/main
+        run: terraform validate 
 
+      - name: Terraform Plan
+        working-directory: ./environments/dev/compute/ecs_fargate/main
+        run: |
+          terraform plan -out=tfplan
+          terraform show -json tfplan > fargate_tfplan.json
+          cat fargate_tfplan.json
+          
+#      - name: Terraform Apply
+#        if: ${{ github.event.inputs.dry-run == 'false' }}
+#        working-directory: ./environments/dev/compute/ecs_fargate/main
+#        run: |
+#          terraform apply -auto-approve tfplan    
 
-
-
-#job1:  deploy-dev-iam
-
-#job2: deploy-dev-network
-
-#job3-deploy S3 bucket for static website hosting --> GHA runs script to upload the static website files to the S3 bucket.
