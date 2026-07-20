@@ -62,7 +62,7 @@ jobs:
         working-directory: ./environments/dev/network/main
         run: |
           terraform plan -out=network_tfplan
-          terraform show -json tfplan > network_tfplan.json
+          terraform show -json network_tfplan > network_tfplan.json
           cat network_tfplan.json
 
 #      - name: Terraform Apply
@@ -108,8 +108,8 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/dev/configuration/certs/main
         run: |
-          terraform plan -out=tfplan
-          terraform show -json tfplan > certs_tfplan.json
+          terraform plan -out=certs_tfplan
+          terraform show -json certs_tfplan > certs_tfplan.json
           cat certs_tfplan.json
 
   validate-certs:
@@ -149,9 +149,11 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/dev/configuration/cert-validation
         run: |
-          terraform plan -out=tfplan
-          terraform show -json tfplan > certs_tfplan.json
-          cat certs_tfplan.json
+          terraform plan -out=validate_tfplan
+          terraform show -json validate_tfplan > validate_tfplan.json
+          cat validate_tfplan.json   
+          terraform show -json validate_tfplan > validate_tfplan.json
+          cat validate_tfplan.json
 
 #      - name: Terraform Apply
 #        if: ${{ github.event.inputs.dry-run == 'false' }}
@@ -196,15 +198,15 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/dev/alb/dev
         run: |
-          terraform plan -out=tfplan
-          terraform show -json tfplan > alb_tfplan.json
+          terraform plan -out=alb_tfplan
+          terraform show -json alb_tfplan > alb_tfplan.json
           cat alb_tfplan.json
           
 #      - name: Terraform Apply
 #        if: ${{ github.event.inputs.dry-run == 'false' }}
 #        working-directory: ./environments/dev/alb/dev
 #        run: |
-#          terraform apply -auto-approve tfplan
+#          terraform apply -auto-approve alb_tfplan
 
   deploy-dns:
     name: deploy-dns
@@ -243,15 +245,15 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/dev/dns/main
         run: |
-          terraform plan -out=tfplan
-          terraform show -json tfplan > dns_tfplan.json
+          terraform plan -out=dns_tfplan
+          terraform show -json dns_tfplan > dns_tfplan.json
           cat dns_tfplan.json
       
 #      - name: Terraform Apply
 #        if: ${{ github.event.inputs.dry-run == 'false' }}
 #        working-directory: ./environments/dev/dns/main
 #        run: |
-#          terraform apply -auto-approve tfplan
+#          terraform apply -auto-approve dns_tfplan
 
   deploy-iam:
     name: deploy-iam
@@ -290,15 +292,15 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/dev/iam/main
         run: |
-          terraform plan -out=tfplan
-          terraform show -json tfplan > iam_tfplan.json
+          terraform plan -out=iam_tfplan
+          terraform show -json iam_tfplan > iam_tfplan.json
           cat iam_tfplan.json
       
 #      - name: Terraform Apply
 #        if: ${{ github.event.inputs.dry-run == 'false' }}
 #        working-directory: ./environments/dev/iam/main
 #        run: |
-#          terraform apply -auto-approve tfplan    
+#          terraform apply -auto-approve iam_tfplan    
 
   deploy-fargate:
     name: deploy-fargate
@@ -337,13 +339,13 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/dev/compute/ecs_fargate/main
         run: |
-          terraform plan -out=tfplan
-          terraform show -json tfplan > fargate_tfplan.json
+          terraform plan -out=fargate_tfplan
+          terraform show -json fargate_tfplan > fargate_tfplan.json
           cat fargate_tfplan.json
           
 #      - name: Terraform Apply
 #        if: ${{ github.event.inputs.dry-run == 'false' }}
 #        working-directory: ./environments/dev/compute/ecs_fargate/main
 #        run: |
-#          terraform apply -auto-approve tfplan    
+#          terraform apply -auto-approve fargate_tfplan    
 
