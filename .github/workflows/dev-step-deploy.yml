@@ -1,19 +1,11 @@
 name: Deploy Dev Infrastructure
 
 on:
-  push:
-    branches: [develop]
-    paths: ['infrastructure/environments/dev/fake']
   workflow_dispatch:
     inputs:
       environments:
         description: 'EKS Cluster Name'
         required: true
-        type: string
-      environments:
-        description: 'Environments To Deploy'
-        required: false
-        default: develop
         type: string
 env:
   TF_VERSION: "1.5.0"
