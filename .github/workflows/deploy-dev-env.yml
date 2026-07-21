@@ -122,6 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       region: ${{ github.event.inputs.region }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       TF_VAR_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     needs: [deploy-network, deploy-certs]
 
@@ -220,6 +221,7 @@ jobs:
     needs: [deploy-alb]
     env:
       region: ${{ github.event.inputs.region }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       TF_VAR_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
     steps:  
