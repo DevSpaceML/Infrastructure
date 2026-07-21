@@ -220,7 +220,7 @@ jobs:
     needs: [deploy-alb]
     env:
       region: ${{ github.event.inputs.region }}
-      CLOUDFLARE_API_TOKEN: ${{secrets.CLOUDFLARE_API_TOKEN}}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
     steps:  
       - name: checkout-code
