@@ -1,7 +1,7 @@
 # =========================================================================================================================
 # -- Deploys main Dev infrastructure
 # -- Resources: env IAM, Network, ALB
-# -- CNAME records in Cloudflare DNS for DEV [or staging] environments. 
+# -- CNAME records in Cloudflare DNS for DEV environments
 # =========================================================================================================================
 name: Deploy Dev Environment
 on:
@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       region: ${{ github.event.inputs.region }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     needs: [deploy-network, deploy-certs]
 
     steps:  
@@ -220,7 +220,7 @@ jobs:
     needs: [deploy-alb]
     env:
       region: ${{ github.event.inputs.region }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      TF_VAR_CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
     steps:  
       - name: checkout-code
