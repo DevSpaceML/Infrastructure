@@ -241,16 +241,16 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init
-        working-directory: ./environments/dev/dns/main
+        working-directory: ./environments/dev/dns
         run: |
               terraform init -upgrade
       
       - name: Terraform Validate
-        working-directory: ./environments/dev/dns/main
+        working-directory: ./environments/dev/dns
         run: terraform validate 
 
       - name: Terraform Plan
-        working-directory: ./environments/dev/dns/main
+        working-directory: ./environments/dev/dns
         run: |
           terraform plan -out=dns_tfplan
           terraform show -json dns_tfplan > dns_tfplan.json
@@ -258,7 +258,7 @@ jobs:
       
       - name: Terraform Apply
         if: ${{ github.event.inputs.dry-run == 'false' }}
-        working-directory: ./environments/dev/dns/main
+        working-directory: ./environments/dev/dns
         run: |
           terraform apply -auto-approve dns_tfplan
 
