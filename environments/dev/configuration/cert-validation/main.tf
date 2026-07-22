@@ -11,6 +11,8 @@ terraform {
   }
 }
 
+provider "cloudflare" {}
+
 module "dev_cert_validation" {
   source     = "../../../../modules/dns/cloudflare-cert-validation"
 
