@@ -241,16 +241,16 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init
-        working-directory: ./environments/dev/dns
+        working-directory: ./environments/dev/configuration/dns
         run: |
               terraform init -upgrade
       
       - name: Terraform Validate
-        working-directory: ./environments/dev/dns
+        working-directory: ./environments/dev/configuration/dns
         run: terraform validate 
 
       - name: Terraform Plan
-        working-directory: ./environments/dev/dns
+        working-directory: ./environments/dev/configuration/dns
         run: |
           terraform plan -out=dns_tfplan
           terraform show -json dns_tfplan > dns_tfplan.json
