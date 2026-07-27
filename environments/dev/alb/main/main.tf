@@ -9,7 +9,7 @@ terraform {
 }
 
 module "dev-alb" {
-  source      = "../../../../modules/alb/dev"
+  source      = "../../../../modules/alb/dev/main"
   cert_arn    = data.terraform_remote_state.dev_certs.outputs.dev_acm_cert_arn
   alb_sg_id   = data.terraform_remote_state.dev_network.outputs.alb_security_group_id
   vpc_id      = data.terraform_remote_state.dev_network.outputs.dev_vpc_id

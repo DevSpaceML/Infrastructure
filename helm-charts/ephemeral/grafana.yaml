@@ -1,0 +1,50 @@
+replicas: 1
+
+serviceAccount:
+  create: true
+  annotations:
+    eks.amazonaws.com/role-arn: ${grafana_irsa_role_arn}
+
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: AMP
+        type: prometheus
+        url: ${AMP_REMOTE_WRITE_URL}api/v1/remote_write
+        isDefault: true
+        jsonData:
+          httpMethod: POST
+          sigV4Auth: true
+          sigVAuthType: ec2_iam_role
+          sigV4Region: ${AWS_REGION}
+
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: 'default'
+        orgId: 1
+        folder: ''
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/default
+
+dashboards:
+  default:
+    kubernetes-cluster:
+      gnetId: 7249
+      revision: 1
+      datasource: AMP
+    node-exporter:
+      gnetId: 1860
+      revision: 1
+      datasource: AMP
+persistence:
+  enabled: true
+
+ingress:
+  enabled: false
+           

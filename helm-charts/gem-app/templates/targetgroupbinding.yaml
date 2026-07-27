@@ -1,0 +1,11 @@
+apiVersion: elbv2.k8s.aws/v1beta1
+kind: TargetGroupBinding
+metadata:
+  name: ${HELM_RELEASE_NAME}-tgb
+  namespace: ${HELM_NAMESPACE}
+spec:
+  serviceRef:
+    name: ${HELM_RELEASE_NAME}
+    port: {{ .Values.service.port }}
+  targetGroupARN: ${TARGET_GROUP_ARN}
+  targetType: ip

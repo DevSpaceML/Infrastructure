@@ -1,12 +1,12 @@
 {{ /* Expand the name of the chart */ }}
 
-{{- define "gemapp.appname" -}}
+{{- define "ephemeral.appname" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end }}
 
 {{/* Create a fully qualified app name */}}
 
-{{- define "gemapp.fullname" -}}
+{{- define "ephemeral.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -21,15 +21,15 @@
 
 {{/* Create Chart Name and version as used by the chart label */}}
 
-{{- define "gemapp.chart" -}}
+{{- define "ephemeral.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/* Common Labels */}}
 
-{{- define "gemapp.labels" -}}
-helm.sh/chart: {{ include "gemapp.chart" . }}
-{{ include "gemapp.selectorLabels" }}
+{{- define "ephemeral.labels" -}}
+helm.sh/chart: {{ include "ephemeral.chart" . }}
+{{ include "ephemeral.selectorLabels" }}
 {{- if .Chart.AppVersion  }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -38,16 +38,16 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 
 {{/* Selector Labels */}}
 
-{{- define "gemapp.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "gemapp.name" .}}
+{{- define "ephemeral.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "ephemeral.name" .}}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/* Create the name of the service account to use */}}
 
-{{- define "gemapp.serviceAccountName" -}}
+{{- define "ephemeral.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "gemapp.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "ephemeral.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}

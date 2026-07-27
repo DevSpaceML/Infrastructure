@@ -1,11 +1,11 @@
 apiVersion: v2
-name: gem-app
-description: A Helm chart for EKS deployment of the gem-app application
+name: ephemeral
+description: A Helm chart for deployment of ephemeral eks clusters
 type: application
 version: 0.1.0
 appVersion: 0.1.0
 keywords:
-  - gem-app
+  - ephemeral
   - eks
   - helm
   - kubernetes

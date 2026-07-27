@@ -1,0 +1,741 @@
+# Deployment sequence for ephemeral eks cluster
+#   1. Configure TF_Vars, 2. Deploy Network, 3. Deploy IAM, 4. Deploy Cluster, enable control-plane logging with Cloudwatch
+#  5. Configure Cluster Authentication
+#    step1 --> configure aws-auth ConfigMap for role mappings
+#    step2 --> configure OIDC provider for IRSA (IAM Roles for Service Accounts)
+#   6. Nodegroup, 7. Certs, 8. Database, 9. Helm App+ingress Deployment, 10.DNS (Route53 etc)
+#   Consider using external-dns as a Helm chart in step 9 to automate Route53 record management, rather than managing it as a separate Terraform 
+#   step. This would simplify the workflow and reduce the number of Terraform steps, while still achieving dynamic DNS management based on Kubernetes resources.
+
+name: ephmrl-dev-eks
+
+on:
+  repository_dispatch:
+    types: [ephmrl-dev-eks]
+env:
+  TF_VERSION: "1.8.5"
+  ENVIRONMENT: ${{ github.event.client_payload.config.environment }}
+  REGION: ${{ github.event.client_payload.config.region }}
+
+permissions:
+  id-token: write
+  contents: read  
+
+jobs:
+  configure-variables:
+    runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: ${{ github.event.client_payload.config.environment }}
+      REGION: ${{ github.event.client_payload.config.region }}
+    outputs:
+      environment: ${{ steps.parse_vars.outputs.environment }}
+      clustername: ${{ steps.parse_vars.outputs.clustername }}
+      region: ${{ steps.parse_vars.outputs.region }}
+      dev_cidr: ${{ steps.parse_vars.outputs.dev_cidr }}
+      vpcname: ${{ steps.parse_vars.outputs.vpcname }}
+      createvpc: ${{ steps.parse_vars.outputs.createvpc }}
+      existing_vpc_id: ${{ steps.parse_vars.outputs.existing_vpc_id }}
+      public_subnet_cidr: ${{ steps.parse_vars.outputs.public_subnet_cidr }}
+      private_subnet_cidr: ${{ steps.parse_vars.outputs.private_subnet_cidr }}
+      rds_subnet_cidrs: ${{ steps.parse_vars.outputs.rds_subnet_cidrs }}
+      nodegroup_subnet_cidrs: ${{ steps.parse_vars.outputs.nodegroup_subnet_cidrs }}
+      projectname: ${{ steps.parse_vars.outputs.projectname }}
+      appversion: ${{ steps.parse_vars.outputs.app_version }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.REGION  }}
+          mask-aws-account-id: false
+
+      - name: config_variables
+        shell: bash
+        id: parse_vars
+        working-directory: ./environments/${{ env.ENVIRONMENT }}
+        run: |
+          PAYLOAD=$(printf '%s' '${{ tojson(github.event.client_payload.config) }}')
+          echo "Current Payload: $PAYLOAD"
+
+          # ── Loop over all top-level scalar fields dynamically ──────────────────
+          while IFS='=' read -r key value; do
+            echo "${key}=${value}" >> "$GITHUB_OUTPUT"
+          done < <(
+            echo "$PAYLOAD" | jq -r '
+              to_entries[]
+              | select(.key != "network")
+              | select(.value | type == "string")
+              | "\(.key)=\(.value)"
+            '
+          )
+          # ── Network block: special split logic per subnet role ──────────────────
+          echo "$PAYLOAD" | jq -r '
+            .network | to_entries[] |
+            if   .key == "eks"  then
+              "public_subnet_cidr="  + (.value[:2]  | tojson),
+              "private_subnet_cidr=" + (.value[2:4] | tojson)
+            elif .key == "db"   then "rds_subnet_cidrs="       + (.value | tojson)
+            elif .key == "node" then "nodegroup_subnet_cidrs=" + (.value | tojson)
+            else                     "\(.key)="                + (.value | tojson)
+            end
+          ' >> "$GITHUB_OUTPUT"
+          cat $GITHUB_OUTPUT
+
+  # DEPLOY NETWORK
+  deploy-network:
+    runs-on: ubuntu-latest
+    needs: configure-variables
+    if: needs.configure-variables.outputs.createvpc == 'true'
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+      TF_VAR_dev_cidr: ${{ needs.configure-variables.outputs.dev_cidr }}
+      TF_VAR_existing_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}
+      TF_VAR_vpcname: ${{ needs.configure-variables.outputs.vpcname }}
+      TF_VAR_createvpc: ${{ needs.configure-variables.outputs.createvpc }}
+      TF_VAR_public_subnet_cidr_blocks: ${{ needs.configure-variables.outputs.public_subnet_cidr }}
+      TF_VAR_private_subnet_cidr_blocks: ${{ needs.configure-variables.outputs.private_subnet_cidr }}
+      TF_VAR_rds_private_subnet_cidr_blocks: ${{ needs.configure-variables.outputs.rds_subnet_cidrs }}
+      TF_VAR_nodegroup_pvt_subnet_cidr_blocks: ${{ needs.configure-variables.outputs.nodegroup_subnet_cidrs }}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.TF_VAR_region}}
+          mask-aws-account-id: false
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+    
+      - name: Deploy Network
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/main
+        run: |
+          terraform init -upgrade
+
+      - name: Terraform Validate
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/main
+        run: terraform validate 
+
+      - name: Terraform Plan
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/main
+        run: |
+          terraform plan -out=tfplan
+          terraform show -json tfplan > tfplan.json
+          cat tfplan.json
+
+      - name: Upload Network Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: network-tfplan
+          path: ./environments/${{ env.ENVIRONMENT }}/network/main/tfplan.json
+
+      - name: Terraform Apply
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/main
+        run: terraform apply -auto-approve tfplan    
+
+  # DEPLOY IAM      
+  deploy-iam:
+    name: deploy-iam
+    runs-on: ubuntu-latest
+    needs: [configure-variables, deploy-network]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+        
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+            
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+          role-session-name: GitHub-Actions-OIDC-Session
+          aws-region: ${{ env.region }}
+          mask-aws-account-id: false
+
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/iam
+        run: |
+          terraform init
+
+      - name: Terraform Plan
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/iam
+        run: |
+          terraform plan
+      - name: Terraform Apply
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/iam
+        run: terraform apply -auto-approve 
+           
+  # DEPLOY CLUSTER
+  deploy-cluster:
+    name: deploy-eks-cluster
+    runs-on: ubuntu-latest
+    outputs:
+      ctrlr_role_arn: ${{ steps.verify_cluster.outputs.ctrlr_role_arn }}
+      k8_svc_acc: ${{ steps.verify_cluster.outputs.k8_svc_acc }}
+    needs: [configure-variables, deploy-network, deploy-iam]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment }}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+      TF_VAR_vpcname: ${{ needs.configure-variables.outputs.vpcname }}
+      TF_VAR_createvpc: ${{ needs.configure-variables.outputs.createvpc }}
+      TF_VAR_existing_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}
+      TF_VAR_projectname: ${{ needs.configure-variables.outputs.projectname }}  
+
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.TF_VAR_region }}
+              mask-aws-account-id: false
+            
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
+        run: |
+          terraform init -upgrade
+            
+      - name: Terraform Validate
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
+        run: |
+          terraform validate
+            
+      - name: Terraform Plan
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
+        run: |
+          echo "Running terraform plan for cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          terraform plan -out=tfplan
+          terraform show -json tfplan > tfplan.json
+          cat tfplan.json 
+      - name: Upload Cluster Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: cluster-tfplan
+          path: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster/tfplan.json
+          
+      - name: Terraform Apply
+        id: tf_apply
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
+        run: terraform apply -auto-approve tfplan
+        continue-on-error: true
+
+      - name: Roll back on Failure
+        if: steps.tf_apply.outcome == 'failure'
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
+        run: |
+          echo "Cluster deployment failed, rolling back changes"
+          terraform destroy -auto-approve
+          exit 1
+
+      - name: Verify Cluster Deployment
+        id: verify_cluster
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
+        run: |
+          echo "Verifying EKS Cluster Creation"
+          CLUSTER_NAME="${{ env.TF_VAR_clustername }}"
+          aws eks describe-cluster --name $CLUSTER_NAME --region ${{ env.TF_VAR_region }} --query 'cluster.status' --output text
+
+          echo "Checking if cluster is active"
+          TIMEOUT=900  # 15 minutes in seconds
+          INTERVAL=30  # Check every 30 seconds
+          ELAPSED=0
+
+          echo "Checking EKS cluster status for up to 15 minutes..."
+
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+          STATUS=$(aws eks describe-cluster --name $CLUSTER_NAME --region ${{ env.TF_VAR_region }} --query 'cluster.status' --output text)
+          
+          if [ "$STATUS" = "ACTIVE" ]; then
+            echo "EKS Cluster $CLUSTER_NAME is active."
+            echo "setting outputs..."
+            echo "ctrlr_role_arn=$(terraform output -raw controller_role_arn)" >> $GITHUB_OUTPUT
+            echo "k8_svc_acc=$(terraform output -raw k8_svc_acc)" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "Cluster status: $STATUS. Waiting... ($ELAPSED/$TIMEOUT seconds elapsed)"
+          sleep $INTERVAL
+          ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          echo "ERROR: EKS Cluster $CLUSTER_NAME did not become active within 15 minutes."
+          echo "Final status: $STATUS"
+          exit 1
+  
+  # deploy monitoring stack with kube-prometheus-stack helm chart
+
+  #CLUSTER AUTHENTICATION FOR USERS/ROLES
+  configure-auth:
+    name: configure-auth
+    runs-on: ubuntu-latest
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.TF_VAR_region }}
+              mask-aws-account-id: false
+            
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Update kubeconfig
+        run: |
+          echo "Updating kubeconfig for cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
+          kubectl config view    
+
+      - name: Terraform Init
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/k8auth
+        run: |
+          terraform init -upgrade
+            
+      - name: Terraform Validate
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/k8auth
+        run: |
+          terraform validate
+            
+      - name: Terraform Plan
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/k8auth
+        run: |
+          echo "Running terraform plan for auth configuration of cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          terraform plan -out=tfplan
+          terraform show -json tfplan > tfplan.json
+          cat tfplan.json 
+      - name: Upload Auth Plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-tfplan
+          path: ./environments/${{ env.ENVIRONMENT }}/configuration/k8auth/tfplan.json
+      
+      - name: Terraform Apply
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/k8auth
+        run: terraform apply -auto-approve tfplan
+      
+      - name: Verify Kubectl access to Cluster
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/k8auth
+        run: |
+          echo "Verifying kubectl access to EKS Cluster"
+          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
+          kubectl get nodes
+
+  #INSTALL LBC CONTROLLER WITH HELM
+  install-lbc:
+    name: install-lbc
+    runs-on: ubuntu-latest
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+      TF_VAR_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}
+      Ctrlr_Role_Arn: ${{ needs.deploy-cluster.outputs.ctrlr_role_arn }}
+      k8_svc_acc: ${{ needs.deploy-cluster.outputs.k8_svc_acc }}
+
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.TF_VAR_region }}
+              mask-aws-account-id: false
+            
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Update kubeconfig
+        run: |
+          echo "Updating kubeconfig for cluster ${{ env.TF_VAR_clustername}} in environment ${{ env.ENVIRONMENT }}"
+          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
+          kubectl config view
+
+      - name: Install AWS Load Balancer Controller with Helm
+        run : |
+          helm repo add eks https://aws.github.io/eks-charts
+          helm repo update
+          helm upgrade --install aws-load-balancer-controller eks/aws-load-balancer-controller \
+            --namespace kube-system \
+            --set clusterName=${TF_VAR_clustername} \
+            --set serviceAccount.create=false \
+            --set serviceAccount.name=${{ env.k8_svc_acc }} \
+            --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=${{ env.Ctrlr_Role_Arn }} \
+            --set region=${TF_VAR_region} \
+            --set vpcId=${TF_VAR_vpc_id} \
+            --timeout 10m \
+            --wait \
+            --debug
+          kubectl rollout status deployment/aws-load-balancer-controller -n kube-system
+
+  #INSTALL CRDs for Traefik Ingress Controller
+  install-crds:
+    name: install-crds
+    runs-on: ubuntu-latest
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region : ${{ needs.configure-variables.outputs.region }}
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.TF_VAR_region }}
+              mask-aws-account-id: false
+            
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      
+      - name: Update kubeconfig
+        run: |
+          echo "Updating kubeconfig for cluster ${{ env.TF_VAR_clustername}} in environment ${{ env.ENVIRONMENT }}"
+          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
+          kubectl config view    
+
+      - name: Install cert-manager CRDs
+        run: |
+          helm repo add jetstack https://charts.jetstack.io --force-update
+          helm repo update
+          helm upgrade --install cert-manager jetstack/cert-manager \
+            --namespace cert-manager \
+            --create-namespace \
+            --version v1.20.2 \
+            --set crds.enabled=true \
+            --wait \
+            --timeout 10m
+
+      - name: Wait for cert-manager CRDs
+        run: |
+          kubectl wait --for condition=established \
+          crd/clusterissuers.cert-manager.io \
+          crd/certificates.cert-manager.io \
+          --timeout=60s 
+
+  # DEPLOY TRAEFIK INGRESS CONTROLLER WITH HELM        
+  install-traefik:
+    name: install-traefik
+    runs-on: ubuntu-latest
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc, install-crds]
+    outputs:
+      nlb_hostname: ${{ steps.nlb_hostname.outputs.nlb_hostname }}
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+      Ctrlr_Role_Arn: ${{ needs.deploy-cluster.outputs.ctrlr_role_arn }}
+
+    steps:  
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.TF_VAR_region }}
+              mask-aws-account-id: false
+            
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      
+      - name: Install dns tools 
+        run: sudo apt-get install -y dnsutils
+    
+      - name: Update kubeconfig
+        run: |
+          echo "Updating kubeconfig for cluster ${{ env.TF_VAR_clustername }} in environment ${{ env.ENVIRONMENT }}"
+          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
+          kubectl config view    
+
+      - name: Install Traefik with Helm
+        run : |
+          helm repo add traefik https://traefik.github.io/charts
+          helm repo update
+          kubectl create namespace traefik --dry-run=client -o yaml | kubectl apply -f -
+          helm upgrade --install traefik traefik/traefik \
+            --namespace traefik \
+            --version 32.1.0 \
+            --values ./helm-charts/gem-app/dev/ephmrl/traefik-values.yaml \
+            --set "serviceAccountAnnotations.eks\.amazonaws\.com/role-arn=${{ env.Ctrlr_Role_Arn }}" \
+            --timeout 10m \
+            --wait \
+            --debug || {
+              echo "=== Helm failed — dumping pod logs ==="
+              kubectl describe pod -n traefik -l app.kubernetes.io/name=traefik
+              kubectl logs -n traefik -l app.kubernetes.io/name=traefik --previous 2>/dev/null || true
+              exit 1
+            }
+          kubectl rollout status deployment/traefik -n traefik
+
+      - name: Resolve NLB Hostname and write Cname record to Cloudflare DNS
+        id: nlb_hostname
+        run: |
+          set -euo pipefail
+
+          TIMEOUT=300
+          INTERVAL=30
+         
+          echo "Waiting for Traefik NLB hostname (timeout: ${TIMEOUT}s)..."   
+          DEADLINE=$(( $(date +%s) + TIMEOUT ))
+          NLB_HOSTNAME="" 
+          while (( $(date +%s) < DEADLINE )); do
+            NLB_HOSTNAME=$(kubectl get svc traefik -n traefik \
+              -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
+            
+            if [[ -n "$NLB_HOSTNAME" ]]; then
+              echo "Found NLB hostname: $NLB_HOSTNAME"
+              break
+            fi
+            
+            echo "**>>> hostname not yet assigned, retrying in ${INTERVAL}s..."
+            sleep "$INTERVAL"
+          done
+
+          [[ -n "$NLB_HOSTNAME" ]] || { echo "ERROR: NLB hostname not assigned after ${TIMEOUT}s."; exit 1; }
+          echo "Found hostname: $NLB_HOSTNAME"
+
+          # Write Cname record to Cloudflare DNS
+          
+
+          echo "nlb_hostname=${NLB_HOSTNAME}" >> "$GITHUB_OUTPUT"
+
+  # Apply ClusterIssuer for cert-manager
+  apply-clusterissuer:
+    name: apply-clusterissuer
+    runs-on: ubuntu-latest
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc, install-crds, install-traefik]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@v4
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.TF_VAR_region }}
+              mask-aws-account-id: false  
+
+      - name: Update kubeconfig
+        run: |
+          echo "Updating kubeconfig for cluster ${{ env.TF_VAR_clustername }} in environment ${{ env.ENVIRONMENT }}"
+          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
+
+      - name: Apply ClusterIssuer Manifest        
+        run: |
+          echo "Applying cert-manager ClusterIssuer manifest"
+          kubectl apply -f ./helm-charts/gem-app/${{ env.ENVIRONMENT }}/ephmrl/clusterissuer.yaml
+
+      - name: Wait for ClusterIssuer to become ready
+        run: |
+          echo "Waiting for ClusterIssuer to be ready..."
+          kubectl wait clusterissuer --all \
+          --for=condition=Ready \
+          --timeout=120s   
+
+  # DEPLOY APPLICATION WITH HELM
+  deploy-app:
+    name: deploy-app
+    runs-on: ubuntu-latest
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc,install-crds,install-traefik, apply-clusterissuer]
+    env:
+      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+      TF_VAR_image_repository: 586098609239.dkr.ecr.us-east-1.amazonaws.com/gem/gemapp
+      HELM_RELEASE_NAME: ${{ needs.configure-variables.outputs.projectname }}
+      INGRESS_HOST: ${{ needs.install-traefik.outputs.nlb_hostname }}
+      HELM_CHART_PATH: "./helm-charts/gem-app/dev/ephmrl"
+      HELM_NAMESPACE: "ns-${{ needs.configure-variables.outputs.projectname }}"
+      APP_VERSION: ${{ needs.configure-variables.outputs.appversion }}
+
+    steps:  
+      - name: Checkout Helm Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.TF_VAR_region }}
+              mask-aws-account-id: false
+      
+      - name: Update kubeconfig
+        run: |
+          echo "Updating kubeconfig for cluster ${{ env.TF_VAR_clustername }} in environment ${{ env.ENVIRONMENT }}"
+          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
+          kubectl config view
+      
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+        with:
+          version: v3.12.0
+
+      - name: Login to ECR
+        id: ecr-login
+        run: |
+          echo "Logging in to ECR for region ${{ env.TF_VAR_region }}"
+          aws ecr get-login-password --region ${{ env.TF_VAR_region }} | helm registry login --username AWS --password-stdin 586098609239.dkr.ecr.${{ env.TF_VAR_region }}.amazonaws.com    
+
+      - name: Create Namespace
+        run: |
+          echo "Creating namespace ${{ env.HELM_NAMESPACE }} for app deployment"
+          kubectl create namespace ${{ env.HELM_NAMESPACE }} || echo "Namespace ${{ env.HELM_NAMESPACE }} already exists"
+          
+      - name: Get image tag
+        id: get_image_tag
+        run: |
+          echo "Retrieving image tag for repository ${{ env.TF_VAR_image_repository }}"
+          IMAGE_TAG=$(aws ecr describe-images --repository-name gem/gemapp --region ${{ env.TF_VAR_region }} --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' --output text)
+          echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          cat $GITHUB_OUTPUT
+          
+      - name: Helm Template Dry-Run (Pre-flight Check)
+        run: |
+          echo "=== Helm template dry-run — checking for manifest errors ==="
+          helm template ${{ env.HELM_RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
+            --namespace ${{ env.HELM_NAMESPACE }} \
+            --values ${{ env.HELM_CHART_PATH }}/values.yaml \
+            --set image.repository=${{ env.TF_VAR_image_repository }} \
+            --set ingressRoute.host=${{ env.INGRESS_HOST }} \
+            --set app.name=${{ env.HELM_RELEASE_NAME }} \
+            --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
+            --set environment=${{ env.ENVIRONMENT }} \
+            --debug 2>&1 | tee /tmp/helm-template-output.txt
+
+          if [ ${PIPESTATUS[0]} -ne 0 ]; then
+            echo "=== Helm template render FAILED — check for empty documents below ==="
+            cat /tmp/helm-template-output.txt
+            exit 1
+          fi
+          echo "=== Template render OK — proceeding with deploy ==="    
+
+      - name: Deploy App with Helm
+        run : |
+          helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ${{ env.HELM_CHART_PATH }} \
+            --namespace ${{ env.HELM_NAMESPACE }} --create-namespace \
+            --values ${{ env.HELM_CHART_PATH }}/values.yaml \
+            --set image.repository=${{ env.TF_VAR_image_repository }} \
+            --set ingressRoute.host=${{ env.INGRESS_HOST }} \
+            --set app.name=${{ env.HELM_RELEASE_NAME }} \
+            --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
+            --set environment=${{ env.ENVIRONMENT }} \
+            --timeout 10m \
+            --wait \
+            --debug || {
+              echo "=== Helm deployment failed — dumping pod logs ==="
+              kubectl describe pods -n ${{ env.HELM_NAMESPACE }} -l app=${{ env.HELM_RELEASE_NAME }}
+              kubectl logs -n ${{ env.HELM_NAMESPACE }} -l app=${{ env.HELM_RELEASE_NAME }} --previous 2>/dev/null || true
+              exit 1
+            }
+
+      - name: Verify App Deployment
+        run: |
+          echo "Verifying app deployment in namespace ${{ env.HELM_NAMESPACE }}"
+          echo "Looking for release: ${{ env.HELM_RELEASE_NAME }}"
+
+          # Dump all deployments + their labels first — helps debug selector mismatches
+          echo "--- All deployments in namespace ---"
+          kubectl get deployments -n ${{ env.HELM_NAMESPACE }} --show-labels
+
+          # Use --ignore-not-found so an empty result is "" rather than a jsonpath crash
+          DEPLOYMENT=$(kubectl get deployment \
+            -n ${{ env.HELM_NAMESPACE }} \
+            -l "app.kubernetes.io/instance=${{ env.HELM_RELEASE_NAME }}" \
+            --ignore-not-found \
+            -o jsonpath='{.items[0].metadata.name}')
+
+          if [ -z "$DEPLOYMENT" ]; then
+            echo "ERROR: No deployment found matching label app.kubernetes.io/instance=${{ env.HELM_RELEASE_NAME }}"
+            echo "--- Helm release status ---"
+            helm status ${{ env.HELM_RELEASE_NAME }} -n ${{ env.HELM_NAMESPACE }} || true
+            exit 1
+          fi
+
+          echo "Found deployment: $DEPLOYMENT"
+          kubectl rollout status deployment/$DEPLOYMENT \
+          -n ${{ env.HELM_NAMESPACE }} \
+           --timeout=5m
+
+          kubectl get all -n ${{ env.HELM_NAMESPACE }}
+
+      - name: Verify Ingress and ALB
+        run: |
+          echo "Verifying Ingress and ALB for the deployed app"
+          kubectl get ingressroute -n ${{ env.HELM_NAMESPACE }} -o wide
+          kubectl describe ingressroute -n ${{ env.HELM_NAMESPACE }}
+          echo "app url: http://${{ env.INGRESS_HOST }}"
+      
+      - name: Show deployed resources
+        run: |
+          echo "Showing all resources in namespace ${{ env.HELM_NAMESPACE }}"
+          kubectl get all -n ${{ env.HELM_NAMESPACE }} -o wide

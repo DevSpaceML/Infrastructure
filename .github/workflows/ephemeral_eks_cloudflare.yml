@@ -1,6 +1,6 @@
 # Deployment sequence for ephemeral eks cluster
 #   1. Configure TF_Vars, 2. Deploy Network, 3. Deploy IAM, 4. Deploy Cluster, enable control-plane logging with Cloudwatch
-#  5. Configure Cluster Authentication
+#   5. Configure Cluster Authentication
 #    step1 --> configure aws-auth ConfigMap for role mappings
 #    step2 --> configure OIDC provider for IRSA (IAM Roles for Service Accounts)
 #   6. Nodegroup, 7. Certs, 8. Database, 9. Helm App+ingress Deployment, 10.DNS (Route53 etc)
@@ -12,7 +12,6 @@ name: ephmrl-dev-eks
 on:
   repository_dispatch:
     types: [ephmrl-dev-eks]
-
 env:
   TF_VERSION: "1.8.5"
   ENVIRONMENT: ${{ github.event.client_payload.config.environment }}
@@ -35,7 +34,7 @@ jobs:
       dev_cidr: ${{ steps.parse_vars.outputs.dev_cidr }}
       vpcname: ${{ steps.parse_vars.outputs.vpcname }}
       createvpc: ${{ steps.parse_vars.outputs.createvpc }}
-      existing_vpc_id: ${{ steps.parse_vars.outputs.existing_vpc_id }}
+      vpc_id: ${{ steps.parse_vars.outputs.vpc_id }}
       public_subnet_cidr: ${{ steps.parse_vars.outputs.public_subnet_cidr }}
       private_subnet_cidr: ${{ steps.parse_vars.outputs.private_subnet_cidr }}
       rds_subnet_cidrs: ${{ steps.parse_vars.outputs.rds_subnet_cidrs }}
@@ -95,7 +94,7 @@ jobs:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
       TF_VAR_dev_cidr: ${{ needs.configure-variables.outputs.dev_cidr }}
-      TF_VAR_existing_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}
+      TF_VAR_existing_vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
       TF_VAR_vpcname: ${{ needs.configure-variables.outputs.vpcname }}
       TF_VAR_createvpc: ${{ needs.configure-variables.outputs.createvpc }}
       TF_VAR_public_subnet_cidr_blocks: ${{ needs.configure-variables.outputs.public_subnet_cidr }}
@@ -122,7 +121,6 @@ jobs:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
 
-    
       - name: Deploy Network
         working-directory: ./environments/${{ env.ENVIRONMENT }}/network/main
         run: |
@@ -143,10 +141,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: network-tfplan
-          path: ./environments/${{ env.ENVIRONMENT }}/network//cluster/tfplan.json
+          path: ./environments/${{ env.ENVIRONMENT }}/network/main/tfplan.json
 
       - name: Terraform Apply
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/main
         run: terraform apply -auto-approve tfplan    
 
   # DEPLOY IAM      
@@ -156,7 +154,7 @@ jobs:
     needs: [configure-variables, deploy-network]
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
-      region: ${{ needs.configure-variables.outputs.region }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
         
     steps:  
       - name: checkout-code
@@ -203,7 +201,7 @@ jobs:
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
       TF_VAR_vpcname: ${{ needs.configure-variables.outputs.vpcname }}
       TF_VAR_createvpc: ${{ needs.configure-variables.outputs.createvpc }}
-      TF_VAR_existing_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}
+      TF_VAR_existing_vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
       TF_VAR_projectname: ${{ needs.configure-variables.outputs.projectname }}  
 
     steps:  
@@ -258,7 +256,7 @@ jobs:
         working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
         run: |
           echo "Cluster deployment failed, rolling back changes"
-          terraform destroy -auto-approve  -input=tfplan
+          terraform destroy -auto-approve
           exit 1
 
       - name: Verify Cluster Deployment
@@ -375,7 +373,7 @@ jobs:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
-      TF_VAR_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}
+      TF_VAR_vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
       Ctrlr_Role_Arn: ${{ needs.deploy-cluster.outputs.ctrlr_role_arn }}
       k8_svc_acc: ${{ needs.deploy-cluster.outputs.k8_svc_acc }}
 
@@ -412,208 +410,78 @@ jobs:
             --set clusterName=${TF_VAR_clustername} \
             --set serviceAccount.create=false \
             --set serviceAccount.name=${{ env.k8_svc_acc }} \
-            --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=${{ env.Ctrlr_Role_Arn }} \
             --set region=${TF_VAR_region} \
-            --set vpcId=${TF_VAR_vpc_id} \
             --timeout 10m \
             --wait \
             --debug
           kubectl rollout status deployment/aws-load-balancer-controller -n kube-system
-
-  #INSTALL CRDs for Traefik Ingress Controller
-  install-crds:
-    name: install-crds
+  
+  # Create http listeners, rules, and target groups
+  configure-routing:
+    name: routing-config
     runs-on: ubuntu-latest
     needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc]
     env:
-      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
-      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
-      TF_VAR_region : ${{ needs.configure-variables.outputs.region }}
-    steps:
-      - name: checkout-code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
-              role-session-name: GitHub-Actions-OIDC-Session
-              aws-region: ${{ env.TF_VAR_region }}
-              mask-aws-account-id: false
-            
-      - name: Prepare Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-          terraform_wrapper: false
-      
-      - name: Update kubeconfig
-        run: |
-          echo "Updating kubeconfig for cluster ${{ env.TF_VAR_clustername}} in environment ${{ env.ENVIRONMENT }}"
-          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
-          kubectl config view    
-
-      - name: Install cert-manager CRDs
-        run: |
-          helm repo add jetstack https://charts.jetstack.io --force-update
-          helm repo update
-          helm install cert-manager jetstack/cert-manager \
-            --namespace cert-manager \
-            --create-namespace \
-            --version v1.20.2 \
-            --set crds.enabled=true \
-            --wait \
-            --timeout 10m
-
-      - name: Wait for cert-manager CRDs
-        run: |
-          kubectl wait --for condition=established \
-          crd/clusterissuers.cert-manager.io \
-          crd/certificates.cert-manager.io \
-          --timeout=60s 
-
-  # DEPLOY TRAEFIK INGRESS CONTROLLER WITH HELM        
-  install-traefik:
-    name: install-traefik
-    runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc, install-crds]
-    outputs:
-      nlb_hostname: ${{ steps.nlb_hostname.outputs.nlb_hostname }}
-    env:
-      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
-      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+      projectname: ${{ needs.configure-variables.outputs.projectname }}
+      vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
-      Ctrlr_Role_Arn: ${{ needs.deploy-cluster.outputs.ctrlr_role_arn }}
-
-    steps:  
-      - name: checkout-code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
-              role-session-name: GitHub-Actions-OIDC-Session
-              aws-region: ${{ env.TF_VAR_region }}
-              mask-aws-account-id: false
-            
-      - name: Prepare Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-          terraform_wrapper: false
-      
-      - name: Install dns tools 
-        run: sudo apt-get install -y dnsutils
     
-      - name: Update kubeconfig
-        run: |
-          echo "Updating kubeconfig for cluster ${{ env.TF_VAR_clustername }} in environment ${{ env.ENVIRONMENT }}"
-          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
-          kubectl config view    
-
-      - name: Install Traefik with Helm
-        run : |
-          helm repo add traefik https://traefik.github.io/charts
-          helm repo update
-          kubectl create namespace traefik --dry-run=client -o yaml | kubectl apply -f -
-          helm upgrade --install traefik traefik/traefik \
-            --namespace traefik \
-            --version 32.1.0 \
-            --values ./helm-charts/gem-app/dev/ephmrl/traefik-values.yaml \
-            --set "serviceAccountAnnotations.eks\.amazonaws\.com/role-arn=${{ env.Ctrlr_Role_Arn }}" \
-            --timeout 10m \
-            --wait \
-            --debug || {
-              echo "=== Helm failed — dumping pod logs ==="
-              kubectl describe pod -n traefik -l app.kubernetes.io/name=traefik
-              kubectl logs -n traefik -l app.kubernetes.io/name=traefik --previous 2>/dev/null || true
-              exit 1
-            }
-          kubectl rollout status deployment/traefik -n traefik
-
-      - name: Resolve NLB Hostname and write Cname record to Cloudflare DNS
-        id: nlb_hostname
-        run: |
-          set -euo pipefail
-
-          TIMEOUT=300
-          INTERVAL=30
-         
-          echo "Waiting for Traefik NLB hostname (timeout: ${TIMEOUT}s)..."   
-          DEADLINE=$(( $(date +%s) + TIMEOUT ))
-          NLB_HOSTNAME="" 
-          while (( $(date +%s) < DEADLINE )); do
-            NLB_HOSTNAME=$(kubectl get svc traefik -n traefik \
-              -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
-            
-            if [[ -n "$NLB_HOSTNAME" ]]; then
-              echo "Found NLB hostname: $NLB_HOSTNAME"
-              break
-            fi
-            
-            echo "**>>> hostname not yet assigned, retrying in ${INTERVAL}s..."
-            sleep "$INTERVAL"
-          done
-
-          [[ -n "$NLB_HOSTNAME" ]] || { echo "ERROR: NLB hostname not assigned after ${TIMEOUT}s."; exit 1; }
-          echo "Found hostname: $NLB_HOSTNAME"
-
-          # Write Cname record to Cloudflare DNS
-          
-
-          echo "nlb_hostname=${NLB_HOSTNAME}" >> "$GITHUB_OUTPUT"
-
-  # Apply ClusterIssuer for cert-manager
-  apply-clusterissuer:
-    name: apply-clusterissuer
-    runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc, install-crds, install-traefik]
-    env:
-      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
-      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
-      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
     steps:
       - name: checkout-code
         uses: actions/checkout@v4
-      
+
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v4  
         with:
               role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
               role-session-name: GitHub-Actions-OIDC-Session
               aws-region: ${{ env.TF_VAR_region }}
-              mask-aws-account-id: false  
+              mask-aws-account-id: false
 
-      - name: Update kubeconfig
-        run: |
-          echo "Updating kubeconfig for cluster ${{ env.TF_VAR_clustername }} in environment ${{ env.ENVIRONMENT }}"
-          aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
 
-      - name: Apply ClusterIssuer Manifest        
+      - name: Terraform Init
+        working-directory: ./environments/dev/alb/eks/
         run: |
-          echo "Applying cert-manager ClusterIssuer manifest"
-          kubectl apply -f ./helm-charts/gem-app/${{ env.ENVIRONMENT }}/ephmrl/clusterissuer.yaml
+          terraform init -upgrade
+      
+      - name: Terraform Validate
+        working-directory: ./environments/dev/alb/eks
+        run: |
+          terraform validate
 
-      - name: Wait for ClusterIssuer to become ready
+      - name: Terraform Plan
+        working-directory:  ./environments/dev/alb/eks
         run: |
-          echo "Waiting for ClusterIssuer to be ready..."
-          kubectl wait clusterissuer --all \
-          --for=condition=Ready \
-          --timeout=120s   
+          terraform plan -out=routes_tfplan
+          terraform show -json routes_tfplan > routes_tfplan.json
+          cat routes_tfplan.json
+          
+      - name: Terraform Apply
+        working-directory: ./environments/dev/alb/eks
+        run: |
+          terraform apply -auto-approve routes_tfplan
+          
+      - name: Set Outputs
+        working-directory: ./environments/dev/alb/eks
+        run: |
+          echo "target_group_arn=$(terraform output -raw tgtgrp_arn)" >> GITHUB_OUTPUT    
 
   # DEPLOY APPLICATION WITH HELM
   deploy-app:
     name: deploy-app
     runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc,install-crds,install-traefik, apply-clusterissuer]
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc, configure-routing]
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
-      TF_VAR_image_repository: 586098609239.dkr.ecr.us-east-1.amazonaws.com/gem/gemapp
+      TF_VAR_image_repository: 488347380548.dkr.ecr.us-east-1.amazonaws.com/dev/gemapp
       HELM_RELEASE_NAME: ${{ needs.configure-variables.outputs.projectname }}
-      INGRESS_HOST: ${{ needs.install-traefik.outputs.nlb_hostname }}
       HELM_CHART_PATH: "./helm-charts/gem-app/dev/ephmrl"
       HELM_NAMESPACE: "ns-${{ needs.configure-variables.outputs.projectname }}"
       APP_VERSION: ${{ needs.configure-variables.outputs.appversion }}
@@ -667,7 +535,6 @@ jobs:
             --namespace ${{ env.HELM_NAMESPACE }} \
             --values ${{ env.HELM_CHART_PATH }}/values.yaml \
             --set image.repository=${{ env.TF_VAR_image_repository }} \
-            --set ingressRoute.host=${{ env.INGRESS_HOST }} \
             --set app.name=${{ env.HELM_RELEASE_NAME }} \
             --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
             --set environment=${{ env.ENVIRONMENT }} \
@@ -686,10 +553,10 @@ jobs:
             --namespace ${{ env.HELM_NAMESPACE }} --create-namespace \
             --values ${{ env.HELM_CHART_PATH }}/values.yaml \
             --set image.repository=${{ env.TF_VAR_image_repository }} \
-            --set ingressRoute.host=${{ env.INGRESS_HOST }} \
             --set app.name=${{ env.HELM_RELEASE_NAME }} \
             --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
             --set environment=${{ env.ENVIRONMENT }} \
+            --set targetGroupBinding.targetGroupArn=${{ needs.configure-routing.outputs.target_group_arn }}
             --timeout 10m \
             --wait \
             --debug || {
