@@ -535,7 +535,6 @@ jobs:
             --namespace ${{ env.HELM_NAMESPACE }} \
             --values ${{ env.HELM_CHART_PATH }}/values.yaml \
             --set image.repository=${{ env.TF_VAR_image_repository }} \
-            --set app.name=${{ env.HELM_RELEASE_NAME }} \
             --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
             --set environment=${{ env.ENVIRONMENT }} \
             --debug 2>&1 | tee /tmp/helm-template-output.txt

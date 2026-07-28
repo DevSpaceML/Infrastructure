@@ -1,11 +1,11 @@
 apiVersion: v2
-name: ephmrl-k8s
+name: ephemeral
 description: A reusable Helm chart for ephmemeral EKS deployments with Traefik ingress and cert-manager TLS
 type: application
 version: 0.1.0
 appVersion: 0.1.0
 keywords:
-  - ephmrl
+  - ephemeral
   - eks
   - helm
   - kubernetes
