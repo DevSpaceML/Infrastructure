@@ -20,7 +20,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
-module "dev_vpc" {
+module "cluster_vpc" {
   source                             = "../../../modules/network/dev/eks/vpc"
   cidr                               = var.dev_cidr
   vpcname                            = var.vpcname

@@ -122,16 +122,16 @@ jobs:
           terraform_wrapper: false
 
       - name: Deploy Network
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/main
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster
         run: |
           terraform init -upgrade
 
       - name: Terraform Validate
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/main
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster
         run: terraform validate 
 
       - name: Terraform Plan
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/main
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster
         run: |
           terraform plan -out=tfplan
           terraform show -json tfplan > tfplan.json
@@ -141,10 +141,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: network-tfplan
-          path: ./environments/${{ env.ENVIRONMENT }}/network/main/tfplan.json
+          path: ./environments/${{ env.ENVIRONMENT }}/network/cluster/tfplan.json
 
       - name: Terraform Apply
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/main
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster
         run: terraform apply -auto-approve tfplan    
 
   # DEPLOY IAM      
@@ -326,7 +326,7 @@ jobs:
 
       - name: Update kubeconfig
         run: |
-          echo "Updating kubeconfig for cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          echo "Updating kubeconfig for cluster ${{ env.TF_VAR_clustername }} in environment ${{ env.ENVIRONMENT }}"
           aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
           kubectl config view    
 
@@ -343,7 +343,7 @@ jobs:
       - name: Terraform Plan
         working-directory: ./environments/${{ env.ENVIRONMENT }}/configuration/k8auth
         run: |
-          echo "Running terraform plan for auth configuration of cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          echo "Running terraform plan for auth configuration of cluster ${{ env.TF_VAR_clustername }} in environment ${{ env.ENVIRONMENT }}"
           terraform plan -out=tfplan
           terraform show -json tfplan > tfplan.json
           cat tfplan.json 
@@ -420,6 +420,8 @@ jobs:
   configure-routing:
     name: routing-config
     runs-on: ubuntu-latest
+    outputs:
+      target_group_arn: ${{ steps.app-routing.outputs.target_group_arn }}
     needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc]
     env:
       projectname: ${{ needs.configure-variables.outputs.projectname }}
@@ -466,10 +468,11 @@ jobs:
         run: |
           terraform apply -auto-approve routes_tfplan
           
-      - name: Set Outputs
+      - name: app-routing
+        id: app-routing
         working-directory: ./environments/dev/alb/eks
         run: |
-          echo "target_group_arn=$(terraform output -raw tgtgrp_arn)" >> GITHUB_OUTPUT    
+          echo "target_group_arn=$(terraform output -raw tgtgrp_arn)" >> "$GITHUB_OUTPUT"
 
   # DEPLOY APPLICATION WITH HELM
   deploy-app:
@@ -484,6 +487,7 @@ jobs:
       HELM_RELEASE_NAME: ${{ needs.configure-variables.outputs.projectname }}
       HELM_CHART_PATH: "./helm-charts/gem-app/dev/ephmrl"
       HELM_NAMESPACE: "ns-${{ needs.configure-variables.outputs.projectname }}"
+      target_group_arn: ${{ needs.configure-routing.outputs.target_group_arn }}
       APP_VERSION: ${{ needs.configure-variables.outputs.appversion }}
 
     steps:  
@@ -513,7 +517,7 @@ jobs:
         id: ecr-login
         run: |
           echo "Logging in to ECR for region ${{ env.TF_VAR_region }}"
-          aws ecr get-login-password --region ${{ env.TF_VAR_region }} | helm registry login --username AWS --password-stdin 586098609239.dkr.ecr.${{ env.TF_VAR_region }}.amazonaws.com    
+          aws ecr get-login-password --region ${{ env.TF_VAR_region }} | helm registry login --username AWS --password-stdin 488347380548.dkr.ecr.${{ env.TF_VAR_region }}.amazonaws.com    
 
       - name: Create Namespace
         run: |
@@ -555,7 +559,7 @@ jobs:
             --set app.name=${{ env.HELM_RELEASE_NAME }} \
             --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
             --set environment=${{ env.ENVIRONMENT }} \
-            --set targetGroupBinding.targetGroupArn=${{ needs.configure-routing.outputs.target_group_arn }}
+            --set targetGroupBinding.targetGroupArn=${{ env.target_group_arn }}
             --timeout 10m \
             --wait \
             --debug || {
