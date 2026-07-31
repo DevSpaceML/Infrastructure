@@ -8,7 +8,6 @@
 #   step. This would simplify the workflow and reduce the number of Terraform steps, while still achieving dynamic DNS management based on Kubernetes resources.
 
 name: ephmrl-dev-eks
-
 on:
   repository_dispatch:
     types: [ephmrl-dev-eks]
@@ -231,11 +230,11 @@ jobs:
         working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
         run: |
           terraform validate
-            
+
       - name: Terraform Plan
         working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
         run: |
-          echo "Running terraform plan for cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          echo "Running terraform plan for cluster ${{ env.TF_VAR_clustername }} in environment ${{ env.ENVIRONMENT }}"
           terraform plan -out=tfplan
           terraform show -json tfplan > tfplan.json
           cat tfplan.json 
@@ -485,6 +484,7 @@ jobs:
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
       TF_VAR_image_repository: 488347380548.dkr.ecr.us-east-1.amazonaws.com/dev/gemapp
       HELM_RELEASE_NAME: ${{ needs.configure-variables.outputs.projectname }}
+      projectname: ${{ needs.configure-variables.outputs.projectname }}
       HELM_CHART_PATH: "./helm-charts/gem-app/dev/ephmrl"
       HELM_NAMESPACE: "ns-${{ needs.configure-variables.outputs.projectname }}"
       target_group_arn: ${{ needs.configure-routing.outputs.target_group_arn }}
@@ -599,14 +599,25 @@ jobs:
 
           kubectl get all -n ${{ env.HELM_NAMESPACE }}
 
-      - name: Verify Ingress and ALB
+      - name: Verify App Available
         run: |
-          echo "Verifying Ingress and ALB for the deployed app"
-          kubectl get ingressroute -n ${{ env.HELM_NAMESPACE }} -o wide
-          kubectl describe ingressroute -n ${{ env.HELM_NAMESPACE }}
-          echo "app url: http://${{ env.INGRESS_HOST }}"
-      
-      - name: Show deployed resources
-        run: |
-          echo "Showing all resources in namespace ${{ env.HELM_NAMESPACE }}"
-          kubectl get all -n ${{ env.HELM_NAMESPACE }} -o wide
+          URL="http://${{ env.projectname }}.salientapps.com"
+          echo "Verifying deployment for app url: $URL"
+
+          max_attempts=10
+          sleep_seconds=15
+
+          for attempt in $(seq 1 $max_attempts); do
+            status_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "$URL")
+
+            if [ "$status_code" -ge 200 ] && [ "$status_code" -lt 400 ]; then
+              echo "App is up. Received HTTP $status_code on attempt $attempt."
+              exit 0
+            fi
+
+            echo "Attempt $attempt/$max_attempts: got HTTP $status_code, retrying in ${sleep_seconds}s..."
+            sleep $sleep_seconds
+          done
+
+          echo "App did not become available after $max_attempts attempts."
+          exit 1
