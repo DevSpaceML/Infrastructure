@@ -7,6 +7,6 @@ output "dev_alb_arn" {
 }
 
 output "ecs_slfsvc_tg_arn" {
-  description = "ARN for dev ECS self-service target group"
+  description = "DEV Ecs self-service target group ARN"
   value = module.dev-alb.ecs_slfsvc_tg_arn
 }
