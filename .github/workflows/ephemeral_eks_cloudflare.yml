@@ -10,7 +10,7 @@
 name: ephmrl-dev-eks
 on:
   repository_dispatch:
-    types: [ephmrl-dev-eks]
+    types: [ephmrl-eks-cloudflare]
 env:
   TF_VERSION: "1.8.5"
   ENVIRONMENT: ${{ github.event.client_payload.config.environment }}
@@ -528,7 +528,7 @@ jobs:
         id: get_image_tag
         run: |
           echo "Retrieving image tag for repository ${{ env.TF_VAR_image_repository }}"
-          IMAGE_TAG=$(aws ecr describe-images --repository-name gem/gemapp --region ${{ env.TF_VAR_region }} --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' --output text)
+          IMAGE_TAG=$(aws ecr describe-images --repository-name dev/gemapp --region ${{ env.TF_VAR_region }} --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' --output text)
           echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
           
@@ -595,7 +595,7 @@ jobs:
           echo "Found deployment: $DEPLOYMENT"
           kubectl rollout status deployment/$DEPLOYMENT \
           -n ${{ env.HELM_NAMESPACE }} \
-           --timeout=5m
+          --timeout=5m
 
           kubectl get all -n ${{ env.HELM_NAMESPACE }}
 
