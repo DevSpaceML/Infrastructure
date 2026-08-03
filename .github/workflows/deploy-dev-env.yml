@@ -1,6 +1,6 @@
 # =========================================================================================================================
 # -- Deploys main Dev infrastructure
-# -- Resources: env IAM, Network, ALB
+# -- Resources: env IAM, Network, ALB, Platform Applications
 # -- CNAME records in Cloudflare DNS for DEV environments
 # =========================================================================================================================
 name: Deploy Dev Environment
