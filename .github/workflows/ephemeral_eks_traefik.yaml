@@ -7,11 +7,11 @@
 #   Consider using external-dns as a Helm chart in step 9 to automate Route53 record management, rather than managing it as a separate Terraform 
 #   step. This would simplify the workflow and reduce the number of Terraform steps, while still achieving dynamic DNS management based on Kubernetes resources.
 
-name: ephmrl-dev-eks
+name: ephmrl-eks-traefik
 
 on:
   repository_dispatch:
-    types: [ephmrl-dev-eks]
+    types: [ephmrl-eks-traefik]
 env:
   TF_VERSION: "1.8.5"
   ENVIRONMENT: ${{ github.event.client_payload.config.environment }}
