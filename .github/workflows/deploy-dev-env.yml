@@ -6,7 +6,7 @@
 name: Deploy Dev Environment
 on:
   push:
-    branches: [develop]
+    branches: [main]
     paths: ['infrastructure/environments/dev/**']
   workflow_dispatch:
     inputs:
