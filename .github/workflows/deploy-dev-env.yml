@@ -258,7 +258,7 @@ jobs:
       
       - name: Terraform Apply
         if: ${{ github.event.inputs.dry-run == 'false' }}
-        working-directory: ./environments/dev/dns
+        working-directory: ./environments/dev/configuration/dns
         run: |
           terraform apply -auto-approve dns_tfplan
 
