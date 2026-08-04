@@ -335,16 +335,16 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init
-        working-directory: ./environments/dev/compute/ecs_fargate/main
+        working-directory: ./environments/dev/compute/ecs_fargate
         run: |
               terraform init -upgrade
       
       - name: Terraform Validate
-        working-directory: ./environments/dev/compute/ecs_fargate/main
+        working-directory: ./environments/dev/compute/ecs_fargate
         run: terraform validate 
 
       - name: Terraform Plan
-        working-directory: ./environments/dev/compute/ecs_fargate/main
+        working-directory: ./environments/dev/compute/ecs_fargate
         run: |
           terraform plan -out=fargate_tfplan
           terraform show -json fargate_tfplan > fargate_tfplan.json
@@ -352,7 +352,7 @@ jobs:
       
       - name: Terraform Apply
         if: ${{ github.event.inputs.dry-run == 'false' }}
-        working-directory: ./environments/dev/compute/ecs_fargate/main
+        working-directory: ./environments/dev/compute/ecs_fargate
         run: |
           terraform apply -auto-approve fargate_tfplan    
 

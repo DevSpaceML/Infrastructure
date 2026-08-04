@@ -158,7 +158,7 @@ resource "aws_ecs_task_definition" "slfsvc-app" {
   container_definitions = jsonencode([
     {
       name      = "slfsvc-app"
-      image     = "${data.aws_ecr_repository.selfservice.repository_url}:selfservice:08-02-26_13-29"
+      image     = "${data.aws_ecr_repository.selfservice.repository_url}:20260804_1625"
       essential = true
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
       logConfiguration = {
