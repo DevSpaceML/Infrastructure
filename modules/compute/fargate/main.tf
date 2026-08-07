@@ -77,17 +77,16 @@ data "aws_iam_policy_document" "ecs_execution_permissions" {
   }
 }
 
-/* ecs-task permissions  
+/* ecs-task permissions */
 
 data "aws_iam_policy_document" "ecs_task_permissions" {
-  # No AWS API calls at runtime — GitHub and Postgres are
-  # plain TCP/HTTPS connections, not IAM-authenticated.
-  #
-  # If you later add RDS IAM auth, S3, SQS, etc., add
-  # scoped statements here rather than broadening this.
+  statement {  
+    sid     = "EC2Permissions"
+    effect  = "Allow"
+    actions = ["ec2:describeVpcs", "ec2:describeSubnets", "ec2:describeSecurityGroups"]
+    resources = ["*"]
+  }
 }
-*/
-
 
 # ------------- IAM Roles and Policy Attachments ---------------------- #
 
@@ -115,13 +114,11 @@ resource "aws_iam_role" "ecs_task" {
   assume_role_policy = data.aws_iam_policy_document.ecs_task_trust.json  
 }
 
-/*
 resource "aws_iam_role_policy" "ecs_task_policy" {
   name = "selfservice-task-policy"
   role = aws_iam_role.ecs_task.id
   policy = data.aws_iam_policy_document.ecs_task_permissions.json
 }
-*/
 
 # ------------------------------------------------------------------- #
 
@@ -158,7 +155,7 @@ resource "aws_ecs_task_definition" "slfsvc-app" {
   container_definitions = jsonencode([
     {
       name      = "slfsvc-app"
-      image     = "${data.aws_ecr_repository.selfservice.repository_url}:20260804_1625"
+      image     = "${data.aws_ecr_repository.selfservice.repository_url}:20260807_1129"
       essential = true
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
       logConfiguration = {
