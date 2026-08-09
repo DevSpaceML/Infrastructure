@@ -83,7 +83,7 @@ data "aws_iam_policy_document" "ecs_task_permissions" {
   statement {  
     sid     = "EC2Permissions"
     effect  = "Allow"
-    actions = ["ec2:describeVpcs", "ec2:describeSubnets", "ec2:describeSecurityGroups"]
+    actions = ["ec2:describeVpcs", "ec2:describeSubnets", "ec2:describeSecurityGroups", "ssmmessages:CreateControlChannel", "ssmmessages:CreateDataChannel", "ssmmessages:OpenControlChannel", "ssmmessages:OpenDataChannel"]
     resources = ["*"]
   }
 }
@@ -155,7 +155,7 @@ resource "aws_ecs_task_definition" "slfsvc-app" {
   container_definitions = jsonencode([
     {
       name      = "slfsvc-app"
-      image     = "${data.aws_ecr_repository.selfservice.repository_url}:20260807_1129"
+      image     = "${data.aws_ecr_repository.selfservice.repository_url}:20260808_1603"
       essential = true
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
       logConfiguration = {
@@ -176,6 +176,7 @@ resource "aws_ecs_service" "slfsvc-app" {
   task_definition = aws_ecs_task_definition.slfsvc-app.arn
   desired_count   = 1
   launch_type     = "FARGATE"
+  enable_execute_command = true
 
   network_configuration {
     subnets         = var.private_ecs_subnet_ids
