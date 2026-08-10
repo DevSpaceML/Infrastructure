@@ -88,7 +88,7 @@ data "aws_iam_policy_document" "ecs_task_permissions" {
   }
 }
 
-# ------------- IAM Roles and Policy Attachments ---------------------- #
+# --- IAM Roles and Policy Attachments --- #
 
 # IAM roles for ECS tasks and execution
 resource "aws_iam_role" "ecs_exec" {
