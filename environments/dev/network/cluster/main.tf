@@ -26,7 +26,7 @@ module "cluster_vpc" {
   vpcname                            = var.vpcname
   region                             = var.region
   createvpc                          = var.createvpc
-  existing_vpc_id                    = var.existing_vpc_id
+  existing_vpc_id                    = var.vpc_id
   public_subnet_cidr_blocks          = var.public_subnet_cidr_blocks
   private_subnet_cidr_blocks         = var.private_subnet_cidr_blocks
   nodegroup_pvt_subnet_cidr_blocks   = var.nodegroup_pvt_subnet_cidr_blocks
