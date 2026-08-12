@@ -53,7 +53,7 @@ provider "helm" {
 }
 
 module "dev_cluster" {
-  source                 = "../../../modules/compute/eks/cluster"
+  source                 = "../../../../modules/compute/eks/cluster"
   clustername            = var.clustername
   region                 = data.terraform_remote_state.dev_network.outputs.region
   vpcId                  = data.terraform_remote_state.dev_network.outputs.vpc_id
@@ -87,7 +87,7 @@ module "dev_cluster" {
 
 module "eks_security_groups" {
   depends_on            = [ module.dev_cluster ]
-  source                = "../../../modules/network/eks-security-groups"
+  source                = "../../../../modules/network/eks/eks-security-groups"
   vpc_id                = data.terraform_remote_state.dev_network.outputs.vpc_id
   nodegroup_cidr_blocks = data.terraform_remote_state.dev_network.outputs.nodegroup_cidr
   clustername           = module.dev_cluster.cluster_name
@@ -95,26 +95,26 @@ module "eks_security_groups" {
 
 module "vpc_cni" {
   depends_on  = [ module.dev_cluster, module.eks_security_groups ]
-  source      = "../../../modules/compute/eks/addons/vpc-cni"
+  source      = "../../../../modules/compute/eks/addons/vpc-cni"
   clustername = module.dev_cluster.cluster_name
   rolearn     = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
 }
 
 module "kube_proxy" {
   depends_on = [ module.dev_cluster, module.vpc_cni ]
-  source = "../../../modules/compute/eks/addons/kube_proxy"
+  source = "../../../../modules/compute/eks/addons/kube_proxy"
   clustername = module.dev_cluster.cluster_name
 }
 
 module "oidc_auth" {
   depends_on = [ module.dev_cluster, module.vpc_cni, module.kube_proxy ]
-  source = "../../../modules/compute/eks/addons/oidc"
+  source = "../../../../modules/compute/eks/addons/oidc"
   clustername = module.dev_cluster.cluster_name
 }
 
 module "dev_nodes" {
   depends_on = [ module.dev_cluster, module.oidc_auth ]
-  source                       = "../../../modules/compute/eks/nodegroups"
+  source                       = "../../../../modules/compute/eks/nodegroups"
   node_group_mgr_arn           = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
   nodegroupname                = "${module.dev_cluster.cluster_name}-nodegroup"
   clustername                  = module.dev_cluster.cluster_name
@@ -124,13 +124,13 @@ module "dev_nodes" {
 
 module "coredns" {
   depends_on = [module.dev_cluster, module.dev_nodes, module.oidc_auth ]
-  source = "../../../modules/compute/eks/addons/coredns"
+  source = "../../../../modules/compute/eks/addons/coredns"
   clustername = module.dev_cluster.cluster_name
 }
 
 module "prometheus" {
   depends_on = [ module.dev_cluster, module.oidc_auth ]
-  source = "../../../modules/monitoring/prometheus"
+  source = "../../../../modules/monitoring/prometheus"
   clustername = module.dev_cluster.cluster_name
   environment = var.environment
   oidc_arn = module.oidc_auth.oidc_arn
