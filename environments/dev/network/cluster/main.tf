@@ -21,12 +21,12 @@ provider "aws" {
 }
 
 module "cluster_vpc" {
-  source                             = "../../../modules/network/dev/eks/vpc"
+  source                             = "../../../../modules/network/eks/vpc"
   cidr                               = var.dev_cidr
   vpcname                            = var.vpcname
   region                             = var.region
   createvpc                          = var.createvpc
-  existing_vpc_id                    = var.vpc_id
+  vpc_id                             = var.vpc_id
   public_subnet_cidr_blocks          = var.public_subnet_cidr_blocks
   private_subnet_cidr_blocks         = var.private_subnet_cidr_blocks
   nodegroup_pvt_subnet_cidr_blocks   = var.nodegroup_pvt_subnet_cidr_blocks

@@ -16,7 +16,7 @@ variable "createvpc" {
   default = false
 }
 
-variable "existing_vpc_id" {
+variable "vpc_id" {
   description = "required if createvpc is false"
   type = string
   default = null

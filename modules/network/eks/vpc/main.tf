@@ -20,11 +20,11 @@ resource "aws_vpc" "cluster_vpc" {
 
 data "aws_vpc" "existing_vpc" {
 	count = var.createvpc ? 0 : 1
-	id = var.existing_vpc_id
+	id = var.vpc_id
 }
 
 locals {
-  vpc_id = var.createvpc ? aws_vpc.cluster_vpc[0].id : var.existing_vpc_id
+  vpc_id = var.createvpc ? aws_vpc.cluster_vpc[0].id : var.vpc_id
 }
 
 data "aws_internet_gateway" "existing_igw" {
@@ -32,7 +32,7 @@ data "aws_internet_gateway" "existing_igw" {
 
   filter {
 	name = "attachment.vpc-id"
-	values = [var.existing_vpc_id]		
+	values = [var.vpc_id]		
   }
 }
 
