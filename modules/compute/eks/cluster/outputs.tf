@@ -18,7 +18,7 @@ output "cluster_certificate" {
 }
 
 output "projectname" {
-  value = var.projectname
+  value = concat(var.environment, "-", var.projectname)
 }
 
 output "environment" {
