@@ -120,7 +120,7 @@ resource "aws_iam_role_policy" "ecs_task_policy" {
   policy = data.aws_iam_policy_document.ecs_task_permissions.json
 }
 
-# ------------------------------------------------------------------- #
+# ------------------------------------------------------- #
 
 /* ECS Cluster and Tasks */
 
@@ -155,7 +155,7 @@ resource "aws_ecs_task_definition" "slfsvc-app" {
   container_definitions = jsonencode([
     {
       name      = "slfsvc-app"
-      image     = "${data.aws_ecr_repository.selfservice.repository_url}:20260812_1208"
+      image     = "${data.aws_ecr_repository.selfservice.repository_url}:20260814_1017"
       essential = true
       portMappings = [{ containerPort = 80, protocol = "tcp" }]
       logConfiguration = {
