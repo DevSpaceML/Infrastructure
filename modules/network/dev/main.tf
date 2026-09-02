@@ -17,7 +17,7 @@ data "aws_availability_zones" "available"{
 }
 
 
-/* --- Dev Resources --- */
+/* --- Shared Dev Resources --- */
 
 resource "aws_vpc" "dev_vpc" {
   cidr_block = "10.1.0.0/16"
@@ -82,7 +82,7 @@ resource "aws_security_group_rule" "sgr-ecs-ingress-443" {
 }
 
 
-/* Public subnet resources */
+/* Public subnets */
 
 resource "aws_subnet" "public_dev_subnet" {
   for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 2) : az => idx }
@@ -191,7 +191,7 @@ resource "aws_subnet" "private_ecs_subnet" {
   availability_zone = each.key
 
   tags = {
-    Name        = "private-eks-subnet-${each.key}"
+    Name        = "private-ecs-subnet-${each.key}"
     Environment = "Dev"
   }
 }
