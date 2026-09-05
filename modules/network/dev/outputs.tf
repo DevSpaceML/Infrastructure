@@ -5,17 +5,17 @@ output "dev_vpc_id" {
 /** Public subnet IDs */
 output "public_subnet_id_list" {
   description = "Public subnet IDs for dev environment"
-  value = [for subnet in aws_subnet.public_dev_subnet : subnet.id]
+  value = [for subnet in aws_subnet.public_dev : subnet.id]
 }
 
 output "private_subnet_id_list" {
   description = "Private subnet IDs for dev environment"
-  value = [for subnet in aws_subnet.private_dev_subnet : subnet.id]
+  value = [for subnet in aws_subnet.private_dev : subnet.id]
 }
 
 output "private_ecs_subnet_id_list" {
   description = "Private ECS subnet IDs for dev environment"
-  value = [for subnet in aws_subnet.private_ecs_subnet : subnet.id]
+  value = [for subnet in aws_subnet.private_ecs : subnet.id]
 }
 
 /* Security group IDs */
