@@ -25,6 +25,32 @@ data "aws_vpc" "existing_vpc" {
 
 locals {
   vpc_id = var.createvpc ? aws_vpc.cluster_vpc[0].id : var.vpc_id
+
+  azs = length(slice(data.aws_availability_zones.available.names, 0, var.num_azs))
+  az_count = length(local.azs)
+
+  base_prefix = tonumber(split("/", var.cidr)[1])
+  svctiers = {
+	"eks_public": var.eks_prefix,
+	"eks_private": var.eks_prefix,
+	"rds": var.db_prefix,
+	"nodegrp": var.nodegrp_prefix
+  }
+
+  tier_order = keys(local.svctiers)
+  newbits_list = flatten([
+	for tier in local.tier_order :
+	    [for _ in range(local.az_count): local.svctiers[tier] - local.base_prefix]
+     ]) 
+
+  subnet_cidrs = cidrsubnets(local.vpc_id, local.newbits_list...)
+
+  # Reconstruct subnet cidrs into {tier => {az => cidr}}, eliminates downstream index math
+  tiers = {
+	for t_idx, tier in local.tier_order : tier => {
+		for az_idx, az in local.azs : az => local.subnet_cidrs[t_idx * local.az_count + az_idx]
+	}
+  }
 }
 
 data "aws_internet_gateway" "existing_igw" {
@@ -82,17 +108,17 @@ resource "aws_internet_gateway" "igw_public_eks" {
 }
 
 resource "aws_subnet" "public_subnet_eks" {
+	for_each = local.tiers["eks_public"]
+	availability_zone = each.key
+	cidr_block = each.value
 	vpc_id = local.vpc_id
-	count = length(var.public_subnet_cidr_blocks)
-	cidr_block = var.public_subnet_cidr_blocks[count.index]
-	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	map_public_ip_on_launch = true
 
 	tags = {
-		Name = "public-subnet-${count.index + 1}"
+		Name = "public-subnet-${each.key}"
 		"kubernetes.io/role/elb" = "1"
 		"kubernetes.io/cluster/${var.clustername}" = "shared"
-		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
+		availability_zone = each.key
 	}	
 }
 
@@ -132,19 +158,20 @@ resource "aws_route_table_association" "eks_public_route_association" {
   depends_on = [aws_route_table.eks_public_routetable, aws_subnet.public_subnet_eks]
 }
 
-# Private Subnets #
+# --- EKS Private Subnets --- 
+
 resource "aws_subnet" "private_subnet_eks" {
+	for_each = local.tiers["eks_private"]
+	availability_zone = each.key
+	cidr_block = each.value
 	vpc_id = local.vpc_id
-	count = length(var.private_subnet_cidr_blocks)
-	cidr_block = var.private_subnet_cidr_blocks[count.index]
-	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	map_public_ip_on_launch = false
 
 	tags = {
-		Name = "private-subnet-${count.index + 1}"
+		Name = "private-subnet-${each.key}"
 		"kubernetes.io/cluster/${var.clustername}" = "shared"
 		"kubernetes.io/role/internal-elb" = "1"
-		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
+		availability_zone = each.key
 	}	
 }
 
@@ -169,20 +196,20 @@ resource "aws_route_table_association" "eks_private_route_association" {
 }
 
 
-# ------ RDS Private Subnets ------ # 
+# ------ RDS Private Subnets ------ 
 
 resource "aws_subnet" "rds_private_subnet" {
+	for_each = local.tiers["rds"]
+	availability_zone = each.key
+	cidr_block = each.value
 	vpc_id = local.vpc_id
-	count = length(var.rds_private_subnet_cidr_blocks)
-	cidr_block = var.rds_private_subnet_cidr_blocks[count.index]
-	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	map_public_ip_on_launch = false
 
 	tags = {
-		Name = "rds-private-subnet-${count.index + 1}"
+		Name = "rds-private-subnet-${each.key}"
 		"kubernetes.io/cluster/${var.clustername}" = "shared"
 		"kubernetes.io/role/internal-elb" = "1"
-		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
+		availability_zone = each.key
 	}	
 }
 
@@ -194,17 +221,17 @@ locals {
 /* Nodegroup Subnet, Routetable */
 
 resource "aws_subnet" "nodegroup_private_subnet" {
+	for_each = local.tiers["nodegrp"]
+	availability_zone = each.key
+	cidr_block = each.value
 	vpc_id = local.vpc_id
-	count = length(var.nodegroup_pvt_subnet_cidr_blocks)
-	cidr_block = var.nodegroup_pvt_subnet_cidr_blocks[count.index]
-	availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
 	map_public_ip_on_launch = false
 
 	tags = {
-		Name = "nodegroup-private-subnet-${count.index + 1}"
+		Name = "nodegroup-private-subnet-${each.key}"
 		"kubernetes.io/cluster/${var.clustername}" = "shared"
 		"kubernetes.io/role/internal-elb" = "1"
-		availability_zone = data.aws_availability_zones.available.names[count.index % length(data.aws_availability_zones.available.names)]
+		availability_zone = each.key
 	}	
   
 }

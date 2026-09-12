@@ -32,6 +32,8 @@ variable "cidr" {
 	type = string
 }
 
+# ----
+
 variable "public_subnet_cidr_blocks" {
   description = "Public Cidr blocks for NAT gateways, ALB, etc"
   type        = list(string)
@@ -54,6 +56,31 @@ variable nodegroup_pvt_subnet_cidr_blocks {
 	default = []
 }
 
+variable "eks_prefix"{
+	description = "prefix for eks subnets"
+	type = number
+	default = 22
+}
+
+variable "nodegrp_prefix"{
+	description = "prefix for nodegroup subnets"
+	type = number
+	default = 20
+}
+
+variable "db_prefix" {
+	description = "prefix for database subnets"
+	type = number
+	default = 27
+}
+
+variable "num_azs" {
+  description = "number of availability zones to use"
+  type        = number
+  default     = 2
+}
+
+# ---- 
 variable "instance_tenancy" {
 	description = "Tenancy of ec2 instances in this VPC"
 	type = string
