@@ -12,6 +12,8 @@ resource "aws_subnet" "corp_subnet" {
 
 */
 
+
+
 data "aws_availability_zones" "available"{
 	state = "available"
 }
@@ -21,6 +23,12 @@ data "aws_availability_zones" "available"{
 
 resource "aws_vpc" "dev_vpc" {
   cidr_block = "10.0.0.0/16"
+}
+
+locals {
+  tier_public = cidrsubnet(aws_vpc.dev_vpc.cidr_block, 4, 0)
+  tier_private = cidrsubnet(aws_vpc.dev_vpc.cidr_block,4, 1)
+  tier_ecs = cidrsubnet(aws_vpc.dev_vpc.cidr_block, 4, 2)
 }
 
 resource "aws_internet_gateway" "salient_igw" {
@@ -85,9 +93,9 @@ resource "aws_security_group_rule" "sgr-ecs-ingress-443" {
 /* Public subnets at /24. Alb, Nat Gateway etc */
 
 resource "aws_subnet" "public_dev" {
-  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 1) : az => idx }
+  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 2) : az => idx }
   vpc_id            = aws_vpc.dev_vpc.id
-  cidr_block        = cidrsubnet(aws_vpc.dev_vpc.cidr_block, 10, each.value)
+  cidr_block        = cidrsubnet(local.tier_public, 6, each.value)
   availability_zone = each.key
   map_public_ip_on_launch = true
 
@@ -172,9 +180,9 @@ resource "aws_security_group_rule" "sgr-ecs-egress" {
 /** Private subnet resources */
 
 resource "aws_subnet" "private_dev" {
-  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 1) : az => idx }
+  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 2) : az => idx }
   vpc_id            = aws_vpc.dev_vpc.id
-  cidr_block        = cidrsubnet(aws_vpc.dev_vpc.cidr_block, 11, each.value + 2)
+  cidr_block        = cidrsubnet(local.tier_private, 11, each.value)
   availability_zone = each.key
 
   tags = {
@@ -185,9 +193,9 @@ resource "aws_subnet" "private_dev" {
 }
 
 resource "aws_subnet" "private_ecs" {
-  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 1) : az => idx }
+  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 2) : az => idx }
   vpc_id            = aws_vpc.dev_vpc.id
-  cidr_block        = cidrsubnet(aws_vpc.dev_vpc.cidr_block, 8, each.value + 4)
+  cidr_block        = cidrsubnet(local.tier_ecs, 4, each.value)
   availability_zone = each.key
 
   tags = {
