@@ -85,9 +85,9 @@ resource "aws_security_group_rule" "sgr-ecs-ingress-443" {
 /* Public subnets at /24. Alb, Nat Gateway etc */
 
 resource "aws_subnet" "public_dev" {
-  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 2) : az => idx }
+  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 1) : az => idx }
   vpc_id            = aws_vpc.dev_vpc.id
-  cidr_block        = cidrsubnet(aws_vpc.dev_vpc.cidr_block, 8, each.value)
+  cidr_block        = cidrsubnet(aws_vpc.dev_vpc.cidr_block, 10, each.value)
   availability_zone = each.key
   map_public_ip_on_launch = true
 
@@ -172,9 +172,9 @@ resource "aws_security_group_rule" "sgr-ecs-egress" {
 /** Private subnet resources */
 
 resource "aws_subnet" "private_dev" {
-  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 2) : az => idx }
+  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 1) : az => idx }
   vpc_id            = aws_vpc.dev_vpc.id
-  cidr_block        = cidrsubnet(aws_vpc.dev_vpc.cidr_block, 4, each.value + 2)
+  cidr_block        = cidrsubnet(aws_vpc.dev_vpc.cidr_block, 11, each.value + 2)
   availability_zone = each.key
 
   tags = {
@@ -185,7 +185,7 @@ resource "aws_subnet" "private_dev" {
 }
 
 resource "aws_subnet" "private_ecs" {
-  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 2) : az => idx }
+  for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 1) : az => idx }
   vpc_id            = aws_vpc.dev_vpc.id
   cidr_block        = cidrsubnet(aws_vpc.dev_vpc.cidr_block, 8, each.value + 4)
   availability_zone = each.key

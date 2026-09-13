@@ -1,4 +1,4 @@
-#vpc module for EKS cluster
+# VPC module for EKS cluster
 
 data "aws_availability_zones" "available"{
 	state = "available"
@@ -96,7 +96,7 @@ resource "aws_vpc_dhcp_options_association" "eks_dhcp_options_association" {
 }
 
 
-# Public subnet, EIP, Nat Gateway, Route Tables
+# --- Public subnet, EIP, Nat Gateway, Route Tables ---
 
 resource "aws_internet_gateway" "igw_public_eks" {
 	count = var.createvpc ? 1 : 0
@@ -195,7 +195,6 @@ resource "aws_route_table_association" "eks_private_route_association" {
 	route_table_id =  aws_route_table.eks_private_routetable[count.index].id
 }
 
-
 # ------ RDS Private Subnets ------ 
 
 resource "aws_subnet" "rds_private_subnet" {
@@ -257,7 +256,6 @@ resource "aws_route_table_association" "nodegroup_private_route_association" {
 }
 
 /* VPC Flow Logs 
-
 resource "aws_flow_log" "eks-vpc-flow-log" {
 	log_destination = "${var.vpcname}-vpc-flow-logs"
 	vpc_id = local.vpc_id
