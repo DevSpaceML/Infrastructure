@@ -32,7 +32,7 @@ variable "cidr" {
 	type = string
 }
 
-# ----
+/*
 
 variable "public_subnet_cidr_blocks" {
   description = "Public Cidr blocks for NAT gateways, ALB, etc"
@@ -51,10 +51,12 @@ variable "rds_private_subnet_cidr_blocks" {
 }
 
 variable nodegroup_pvt_subnet_cidr_blocks {
-	description = "list if cidr blocks for nodegroup private subnets"
+	description = "list of cidr blocks for nodegroup private subnets"
 	type = list
 	default = []
 }
+
+*/
 
 variable "eks_prefix"{
 	description = "prefix for eks subnets"

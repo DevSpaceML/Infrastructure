@@ -22,14 +22,10 @@ provider "aws" {
 
 module "cluster_vpc" {
   source                             = "../../../../modules/network/eks/vpc"
-  cidr                               = var.dev_cidr
+  cidr                               = var.cluster_cidr
   vpcname                            = var.vpcname
   region                             = var.region
   createvpc                          = var.createvpc
   vpc_id                             = var.vpc_id
-  public_subnet_cidr_blocks          = var.public_subnet_cidr_blocks
-  private_subnet_cidr_blocks         = var.private_subnet_cidr_blocks
-  nodegroup_pvt_subnet_cidr_blocks   = var.nodegroup_pvt_subnet_cidr_blocks
-  rds_private_subnet_cidr_blocks     = var.rds_private_subnet_cidr_blocks
   clustername                        = var.clustername
 }

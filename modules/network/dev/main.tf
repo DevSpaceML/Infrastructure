@@ -182,7 +182,7 @@ resource "aws_security_group_rule" "sgr-ecs-egress" {
 resource "aws_subnet" "private_dev" {
   for_each = { for idx, az in slice(data.aws_availability_zones.available.names, 0, 2) : az => idx }
   vpc_id            = aws_vpc.dev_vpc.id
-  cidr_block        = cidrsubnet(local.tier_private, 11, each.value)
+  cidr_block        = cidrsubnet(local.tier_private, 7, each.value)
   availability_zone = each.key
 
   tags = {
