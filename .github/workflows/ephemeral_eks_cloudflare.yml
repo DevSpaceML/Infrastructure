@@ -34,10 +34,6 @@ jobs:
       vpcname: ${{ steps.parse_vars.outputs.vpcname }}
       createvpc: ${{ steps.parse_vars.outputs.createvpc }}
       vpc_id: ${{ steps.parse_vars.outputs.vpc_id }}
-      public_subnet_cidr: ${{ steps.parse_vars.outputs.public_subnet_cidr }}
-      private_subnet_cidr: ${{ steps.parse_vars.outputs.private_subnet_cidr }}
-      rds_subnet_cidrs: ${{ steps.parse_vars.outputs.rds_subnet_cidrs }}
-      nodegroup_subnet_cidrs: ${{ steps.parse_vars.outputs.nodegroup_subnet_cidrs }}
       projectname: ${{ steps.parse_vars.outputs.projectname }}
       appversion: ${{ steps.parse_vars.outputs.app_version }}
     steps:
@@ -72,16 +68,7 @@ jobs:
             '
           )
           # ── Network block: special split logic per subnet role ──────────────────
-          echo "$PAYLOAD" | jq -r '
-            .network | to_entries[] |
-            if   .key == "eks"  then
-              "public_subnet_cidr="  + (.value[:2]  | tojson),
-              "private_subnet_cidr=" + (.value[2:4] | tojson)
-            elif .key == "db"   then "rds_subnet_cidrs="       + (.value | tojson)
-            elif .key == "node" then "nodegroup_subnet_cidrs=" + (.value | tojson)
-            else                     "\(.key)="                + (.value | tojson)
-            end
-          ' >> "$GITHUB_OUTPUT"
+          echo "Pass Network prefixes if not null"
           cat $GITHUB_OUTPUT
 
   # DEPLOY NETWORK
@@ -93,11 +80,9 @@ jobs:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
       TF_VAR_dev_cidr: ${{ needs.configure-variables.outputs.dev_cidr }}
-      TF_VAR_vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
       TF_VAR_vpcname: ${{ needs.configure-variables.outputs.vpcname }}
       TF_VAR_createvpc: ${{ needs.configure-variables.outputs.createvpc }}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
-
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -117,16 +102,16 @@ jobs:
           terraform_wrapper: false
 
       - name: Deploy Network
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc
         run: |
           terraform init -upgrade
 
       - name: Terraform Validate
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc
         run: terraform validate 
 
       - name: Terraform Plan
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc
         run: |
           terraform plan -out=tfplan
           terraform show -json tfplan > tfplan.json
@@ -136,10 +121,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: network-tfplan
-          path: ./environments/${{ env.ENVIRONMENT }}/network/cluster/tfplan.json
+          path: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc/tfplan.json
 
       - name: Terraform Apply
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc
         run: terraform apply -auto-approve tfplan    
 
   # DEPLOY IAM      

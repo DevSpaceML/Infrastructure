@@ -7,15 +7,15 @@ output "eks_vpc_id" {
 }
 
 output "public_cidr" {
-  value = var.public_subnet_cidr_blocks
+  value = aws_subnet.public_subnet_eks.cidr_block
 }
 
 output "private_cidr" {
-  value = var.private_subnet_cidr_blocks
+  value = aws_subnet.private_subnet_eks.cidr_block
 }
 
 output "nodegroup_pvt_cidr" {
-  value = var.nodegroup_pvt_subnet_cidr_blocks
+  value = aws_subnet.nodegroup_private_subnet.cidr_block
 }
 
 output "eks_security_group_id" {
