@@ -148,7 +148,7 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
           role-session-name: GitHub-Actions-OIDC-Session
-          aws-region: ${{ env.region }}
+          aws-region: ${{ env.TF_VAR_region }}
           mask-aws-account-id: false
 
       - name: Prepare Terraform
