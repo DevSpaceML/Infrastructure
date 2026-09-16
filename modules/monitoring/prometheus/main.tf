@@ -23,7 +23,7 @@ resource "aws_iam_policy" "amp_write_policy" {
             "aps:GetLabels",
             "aps:GetMetricMetadata"
           ]
-          Resource = aws_prometheus_workspace.monitor.arn
+          Resource = aws_prometheus_workspace.this.arn
         },
       ]
     }
@@ -47,7 +47,7 @@ module "irsa_prometheus" {
  }
 }
 
-resource "kubernetes_svc_account_v1" "prometheus_agent" {
+resource "kubernetes_svc_account" "prometheus_agent" {
   metadata {
     name        = "prometheus-agent-svc-acc"
     namespace   = "monitoring"
