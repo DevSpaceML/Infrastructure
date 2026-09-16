@@ -10,7 +10,7 @@ data "aws_iam_user" "DevOpsAdmin" {
 }
 
 data "aws_iam_role" "deployment_role" {
-  name = "deployment_role"
+  name = "gha_deploy"
 }
 
 data "aws_iam_role" "eks_cluster_Role" {
