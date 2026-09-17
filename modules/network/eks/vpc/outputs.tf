@@ -6,18 +6,6 @@ output "eks_vpc_id" {
   value = local.vpc_id
 }
 
-output "public_cidr" {
-  value = aws_subnet.public_subnet_eks.cidr_block
-}
-
-output "private_cidr" {
-  value = aws_subnet.private_subnet_eks.cidr_block
-}
-
-output "nodegroup_pvt_cidr" {
-  value = aws_subnet.nodegroup_private_subnet.cidr_block
-}
-
 output "eks_security_group_id" {
   value = data.aws_security_group.default_sec_group.id
 }
