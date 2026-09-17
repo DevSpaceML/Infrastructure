@@ -24,7 +24,9 @@ data "aws_vpc" "existing_vpc" {
 }
 
 locals {
+
   vpc_id = var.createvpc ? aws_vpc.cluster_vpc[0].id : var.vpc_id
+  cidr_block = var.createvpc ? aws_vpc.cluster_vpc.cidr_block : data.aws_vpc.existing_vpc.cidr_block
 
   azs = slice(data.aws_availability_zones.available.names, 0, var.num_azs)
   az_count = length(local.azs)
@@ -43,7 +45,7 @@ locals {
 	    [for _ in range(local.az_count): local.svctiers[tier] - local.base_prefix]
      ]) 
 
-  subnet_cidrs = cidrsubnets(local.vpc_id, local.newbits_list...)
+  subnet_cidrs = cidrsubnets(cidr_block, local.newbits_list...)
 
   # Reconstruct subnet cidrs into {tier => {az => cidr}}, eliminates downstream index math
   tiers = {
@@ -58,7 +60,7 @@ data "aws_internet_gateway" "existing_igw" {
 
   filter {
 	name = "attachment.vpc-id"
-	values = [var.vpc_id]		
+	values = [local.vpc_id]		
   }
 }
 
