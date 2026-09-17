@@ -1,47 +1,47 @@
 output "vpc_id" {
-  value = module.dev_vpc.eks_vpc_id
+  value = module.cluster_vpc.eks_vpc_id
 }
 
 output "region" {
-  value = module.dev_vpc.region
+  value = module.cluster_vpc.region
 }
 
 output "public_cidr" {
-  value = module.dev_vpc.public_cidr
+  value = module.cluster_vpc.public_cidr
 }
 
 output "private_cidr" {
-  value = module.dev_vpc.private_cidr
+  value = module.cluster_vpc.private_cidr
 }
 
 output "nodegroup_cidr" {
-  value = module.dev_vpc.nodegroup_pvt_cidr
+  value = module.cluster_vpc.nodegroup_pvt_cidr
 }
 
 # -- Subnet ID lists for cluster and nodegroups
 
 output "public_subnet_id_list" {
-  value = module.dev_vpc.public_subnet_id_list
+  value = module.cluster_vpc.public_subnet_id_list
 }
 
 output "private_subnet_id_list" {
-  value = module.dev_vpc.private_subnet_id_list
+  value = module.cluster_vpc.private_subnet_id_list
 }
 
 output "nodegroup_subnet_id_list" {
-  value = module.dev_vpc.nodegroup_pvt_subnet_id_list
+  value = module.cluster_vpc.nodegroup_pvt_subnet_id_list
 }
 
 output "db_subnet_id_list" {
-  value = module.dev_vpc.rds_private_subnet_id_list
+  value = module.cluster_vpc.rds_private_subnet_id_list
 }
 
 # --
 
 output "nat_gateway_id_list" {
-  value = module.dev_vpc.nat_gateways
+  value = module.cluster_vpc.nat_gateways
 }
 
 output "eks_sec_group_id" {
-  value = module.dev_vpc.eks_security_group_id
+  value = module.cluster_vpc.eks_security_group_id
 }
