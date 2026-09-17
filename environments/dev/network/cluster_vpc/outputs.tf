@@ -6,18 +6,6 @@ output "region" {
   value = module.cluster_vpc.region
 }
 
-output "public_cidr" {
-  value = module.cluster_vpc.public_cidr
-}
-
-output "private_cidr" {
-  value = module.cluster_vpc.private_cidr
-}
-
-output "nodegroup_cidr" {
-  value = module.cluster_vpc.nodegroup_pvt_cidr
-}
-
 # -- Subnet ID lists for cluster and nodegroups
 
 output "public_subnet_id_list" {
