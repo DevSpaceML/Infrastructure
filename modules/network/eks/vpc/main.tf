@@ -26,7 +26,7 @@ data "aws_vpc" "existing_vpc" {
 locals {
   vpc_id = var.createvpc ? aws_vpc.cluster_vpc[0].id : var.vpc_id
 
-  azs = length(slice(data.aws_availability_zones.available.names, 0, var.num_azs))
+  azs = slice(data.aws_availability_zones.available.names, 0, var.num_azs)
   az_count = length(local.azs)
 
   base_prefix = tonumber(split("/", var.cidr)[1])
