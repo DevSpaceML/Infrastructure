@@ -11,7 +11,7 @@ data "terraform_remote_state" "dev_iam" {
     backend = "s3"
     config = {
         bucket = "dev-tf-state-488347380548"
-        key    = "dev/iam/eks/main/terraform.tfstate"
+        key    = "dev/iam/eks/terraform.tfstate"
         region = "us-east-1"
     }
 }

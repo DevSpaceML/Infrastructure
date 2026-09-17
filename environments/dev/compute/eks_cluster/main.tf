@@ -31,7 +31,7 @@ provider "kubernetes" {
    exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
-    args        = ["eks", "get-token", "--cluster-name", module.dev_cluster.cluster_name, "--region", data.terraform_remote_state.dev_network.outputs.region]
+    args        = ["eks", "get-token", "--cluster-name", module.dev_cluster.cluster_name, "--region", var.region]
   }
 }
 
@@ -55,11 +55,10 @@ provider "helm" {
 module "dev_cluster" {
   source                 = "../../../../modules/compute/eks/cluster"
   clustername            = var.clustername
-  region                 = data.terraform_remote_state.dev_network.outputs.region
-  vpcId                  = data.terraform_remote_state.dev_network.outputs.vpc_id
+  region                 = var.region
+  vpcId                  = data.terraform_remote_state.dev_network.outputs.dev_vpc_id
   public_subnet_ids      = data.terraform_remote_state.dev_network.outputs.public_subnet_id_list
   private_subnet_ids     = data.terraform_remote_state.dev_network.outputs.private_subnet_id_list
-  public_cidr            = data.terraform_remote_state.dev_network.outputs.public_cidr
   cluster_role_arn       = data.terraform_remote_state.dev_iam.outputs.cluster-role-arn
   node_role_arn          = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
   devops_admin_arn       = data.terraform_remote_state.dev_iam.outputs.DevOpsAdminSre-arn
@@ -88,8 +87,7 @@ module "dev_cluster" {
 module "eks_security_groups" {
   depends_on            = [ module.dev_cluster ]
   source                = "../../../../modules/network/eks/eks-security-groups"
-  vpc_id                = data.terraform_remote_state.dev_network.outputs.vpc_id
-  nodegroup_cidr_blocks = data.terraform_remote_state.dev_network.outputs.nodegroup_cidr
+  vpc_id                = data.terraform_remote_state.dev_network.outputs.dev_vpc_id
   clustername           = module.dev_cluster.cluster_name
 }
 
