@@ -22,7 +22,7 @@ variable "createvpc" {
   default = false
 }
 
-variable "dev_cidr" {
+variable "cluster_cidr" {
   description = "Default cidr block for VPC cluster"
   type        = string
 }
