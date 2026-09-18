@@ -25,6 +25,7 @@ variable "createvpc" {
 variable "cluster_cidr" {
   description = "Default cidr block for VPC cluster"
   type        = string
+  default = null
 }
 
 variable "vpc_id" {
