@@ -27,5 +27,5 @@ output "rds_private_subnet_id_list" {
 }
 
 output "nat_gateways" {
-  value = aws_nat_gateway.eks_nat_gw[*].id
+  value = [for ng in aws_nat_gateway.eks_nat_gw: ng.id]
 }
