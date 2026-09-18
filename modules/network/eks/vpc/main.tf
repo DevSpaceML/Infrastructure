@@ -18,15 +18,11 @@ resource "aws_vpc" "cluster_vpc" {
 	}
 }
 
-data "aws_vpc" "existing_vpc" {
-	count = var.createvpc ? 0 : 1
-	id = var.vpc_id
-}
 
 locals {
 
   vpc_id = var.createvpc ? aws_vpc.cluster_vpc[0].id : var.vpc_id
-  cidr_block = var.createvpc ? aws_vpc.cluster_vpc.cidr_block : data.aws_vpc.existing_vpc.cidr_block
+  cidrblock = var.createvpc ? aws_vpc.cluster_vpc[0].cidr_block : data.aws_vpc.existing_vpc[0].cidr_block
 
   azs = slice(data.aws_availability_zones.available.names, 0, var.num_azs)
   az_count = length(local.azs)
@@ -45,7 +41,7 @@ locals {
 	    [for _ in range(local.az_count): local.svctiers[tier] - local.base_prefix]
      ]) 
 
-  subnet_cidrs = cidrsubnets(cidr_block, local.newbits_list...)
+  subnet_cidrs = cidrsubnets(local.cidrblock, local.newbits_list...)
 
   # Reconstruct subnet cidrs into {tier => {az => cidr}}, eliminates downstream index math
   tiers = {
@@ -55,12 +51,17 @@ locals {
   }
 }
 
+data "aws_vpc" "existing_vpc" {
+	count = var.createvpc ? 0 : 1
+	id = var.vpc_id
+}
+
 data "aws_internet_gateway" "existing_igw" {
   count = var.createvpc ? 0 : 1
 
   filter {
 	name = "attachment.vpc-id"
-	values = [local.vpc_id]		
+	values = [var.vpc_id]		
   }
 }
 
@@ -125,22 +126,21 @@ resource "aws_subnet" "public_subnet_eks" {
 }
 
 resource "aws_eip" "nat-eip" {
-	count    = length(aws_subnet.public_subnet_eks)
+	for_each = aws_subnet.public_subnet_eks
 	domain   = "vpc"
 
 	tags = {
-		Name = "NAT-EIP-${count.index + 1}"
+		Name = "NAT-EIP-${each.key}"
 	}
-	
 }
 
 resource "aws_nat_gateway" "eks_nat_gw" {
-	count = length(aws_subnet.public_subnet_eks)
-	allocation_id = aws_eip.nat-eip[count.index].id
-	subnet_id = aws_subnet.public_subnet_eks[count.index].id
+	for_each = aws_subnet.public_subnet_eks
+	allocation_id = aws_eip.nat-eip[each.key].id
+	subnet_id = each.value.id
 
 	tags = {
-		Name = "EKS-NAT-Gateway-${count.index+1}"
+		Name = "EKS-NAT-Gateway-${each.key}"
 	}
 }
 
@@ -153,8 +153,8 @@ resource "aws_route_table" "eks_public_routetable" {
 }
 
 resource "aws_route_table_association" "eks_public_route_association" {
-  count          = length(aws_subnet.public_subnet_eks)
-  subnet_id      = aws_subnet.public_subnet_eks[count.index].id
+  for_each       = aws_subnet.public_subnet_eks
+  subnet_id      = each.value.id
   route_table_id = aws_route_table.eks_public_routetable.id
 
   depends_on = [aws_route_table.eks_public_routetable, aws_subnet.public_subnet_eks]
@@ -178,23 +178,23 @@ resource "aws_subnet" "private_subnet_eks" {
 }
 
 resource "aws_route_table" "eks_private_routetable" {
-	count = length(aws_subnet.private_subnet_eks)
+	for_each = aws_subnet.private_subnet_eks
 	vpc_id = local.vpc_id
 
 	route {
 		cidr_block = "0.0.0.0/0"
-		nat_gateway_id = aws_nat_gateway.eks_nat_gw[count.index % length(aws_nat_gateway.eks_nat_gw)].id
+		nat_gateway_id = aws_nat_gateway.eks_nat_gw[each.key].id
 	}
 
 	tags = {
-		Name = "Eks-Private-RouteTable-${count.index + 1}"
+		Name = "Eks-Private-RouteTable-${each.key}"
 	}
 }
 
 resource "aws_route_table_association" "eks_private_route_association" {
-	count          =  length(aws_subnet.private_subnet_eks)
-	subnet_id      =  aws_subnet.private_subnet_eks[count.index].id
-	route_table_id =  aws_route_table.eks_private_routetable[count.index].id
+	for_each = aws_subnet.private_subnet_eks
+	subnet_id      =  each.value.id
+	route_table_id =  aws_route_table.eks_private_routetable[each.key].id
 }
 
 # ------ RDS Private Subnets ------ 
@@ -215,8 +215,8 @@ resource "aws_subnet" "rds_private_subnet" {
 }
 
 locals {
-  public_subnet_ids  = aws_subnet.public_subnet_eks[*].id
-  private_subnet_ids = aws_subnet.private_subnet_eks[*].id
+  public_subnet_ids  = { for k, v in aws_subnet.public_subnet_eks : k => v.id }
+  private_subnet_ids = { for k, v in aws_subnet.private_subnet_eks : k => v.id }
 }
 
 /* Nodegroup Subnet, Routetable */
@@ -238,23 +238,23 @@ resource "aws_subnet" "nodegroup_private_subnet" {
 }
 
 resource "aws_route_table" "nodegroup_private_routetable" {
-	count = length(aws_subnet.nodegroup_private_subnet)
-	vpc_id = local.vpc_id
+  for_each = aws_subnet.nodegroup_private_subnet
+  vpc_id   = local.vpc_id
 
   route {
     cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.eks_nat_gw[count.index % length(aws_nat_gateway.eks_nat_gw)].id
+    nat_gateway_id = aws_nat_gateway.eks_nat_gw[each.key].id
   }
 
   tags = {
-    Name = "Nodegroup-Private-RouteTable-${count.index + 1}"
+    Name = "Nodegroup-Private-RouteTable-${each.key}"
   }
 }
 
 resource "aws_route_table_association" "nodegroup_private_route_association" {
-	count          =  length(aws_subnet.nodegroup_private_subnet)
-	subnet_id      =  aws_subnet.nodegroup_private_subnet[count.index].id
-	route_table_id =  aws_route_table.nodegroup_private_routetable[count.index].id
+  for_each       = aws_subnet.nodegroup_private_subnet
+  subnet_id      = each.value.id
+  route_table_id = aws_route_table.nodegroup_private_routetable[each.key].id
 }
 
 /* VPC Flow Logs 
