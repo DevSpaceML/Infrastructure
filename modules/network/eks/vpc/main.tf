@@ -1,11 +1,28 @@
 # VPC module for EKS cluster
-
 data "aws_availability_zones" "available"{
 	state = "available"
 }
 
-locals {
+resource "aws_vpc" "cluster_vpc" {
+	count = var.createvpc ? 1 : 0
+	cidr_block = var.cidr
+	instance_tenancy = var.instance_tenancy
 
+	enable_dns_hostnames = true
+	enable_dns_support   = true
+
+	tags = {
+		Name = var.vpcname
+		"kubernetes.io/cluster/${var.clustername}" = "shared"
+	}
+}
+
+data "aws_vpc" "existing_vpc" {
+	count = var.createvpc ? 0 : 1
+	id = var.vpc_id
+}
+
+locals {
   vpc_id = var.createvpc ? aws_vpc.cluster_vpc[0].id : var.vpc_id
   cidrblock = var.createvpc ? aws_vpc.cluster_vpc[0].cidr_block : data.aws_vpc.existing_vpc[0].cidr_block
 
@@ -36,24 +53,6 @@ locals {
   }
 }
 
-resource "aws_vpc" "cluster_vpc" {
-	count = var.createvpc ? 1 : 0
-	cidr_block = local.cidrblock
-	instance_tenancy = var.instance_tenancy
-
-	enable_dns_hostnames = true
-	enable_dns_support   = true
-
-	tags = {
-		Name = var.vpcname
-		"kubernetes.io/cluster/${var.clustername}" = "shared"
-	}
-}
-
-data "aws_vpc" "existing_vpc" {
-	count = var.createvpc ? 0 : 1
-	id = var.vpc_id
-}
 
 data "aws_internet_gateway" "existing_igw" {
   count = var.createvpc ? 0 : 1

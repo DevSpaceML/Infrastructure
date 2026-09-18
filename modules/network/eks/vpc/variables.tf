@@ -30,6 +30,7 @@ variable "vpcname" {
 variable "cidr" {
 	description = "Default cidr for VPC cluster"
 	type = string
+	default = "10.0.0.0/16"
 }
 
 /*
