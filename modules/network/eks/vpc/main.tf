@@ -23,13 +23,13 @@ data "aws_vpc" "existing_vpc" {
 }
 
 locals {
-  vpc_id = var.createvpc ? aws_vpc.cluster_vpc[0].id : var.vpc_id
+  vpc_id = var.createvpc ? aws_vpc.cluster_vpc[0].id : data.aws_vpc.existing_vpc[0].id
   cidrblock = var.createvpc ? aws_vpc.cluster_vpc[0].cidr_block : data.aws_vpc.existing_vpc[0].cidr_block
 
   azs = slice(data.aws_availability_zones.available.names, 0, var.num_azs)
   az_count = length(local.azs)
 
-  base_prefix = tonumber(split("/", var.cidr)[1])
+  base_prefix = tonumber(split("/", local.cidrblock)[1])
   svctiers = {
 	"eks_public": var.eks_prefix,
 	"eks_private": var.eks_prefix,
@@ -59,7 +59,7 @@ data "aws_internet_gateway" "existing_igw" {
 
   filter {
 	name = "attachment.vpc-id"
-	values = [var.vpc_id]		
+	values = [local.vpc_id]		
   }
 }
 
