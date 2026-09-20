@@ -15,7 +15,6 @@ data "aws_iam_policy_document" "devops_admin_trust" {
   }
 }
 
-
 data "aws_iam_policy_document" "devops_admin" {
 
   # ──────────────────────────────────────────

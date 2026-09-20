@@ -10,7 +10,7 @@ resource "aws_lb_target_group" "project" {
 }
 
 resource "aws_lb_listener_rule" "project" {
-  listener_arn = var.alb_arn
+  listener_arn = var.lbc_arn
   priority     = 100
 
   action {
