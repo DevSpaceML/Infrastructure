@@ -46,7 +46,7 @@ provider "helm" {
       args = [
         "eks", "get-token",
         "--cluster-name", module.dev_cluster.cluster_name,
-        "--region",       data.terraform_remote_state.dev_network.outputs.region
+        "--region",       data.terraform_remote_state.cluster_network.outputs.region
       ]
     }
   }
@@ -56,9 +56,9 @@ module "dev_cluster" {
   source                 = "../../../../modules/compute/eks/cluster"
   clustername            = var.clustername
   region                 = var.region
-  vpcId                  = data.terraform_remote_state.dev_network.outputs.dev_vpc_id
-  public_subnet_ids      = data.terraform_remote_state.dev_network.outputs.public_subnet_id_list
-  private_subnet_ids     = data.terraform_remote_state.dev_network.outputs.private_subnet_id_list
+  vpcId                  = data.terraform_remote_state.cluster_network.outputs.vpc_id
+  public_subnet_ids      = data.terraform_remote_state.cluster_network.outputs.public_subnet_id_list
+  private_subnet_ids     = data.terraform_remote_state.cluster_network.outputs.private_subnet_id_list
   cluster_role_arn       = data.terraform_remote_state.dev_iam.outputs.cluster-role-arn
   node_role_arn          = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
   devops_admin_arn       = data.terraform_remote_state.dev_iam.outputs.DevOpsAdminSre-arn
@@ -87,7 +87,7 @@ module "dev_cluster" {
 module "eks_security_groups" {
   depends_on            = [ module.dev_cluster ]
   source                = "../../../../modules/network/eks/eks-security-groups"
-  vpc_id                = data.terraform_remote_state.dev_network.outputs.dev_vpc_id
+  vpc_id                = data.terraform_remote_state.cluster_network.outputs.vpc_id
   clustername           = module.dev_cluster.cluster_name
 }
 
@@ -117,7 +117,7 @@ module "dev_nodes" {
   nodegroupname                = "${module.dev_cluster.cluster_name}-nodegroup"
   clustername                  = module.dev_cluster.cluster_name
   instancetype                 = var.instancetype
-  nodegroup_pvt_subnet_id_list = data.terraform_remote_state.dev_network.outputs.nodegroup_subnet_id_list
+  nodegroup_pvt_subnet_id_list = data.terraform_remote_state.cluster_network.outputs.nodegroup_subnet_id_list
 }
 
 module "coredns" {

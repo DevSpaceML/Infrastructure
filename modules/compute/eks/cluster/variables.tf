@@ -62,11 +62,6 @@ variable "private_subnet_ids" {
   type = list
 }
 
-variable "public_cidr" {
-	description = "Public facing CIDR block"
-	type = list
-}
-
 variable "additional_security_group_ids" {
   description = "list of additional security group Ids to attach to the cluster"
 	type        = list(string)
