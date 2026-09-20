@@ -33,17 +33,17 @@ resource "aws_iam_policy" "amp_write_policy" {
 module "irsa_prometheus" {
   source = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
   version = "6.8.1"
-  name = "prometheusagent-irsa-${var.clustername }"
-
+  name = join("-", [substr(var.clustername, 0, 10), "promagent-irsa"])
   oidc_providers = {
     main = {
       provider_arn = var.oidc_arn
       namespace_service_accounts = ["monitoring:prometheus-agent-svc-acc"]
     }
-  role_policy_arns = {
+  }  
+  policies = {
     amp_write_policy = aws_iam_policy.amp_write_policy.arn
   }
- }
+ 
 }
 
 resource "kubernetes_service_account_v1" "prometheus_agent" {
