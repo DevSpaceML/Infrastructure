@@ -9,7 +9,12 @@ variable "vpc_id" {
   type = string
 }
 
-variable "lbc_arn" {
+variable "alb_arn" {
   description = "arn of loadbalancer controller"
   type = string
+}
+
+variable "clustername" {
+	description = "Name of cluster to be provisioned"
+	type = string
 }

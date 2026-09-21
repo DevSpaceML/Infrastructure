@@ -10,7 +10,7 @@ resource "aws_lb_target_group" "project" {
 }
 
 resource "aws_lb_listener_rule" "project" {
-  listener_arn = var.lbc_arn
+  listener_arn = var.alb_arn
   priority     = 100
 
   action {
@@ -23,4 +23,9 @@ resource "aws_lb_listener_rule" "project" {
       values = ["${var.projectname}.salientapps.com"]
     }
   }
+}
+
+resource "aws_iam_policy" "alb_controller" {
+  name = "${var.clustername}-alb-controller"
+  policy = file("${path.module/alb-controller.json}")
 }
