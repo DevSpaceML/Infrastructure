@@ -1,3 +1,8 @@
+data "aws_lb" "k8_shared" {
+  
+}
+
+
 resource "aws_lb_target_group" "project" {
   name        = "tg-${var.projectname}"
   port        = 80
@@ -10,7 +15,7 @@ resource "aws_lb_target_group" "project" {
 }
 
 resource "aws_lb_listener_rule" "project" {
-  listener_arn = var.alb_arn
+  listener_arn = aws_lb.k8_shared.arn
   priority     = 100
 
   action {
@@ -23,4 +28,17 @@ resource "aws_lb_listener_rule" "project" {
       values = ["${var.projectname}.salientapps.com"]
     }
   }
+}
+
+resource "aws_iam_policy" "alb_controller" {
+  name = "${var.clustername}-alb-controller"
+  policy = file("${path.module/alb-controller.json}")
+}
+
+resource "cloudflare_record" "app" {
+  zone_id = var.cloudflare_zone_id
+  name    =  "app"
+  type    = "CNAME"
+  content =  data.aws_lb.k8_shared.dns_name
+  proxied = true
 }

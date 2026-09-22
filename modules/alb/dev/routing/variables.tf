@@ -9,7 +9,8 @@ variable "vpc_id" {
   type = string
 }
 
-variable "alb_arn" {
-  description = "arn of loadbalancer"
+variable "alb_securitygroup_id" {
+  description = "ID of the security group for the ALB"
   type = string
+
 }

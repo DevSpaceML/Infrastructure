@@ -32,3 +32,15 @@ spec:
     - protocol: TCP
       port: {{ .Values.app.port | int }}
       targetPort: {{ .Values.app.targetPort | int }}
+---
+apiVersion: elbv2.k8s.aws/v1beta1
+kind: TargetGroupBinding
+metadata:
+  name: {{ .Values.app.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  serviceRef:
+    name: {{ .Values.app.name }}
+    port: {{ .Values.service.port }}
+  targetGroupARN: {{ .Values.targetGroupBinding.targetGroupArn }}
+  targetType: ip

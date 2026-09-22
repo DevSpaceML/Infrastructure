@@ -12,4 +12,5 @@ module "ephmrl_routing" {
   alb_arn = var.alb_arn
   vpc_id  = data.terraform_remote_state.dev_network.outputs.vpc_id
   projectname = data.terraform_remote_state.dev_cluster.outputs.projectname
+  clustername = var.clustername
 }
