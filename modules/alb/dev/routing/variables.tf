@@ -14,3 +14,18 @@ variable "alb_securitygroup_id" {
   type = string
 
 }
+
+variable "clustername" {
+  description = "Name of cluster"
+  type        = string
+}
+
+variable "alb_arn" {
+  description = "Arn of k8 alb"
+  type = string
+}
+
+variable "alb_name" {
+  description = "alb name"
+  type = string
+}
