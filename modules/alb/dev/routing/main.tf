@@ -1,7 +1,7 @@
 data "aws_lb" "k8_shared" {
-  
+  arn  = var.alb_arn
+  name = var.alb_name
 }
-
 
 resource "aws_lb_target_group" "project" {
   name        = "tg-${var.projectname}"

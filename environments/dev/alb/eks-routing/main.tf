@@ -8,9 +8,10 @@ terraform {
 }
 
 module "ephmrl_routing" {
-  source = "../../../../modules/alb/dev/eks"
-  alb_arn = var.alb_arn
-  vpc_id  = data.terraform_remote_state.dev_network.outputs.vpc_id
+  source      = "../../../../modules/alb/dev/eks"
+  alb_arn     = data.terraform_remote_state.eks_alb.outputs.alb_arn
+  vpc_id      = data.terraform_remote_state.cluster_network.outputs.vpc_id
   projectname = data.terraform_remote_state.dev_cluster.outputs.projectname
-  clustername = var.clustername
+  clustername = data.terraform_remote_state.dev_cluster.outputs.cluster_name
+  alb_securitygroup_id = data.terraform_remote_state.dev_network.outputs.eks_sec_group_id
 }
