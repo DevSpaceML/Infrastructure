@@ -53,7 +53,6 @@ locals {
   }
 }
 
-
 data "aws_internet_gateway" "existing_igw" {
   count = var.createvpc ? 0 : 1
 
