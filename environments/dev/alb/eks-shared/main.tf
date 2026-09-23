@@ -9,9 +9,7 @@ terraform {
 
 module "eks-shared-alb" {
   source      = "../../../../modules/alb/eks-alb"
-  cert_arn    = data.terraform_remote_state.dev_certs.outputs.dev_acm_cert_arn
-  alb_sg_id   = data.terraform_remote_state.dev_network.outputs.alb_security_group_id
-  vpc_id      = data.terraform_remote_state.dev_network.outputs.dev_vpc_id
-  domain_name = data.terraform_remote_state.dev_certs.outputs.appdomain
-  public_dev_subnet_list = data.terraform_remote_state.dev_network.outputs.public_subnet_id_list
+  alb_sg_id   = data.terraform_remote_state.cluster_network.outputs.alb_security_group_id
+  vpc_id      = data.terraform_remote_state.cluster_network.outputs.dev_vpc_id
+  public_dev_subnet_list = data.terraform_remote_state.cluster_network.outputs.public_subnet_id_list
 }
