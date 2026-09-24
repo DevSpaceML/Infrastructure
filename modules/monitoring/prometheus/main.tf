@@ -1,3 +1,9 @@
+resource "kubernetes_namespace_v1" "monitoring" {
+  metadata {
+    name = "monitoring"
+  }
+}
+
 resource "aws_prometheus_workspace" "this" {
   alias = "${var.clustername}-monitoring"
 
@@ -5,6 +11,11 @@ resource "aws_prometheus_workspace" "this" {
     Environment = var.environment
     Cluster     = var.clustername
   }
+}
+
+locals {
+  monitoring_namespace = "monitoring"
+  prometheus_sa_name   = "prometheus-agent-svc-acc"
 }
 
 resource "aws_iam_policy" "amp_write_policy" {
@@ -37,7 +48,7 @@ module "irsa_prometheus" {
   oidc_providers = {
     main = {
       provider_arn = var.oidc_arn
-      namespace_service_accounts = ["monitoring:prometheus-agent-svc-acc"]
+      namespace_service_accounts = ["${local.monitoring_namespace}:${local.prometheus_sa_name}"]
     }
   }  
   policies = {
@@ -49,7 +60,7 @@ module "irsa_prometheus" {
 resource "kubernetes_service_account_v1" "prometheus_agent" {
   metadata {
     name        = "prometheus-agent-svc-acc"
-    namespace   = "monitoring"
+    namespace   = kubernetes_namespace_v1.monitoring.metadata[0].name
     annotations = {
         "eks.amazonaws.com/role-arn" = module.irsa_prometheus.arn
     }

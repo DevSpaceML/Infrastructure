@@ -67,7 +67,7 @@ resource "aws_eks_access_entry" "this" {
 
 resource "aws_eks_access_policy_association" "this" {
   for_each          = {
-    for k,v in var.var.access_entries : k => v
+    for k,v in var.access_entries : k => v
     if v.policy_arn != null  
   }
 
