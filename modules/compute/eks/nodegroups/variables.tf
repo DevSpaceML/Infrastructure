@@ -13,7 +13,7 @@ variable "nodegroupname" {
 variable "instancetype" {
 	description = "Default Instance Type"
 	type = string
-	default = "t3.large"
+	default = "t4g.small"
 }
 
 variable "desired_node_count" {

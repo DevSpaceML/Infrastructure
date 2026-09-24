@@ -121,8 +121,8 @@ variable "access_entries" {
   description = "Access entries for EKS cluster"
   type = map(object({
     principal_arn      = string
-    kubernetes_groups  = list(string)
-    type               = string
+    kubernetes_groups  = optional(list(string), [])
+    type               = optional(string, "STANDARD")
     user_name          = optional(string)
     policy_arn         = optional(string)
     access_scope_type  = optional(string, "cluster")

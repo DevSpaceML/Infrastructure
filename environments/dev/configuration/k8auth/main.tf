@@ -9,7 +9,7 @@ provider "kubernetes" {
    exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
-    args        = ["eks", "get-token", "--cluster-name", data.terraform_remote_state.dev_cluster.outputs.cluster_name, "--region", data.terraform_remote_state.dev_vpc.outputs.region]
+    args        = ["eks", "get-token", "--cluster-name", data.terraform_remote_state.dev_cluster.outputs.cluster_name, "--region", data.terraform_remote_state.cluster_network.outputs.region]
   }
 }
 
