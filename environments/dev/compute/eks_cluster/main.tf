@@ -65,21 +65,11 @@ module "dev_cluster" {
   access_entries         = merge(data.terraform_remote_state.dev_iam.outputs.access-entries-map, {
                                   "github_actions" = {
                                      principal_arn     = data.terraform_remote_state.dev_iam.outputs.github-actions-arn
-                                     type              = "STANDARD"
-                                     kubernetes_groups = []
-                                     user_name         = "github-actions"
+                                     policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
                                     },
                                     "devops_admin" = {
                                       principal_arn = data.terraform_remote_state.dev_iam.outputs.DevOpsAdminSre-arn
-                                      type = "STANDARD"
-                                      kubernetes_groups = ["cluster-admin"]
-                                      user_name = "devops-admin"
-                                    },
-                                    "node_manager" = {
-                                      principal_arn = data.terraform_remote_state.dev_iam.outputs.node-mgr-arn
-                                      type = "EC2_LINUX"
-                                      kubernetes_groups = []
-                                      user_name = ""
+                                      policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
                                     }
                               })
 }

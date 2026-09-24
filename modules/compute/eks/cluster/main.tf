@@ -51,61 +51,33 @@ resource "aws_eks_cluster" "this" {
 
 }
 
-resource "aws_eks_access_policy_association" "github_actions" {
-  cluster_name  = aws_eks_cluster.this.name
-  principal_arn = data.aws_iam_role.deployment_role.arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-
-  access_scope {
-    type = "cluster"
-  }
-}
-
-resource "aws_eks_access_policy_association" "DevopsAdmin" {
-  cluster_name  = aws_eks_cluster.this.name
-  principal_arn = var.devops_admin_arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-
-  access_scope {
-    type = "cluster"
-  }
-}
-
-resource "aws_eks_access_entry" "eks_access" {
-  depends_on = [ aws_eks_cluster.this ]
-
+resource "aws_eks_access_entry" "this" {
+  depends_on        = [ aws_eks_cluster.this ]
   for_each          = var.access_entries
   cluster_name      = aws_eks_cluster.this.name
 	principal_arn     = each.value.principal_arn
-	kubernetes_groups = each.value.kubernetes_groups
-	type              = each.value.type
-  user_name         = try(each.value.user_name, null)
+	kubernetes_groups = each.value.type == "STANDARD" ? each.value.kubernetes_groups : null
+  user_name         = each.value.type == "STANDARD" ? each.value.user_name : null
+  type              = each.value.type
 
   lifecycle {
     create_before_destroy = false
   }
 }
 
-resource "aws_eks_access_policy_association" "eks_cluster_admin_policy" {
-  depends_on    = [ aws_eks_access_entry.eks_access ]
-  cluster_name  = aws_eks_cluster.this.name
-  principal_arn = data.aws_iam_role.eks_cluster_Role.arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-
-  access_scope {
-    type = "cluster"
+resource "aws_eks_access_policy_association" "this" {
+  for_each          = {
+    for k,v in var.var.access_entries : k => v
+    if v.policy_arn != null  
   }
 
-}
-
-resource "aws_eks_access_policy_association" "eks_eks_admin_policy" {
-  depends_on    = [ aws_eks_access_entry.eks_access ]
   cluster_name  = aws_eks_cluster.this.name
-  principal_arn = data.aws_iam_user.DevOpsAdmin.arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
+  principal_arn = aws_eks_access_entry.this[each.key].principal_arn
+  policy_arn    = each.value.policy_arn
 
   access_scope {
-    type = "cluster"
+    type = each.value.access_scope_type
+    namespaces = each.value.access_scope_type == "namespace" ? each.value.namespaces : null
   }
-
 }
+

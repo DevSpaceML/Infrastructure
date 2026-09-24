@@ -114,7 +114,6 @@ variable "cluster_encryption_config" {
 		}
 	)
   )
-
   default = []
 }
 
@@ -123,8 +122,11 @@ variable "access_entries" {
   type = map(object({
     principal_arn      = string
     kubernetes_groups  = list(string)
-    type              = string
-    user_name         = optional(string)
+    type               = string
+    user_name          = optional(string)
+    policy_arn         = optional(string)
+    access_scope_type  = optional(string, "cluster")
+    namespaces         = optional(list(string))
   }))
   default = {}
 }
