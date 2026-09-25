@@ -8,8 +8,8 @@ terraform {
 }
 
 module "eks-shared-alb" {
-  source      = "../../../../modules/alb/eks-alb"
-  alb_sg_id   = data.terraform_remote_state.cluster_network.outputs.alb_security_group_id
-  vpc_id      = data.terraform_remote_state.cluster_network.outputs.dev_vpc_id
+  source                 = "../../../../modules/alb/eks-alb"
+  alb_sg_id              = data.terraform_remote_state.cluster_network.outputs.eks_sec_group_id
+  vpc_id                 = data.terraform_remote_state.cluster_network.outputs.vpc_id
   public_dev_subnet_list = data.terraform_remote_state.cluster_network.outputs.public_subnet_id_list
 }
