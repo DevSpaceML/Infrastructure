@@ -37,7 +37,7 @@ variable "max_node_count" {
 variable "instancetype" {
   description = "Instance type for the nodegroup"
   type = string
-  default = "t4g.medium"
+  default = "t3.small"
 }
 
 variable "environment" {
