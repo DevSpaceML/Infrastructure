@@ -12,7 +12,7 @@ data "aws_iam_openid_connect_provider" "eks_oidc" {
   url        = data.aws_eks_cluster.eks-cluster.identity[0].oidc[0].issuer
 }
 
-# ---- lbController IRSA ----
+# ---- LBC IRSA ----
 resource "aws_iam_role" "lb_controller_role"{
     depends_on = [ aws_iam_openid_connect_provider.eks_oidc_connect ]
     name = "lbControllerRole"
