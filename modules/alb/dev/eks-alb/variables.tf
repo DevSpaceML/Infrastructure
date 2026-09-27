@@ -1,8 +1,3 @@
-variable "clustername" {
-	description = "Name of cluster to be provisioned"
-	type = string
-}
-
 variable "var.public_subnet_ids" {
   description = "List of public subnets"
   type = list
