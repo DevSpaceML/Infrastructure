@@ -478,7 +478,12 @@ jobs:
         run: |
           terraform plan -out=alb_tfplan
           terraform show -json alb_tfplan > alb_tfplan.json
-          cat alb_tfplan.json    
+          cat alb_tfplan.json
+      
+      - name: Terraform Apply
+        working-directory:  ./environments/dev/alb/eks-shared
+        run: |
+          terraform apply -auto-approve alb_tfplan
 
   # Create http listeners, rules, and target groups
   configure-routing:
