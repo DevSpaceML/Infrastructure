@@ -1,4 +1,4 @@
-variable "var.public_subnet_ids" {
+variable "public_subnet_ids" {
   description = "List of public subnets"
   type = list
   default = []

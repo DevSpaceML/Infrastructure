@@ -4,6 +4,12 @@ variable "projectname" {
   default = ""
 }
 
+variable "appdomain" {
+  description = "app domain"
+  type = string
+  default = "salientapps.com"
+}
+
 variable "vpc_id" {
   description = "vpc project will deploy to"
   type = string
