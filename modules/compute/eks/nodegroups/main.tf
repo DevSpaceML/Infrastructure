@@ -1,7 +1,7 @@
 
 resource "aws_launch_template" "cluster_nodes_lt" {
   name_prefix = "${var.nodegroupname}-lt-"
-  instance_type  = [var.instancetype]
+  instance_type  = var.instancetype
 
   metadata_options {
     http_endpoint               = "enabled"
@@ -26,7 +26,6 @@ resource "aws_eks_node_group" "cluster_nodes" {
 	node_group_name = var.nodegroupname
 	node_role_arn   = var.node_group_mgr_arn
 	subnet_ids      = var.nodegroup_pvt_subnet_id_list
-    instance_types  = [var.instancetype]
 
 	scaling_config {
 		desired_size = var.desired_node_count
