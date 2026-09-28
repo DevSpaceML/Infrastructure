@@ -62,8 +62,8 @@ jobs:
             echo "$PAYLOAD" | jq -r '
               to_entries[]
               | select(.key != "network")
-              | select(.value | type == "string")
-              | "\(.key)=\(.value)"
+              | select(.value | type | IN("string","boolean","number"))
+              | "\(.key)=\(.value|tostring)"
             '
           )
           # ── Network block: special split logic per subnet role ──────────────────
