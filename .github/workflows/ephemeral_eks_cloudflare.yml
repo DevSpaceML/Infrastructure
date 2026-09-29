@@ -564,7 +564,10 @@ jobs:
         id: app-routing
         working-directory: ./environments/dev/alb/eks-routing
         run: |
-          echo "target_group_arn=$(terraform output -raw tgtgrp_arn)" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          arn="$(terraform output -raw tgtgrp_arn)"
+          [ -n "$arn" ] || { echo "tgtgrp_arn output is empty" >&2; exit 1; }
+          echo "target_group_arn=$arn" >> "$GITHUB_OUTPUT"
 
   # DEPLOY APPLICATION WITH HELM
   deploy-app:
