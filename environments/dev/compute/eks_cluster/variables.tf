@@ -10,6 +10,12 @@ variable "region" {
 }
 
 /* Nodegroup variables */
+variable "instancetype" {
+  description = "Instance type for the nodegroup"
+  type = string
+  default = "t4g.small"
+}
+
 variable "nodegroupname" {
   description = "name of nodegroup"
   type = string
@@ -32,12 +38,6 @@ variable "max_node_count" {
   description = "maximum allowed nodes"
   type = number
   default = 6
-}
-
-variable "instancetype" {
-  description = "Instance type for the nodegroup"
-  type = string
-  default = "t3.small"
 }
 
 variable "environment" {
