@@ -1,4 +1,3 @@
-
 variable "clustername" {
   description = "Name of the cluster"
   type = string
