@@ -1,4 +1,3 @@
-
 variable "clustername" {
   description = "Name of the cluster"
   type = string
@@ -8,6 +7,12 @@ variable "nodegroupname" {
 	description = "Name of the nodegroup"
 	type = string
     default = ""
+}
+
+variable "ami_type" {
+  description = "default ami type"
+  type = string
+  default = "AL2023_ARM_64_STANDARD"
 }
 
 variable "instancetype" {
