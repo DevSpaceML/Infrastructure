@@ -26,6 +26,7 @@ resource "aws_eks_node_group" "cluster_nodes" {
 	node_group_name = var.nodegroupname
 	node_role_arn   = var.node_group_mgr_arn
 	subnet_ids      = var.nodegroup_pvt_subnet_id_list
+	ami_type        = var.ami_type
 
 	scaling_config {
 		desired_size = var.desired_node_count

@@ -10,6 +10,12 @@ variable "nodegroupname" {
     default = ""
 }
 
+variable "ami_type" {
+  description = "default ami type"
+  type = string
+  default = "AL2023_ARM_64_STANDARD"
+}
+
 variable "instancetype" {
 	description = "Default Instance Type"
 	type = string
