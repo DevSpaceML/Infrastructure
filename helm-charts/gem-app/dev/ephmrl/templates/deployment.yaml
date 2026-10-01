@@ -41,6 +41,6 @@ metadata:
 spec:
   serviceRef:
     name: {{ .Values.app.name }}
-    port: {{ .Values.service.port }}
+    port: {{ .Values.app.port }}
   targetGroupARN: {{ .Values.targetGroupBinding.targetGroupArn }}
   targetType: ip
