@@ -1,19 +1,18 @@
-# get data of security group provisioned by EKS cluster
-
-data "aws_security_group" "cluster-sg" {
-    vpc_id = var.vpc_id
-
-    tags = {
-      "aws:eks:cluster-name" = var.clustername
-    }
+# Data AWS provisioned cluster security group
+data "aws_eks_cluster" "this" {
+    name = var.clustername
 }
 
-# --- SECURITY GROUPS ---
+locals {
+  cluster_sg_id = data.aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+}
+
+#          --- SECURITY GROUPS ---         #
 
 # ALB
-resource "aws_security_group" "alb" {
+resource "aws_security_group" "alb-sg" {
   name_prefix        = "k8-shared-alb-sg-${var.environment}"
-  description        = "alb security group (${var.environment})"
+  description        = "ALB security group (${var.environment})"
   vpc_id             = var.vpc_id
 
   tags = { Name = "sg-k8-shared-alb-${var.environment}" }
@@ -21,126 +20,113 @@ resource "aws_security_group" "alb" {
   lifecycle {
     create_before_destroy = true
   }
-
 }
 
 # NODEGROUP
 resource "aws_security_group" "nodegroup-sg" {
-    name_prefix        = "nodegroup-sg-${var.clustername}"
+    name_prefix        = "nodegroup-${var.clustername}"
     description        = "Security group for EKS nodegroup"
     vpc_id             = var.vpc_id
 
     tags = {
         Name = "nodegroup-sg-${var.clustername}"
     }
+
+    lifecycle {
+    create_before_destroy = true
+  }
 }
 
-# --- SECURITY GROUP RULES ---
+# --- ALB RULES --- #
 
-# allow internet traffic to reach ALB
- resource "aws_vpc_security_group_ingress_rule" "alb_ingress" {
+# * ALB Ingress * 
+# Allow internet traffic to reach ALB
+ resource "aws_vpc_security_group_ingress_rule" "alb_http" {
    from_port                = 80
    to_port                  = 80
-   ip_protocol                 = "tcp"
-   cidr_ipv4             = ["0.0.0.0/0"]
-   security_group_id        = aws_security_group.sg-k8-alb.id
+   ip_protocol              = "tcp"
+   cidr_ipv4                = "0.0.0.0/0"
+   security_group_id        = aws_security_group.alb-sg.id
  }
 
- resource "aws_vpc_security_group_ingress_rule" "alb_http_tls_ingress" {
+# Allow ALB to accept tls internet traffic
+ resource "aws_vpc_security_group_ingress_rule" "alb_https" {
    from_port         = 443
    to_port           = 443
-   ip_protocol          = "tcp"
-   cidr_ipv4       = ["0.0.0.0/0"]
-   security_group_id = aws_security_group.sg-k8-alb.id
+   ip_protocol       = "tcp"
+   cidr_ipv4         = "0.0.0.0/0"
+   security_group_id = aws_security_group.alb-sg.id
  }
 
- # Allow alb to reach nodes
+ # * ALB Egress * 
+ # Allow ALB to send traffic to nodes
  resource "aws_vpc_security_group_egress_rule" "alb_to_nodes" {
-   security_group_id            = aws_security_group.alb.id
+   security_group_id            = aws_security_group.alb-sg.id
    ip_protocol                  = "tcp"
-   from_port                    = 443
-   to_port                      = 443 # double check node ports
-   referenced_security_group_id = aws_security_group.nodegroup-sg
+   from_port                    = 30000
+   to_port                      = 32767 
+   referenced_security_group_id = aws_security_group.nodegroup-sg.id
  }
 
-
-# Allow cluster security group to accept worker node traffic
-resource "aws_vpc_security_group_ingress_rule" "cluster-sg_allow_ingress_from_nodegroup" {
-    from_port         = 443
-    to_port           = 443
-    ip_protocol       = "tcp"
-    security_group_id = data.aws_security_group.cluster-sg.id
-    description       = "Allow cluster to accept incoming worker node traffic"
+# * Cluster (Control Plane) Ingress *
+# Allow cluster to accept incoming worker node traffic
+resource "aws_vpc_security_group_ingress_rule" "cluster_ingress_from_nodegroup" {
+    security_group_id            = data.aws_security_group.cluster-sg.id
+    from_port                    = 443
+    to_port                      = 443
+    ip_protocol                  = "tcp"
+    description                  = "Allow cluster to accept incoming worker node traffic"
+    referenced_security_group_id = aws_security_group.nodegroup-sg.id
 }
 
-resource "aws_vpc_security_group_egress_rule" "cluster_to_nodegroup" {
-  from_port                = 1025
-  to_port                  = 65535
-  ip_protocol              = "tcp"
-  security_group_id        = data.aws_security_group.cluster-sg.id
-  description              = "Allow cluster to send traffic to nodes on ephemeral ports"
+# * Nodegroup Ingress *
+
+# Allow ALB traffic into nodegroup
+resource "aws_vpc_security_group_ingress_rule" "nodes_from_alb" {
+    security_group_id            = aws_security_group.nodegroup-sg.id
+    from_port                    = 30000
+    to_port                      = 32767
+    ip_protocol                  = "tcp"
+    referenced_security_group_id = aws_security_group.alb-sg.id
+    description                  = "Allow incoming alb traffic"
 }
 
-resource "aws_vpc_security_group_egress_rule" "cluster_to_nodegroup_kubelet" {
-  from_port                = 10250
-  to_port                  = 10250
-  ip_protocol                 = "tcp"
-  security_group_id        = data.aws_security_group.cluster-sg.id
-  description              = "Allow cluster to reach kubelet on nodes"
+# Allow tls traffic into nodegroup from cluster
+resource "aws_vpc_security_group_ingress_rule" "nodes_from_cluster" {
+    security_group_id            = aws_security_group.nodegroup-sg.id
+    from_port                    = 443                
+    to_port                      = 443
+    ip_protocol                  = "tcp"
+    referenced_security_group_id = data.aws_security_group.cluster-sg.id
+    description                  = "Allow incoming cluster traffic"
 }
 
-
-# NODEGROUP
-
-# Allow ingress traffic to nodegroup from cluster on kubelet port
-resource "aws_vpc_security_group_ingress_rule" "nodegroup-sg_allow_ingress_from_cluster" {
-    from_port                = 443                
-    to_port                  = 443
-    ip_protocol                 = "tcp"
-    security_group_id        = aws_security_group.nodegroup-sg.id
-    description = "Accept incoming traffic from cluster"
+# Allow traffic into nodes from cluster on extended range of ports
+resource "aws_vpc_security_group_ingress_rule" "node_kubelet_from_cluster" {
+    security_group_id            = aws_security_group.nodegroup-sg.id 
+    from_port                    = 1025                        
+    to_port                      = 65535
+    ip_protocol                  = "tcp"
+    referenced_security_group_id = data.aws_security_group.cluster-sg.id
+    description                  = "Allow incoming control plane traffic to nodegroup kubelet(10250) and webhook ports"
 }
-
-# Allow nodes to communicate with cluster
-resource "aws_vpc_security_group_ingress_rule" "nodegroup_egress_to_cluster" {
-    from_port                = 443                        
-    to_port                  = 443
-    ip_protocol              = "tcp"
-    security_group_id        = aws_security_group.nodegroup-sg.id 
-    description              = "Allow nodes to send traffic to cluster"
-}
-
-# Allow cluster to communicate with nodes on kubelet port
-resource "aws_vpc_security_group_ingress_rule" "cluster_to_nodes" {
-   from_port = 10250
-   to_port = 10250
-   ip_protocol = "tcp"
-   security_group_id = aws_security_group.nodegroup-sg.id
-} 
 
 # Allow nodes to communicate with each other
 resource "aws_vpc_security_group_ingress_rule" "node_to_node" {
-    from_port         = 0
-    to_port           = 65535
-    ip_protocol       = "-1"
-    security_group_id = aws_security_group.nodegroup-sg.id
-    description       = "Allow nodes to communicate with each other"
+    security_group_id            = aws_security_group.nodegroup-sg.id
+    from_port                    = 0
+    to_port                      = 65535
+    cidr_ipv4                    = "0.0.0.0/0" 
+    ip_protocol                  = "-1"
+    referenced_security_group_id = aws_security_group.nodegroup-sg
+    description                  = "Allow all incoming nodes to node traffic"
 }
 
-# Allow cluster to reach nodes - extended range 
-resource "aws_vpc_security_group_ingress_rule" "cluster_to_nodes_extended" {
-    from_port                = 1025                        
-    to_port                  = 65535
-    ip_protocol              = "tcp"
-    security_group_id        = aws_security_group.nodegroup-sg.id 
-    description              = "Allow cluster to communicate with nodes ephemeral ports"
-}
-
-# Allow nodes to reach internet for updates etc
+# * Nodegroup Egress *
+# Allow all outgoing node traffic
 resource "aws_vpc_security_group_egress_rule" "nodes_to_internet" {
-    from_port         = 0
-    to_port           = 0
-    ip_protocol          = "-1"
     security_group_id = aws_security_group.nodegroup-sg.id
-    description = "Allow nodes to reach internet"
+    ip_protocol       = "-1"
+    description       = "Allow all outbound traffic from nodes"
 }
+
