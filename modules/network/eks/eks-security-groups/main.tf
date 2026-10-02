@@ -125,6 +125,7 @@ resource "aws_vpc_security_group_ingress_rule" "node_to_node" {
 resource "aws_vpc_security_group_egress_rule" "nodes_to_internet" {
     security_group_id = aws_security_group.nodegroup-sg.id
     ip_protocol       = "-1"
+    cidr_ipv4         = "0.0.0.0/0"
     description       = "Allow all outbound traffic from nodes"
 }
 
