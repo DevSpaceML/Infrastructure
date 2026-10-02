@@ -65,13 +65,6 @@ resource "aws_lb_listener_rule" "project" {
   }
 }
 
-/*
-resource "aws_iam_policy" "alb_controller" {
-  name = "${var.clustername}-alb-controller"
-  policy = file("${path.module/alb-controller.json}")
-}
-*/
-
 resource "cloudflare_dns_record" "app" {
   zone_id =  data.cloudflare_zone.this.zone_id
   name    =  var.projectname

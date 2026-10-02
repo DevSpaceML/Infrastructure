@@ -30,6 +30,3 @@ output "nat_gateway_id_list" {
   value = module.cluster_vpc.nat_gateways
 }
 
-output "eks_sec_group_id" {
-  value = module.cluster_vpc.eks_security_group_id
-}

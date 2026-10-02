@@ -7,3 +7,9 @@ variable "clustername" {
   description = "Name of the EKS cluster"
   type = string
 }
+
+variable "environment" {
+  description = "Deployment Environment"
+  type = string
+  default = "dev"
+}
