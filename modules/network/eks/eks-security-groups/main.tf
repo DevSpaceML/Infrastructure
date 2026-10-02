@@ -7,9 +7,8 @@ locals {
   cluster_sg_id = data.aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
 }
 
-#          --- SECURITY GROUPS ---         #
+#     --- SECURITY GROUPS ---     #
 
-# ALB
 resource "aws_security_group" "alb-sg" {
   name_prefix        = "k8-shared-alb-sg-${var.environment}"
   description        = "ALB security group (${var.environment})"
@@ -22,7 +21,6 @@ resource "aws_security_group" "alb-sg" {
   }
 }
 
-# NODEGROUP
 resource "aws_security_group" "nodegroup-sg" {
     name_prefix        = "nodegroup-${var.clustername}"
     description        = "Security group for EKS nodegroup"
@@ -71,7 +69,7 @@ resource "aws_security_group" "nodegroup-sg" {
 # * Cluster (Control Plane) Ingress *
 # Allow cluster to accept incoming worker node traffic
 resource "aws_vpc_security_group_ingress_rule" "cluster_ingress_from_nodegroup" {
-    security_group_id            = data.aws_security_group.cluster-sg.id
+    security_group_id            = local.cluster_sg_id
     from_port                    = 443
     to_port                      = 443
     ip_protocol                  = "tcp"
@@ -97,7 +95,7 @@ resource "aws_vpc_security_group_ingress_rule" "nodes_from_cluster" {
     from_port                    = 443                
     to_port                      = 443
     ip_protocol                  = "tcp"
-    referenced_security_group_id = data.aws_security_group.cluster-sg.id
+    referenced_security_group_id = local.cluster_sg_id
     description                  = "Allow incoming cluster traffic"
 }
 
@@ -107,7 +105,7 @@ resource "aws_vpc_security_group_ingress_rule" "node_kubelet_from_cluster" {
     from_port                    = 1025                        
     to_port                      = 65535
     ip_protocol                  = "tcp"
-    referenced_security_group_id = data.aws_security_group.cluster-sg.id
+    referenced_security_group_id = local.cluster_sg_id
     description                  = "Allow incoming control plane traffic to nodegroup kubelet(10250) and webhook ports"
 }
 
@@ -118,7 +116,7 @@ resource "aws_vpc_security_group_ingress_rule" "node_to_node" {
     to_port                      = 65535
     cidr_ipv4                    = "0.0.0.0/0" 
     ip_protocol                  = "-1"
-    referenced_security_group_id = aws_security_group.nodegroup-sg
+    referenced_security_group_id = aws_security_group.nodegroup-sg.id
     description                  = "Allow all incoming nodes to node traffic"
 }
 
