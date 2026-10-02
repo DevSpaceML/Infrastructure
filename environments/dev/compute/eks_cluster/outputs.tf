@@ -24,3 +24,7 @@ output "controller_role_arn" {
 output "k8_svc_acc" {
   value = module.oidc_auth.k8_svc_acc
 }
+
+output "alb_sec_group_id" {
+  value = module.eks_security_groups.alb_sg_id
+}
