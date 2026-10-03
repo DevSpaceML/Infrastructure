@@ -82,8 +82,8 @@ resource "aws_vpc_security_group_ingress_rule" "cluster_ingress_from_nodegroup" 
 # Allow ALB traffic into nodegroup
 resource "aws_vpc_security_group_ingress_rule" "nodes_from_alb" {
     security_group_id            = aws_security_group.nodegroup-sg.id
-    from_port                    = 30000
-    to_port                      = 32767
+    from_port                    = 8000
+    to_port                      = 8000
     ip_protocol                  = "tcp"
     referenced_security_group_id = aws_security_group.alb-sg.id
     description                  = "Allow incoming alb traffic"
@@ -112,8 +112,6 @@ resource "aws_vpc_security_group_ingress_rule" "node_kubelet_from_cluster" {
 # Allow nodes to communicate with each other
 resource "aws_vpc_security_group_ingress_rule" "node_to_node" {
     security_group_id            = aws_security_group.nodegroup-sg.id
-    from_port                    = 0
-    to_port                      = 65535
     ip_protocol                  = "-1"
     referenced_security_group_id = aws_security_group.nodegroup-sg.id
     description                  = "Allow all incoming nodes to node traffic"
