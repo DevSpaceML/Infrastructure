@@ -643,6 +643,7 @@ jobs:
             --values ${{ env.HELM_CHART_PATH }}/values.yaml \
             --set image.repository=${{ env.TF_VAR_image_repository }} \
             --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
+            --set targetGroupBinding.targetGroupArn=${{ env.target_group_arn }} \
             --set environment=${{ env.ENVIRONMENT }} \
             --debug 2>&1 | tee /tmp/helm-template-output.txt
 
