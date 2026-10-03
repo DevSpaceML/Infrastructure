@@ -40,7 +40,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   serviceRef:
-    name: {{ .Values.app.name }}
-    port: {{ .Values.app.port }}
+    name: {{ .Release.Name }}-service
+    port: {{ .Values.app.port | int }}
   targetGroupARN: {{ .Values.targetGroupBinding.targetGroupArn }}
   targetType: ip
