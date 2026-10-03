@@ -40,20 +40,20 @@ resource "aws_security_group" "nodegroup-sg" {
 # * ALB Ingress * 
 # Allow internet traffic to reach ALB
  resource "aws_vpc_security_group_ingress_rule" "alb_http" {
+   security_group_id        = aws_security_group.alb-sg.id
    from_port                = 80
    to_port                  = 80
    ip_protocol              = "tcp"
    cidr_ipv4                = "0.0.0.0/0"
-   security_group_id        = aws_security_group.alb-sg.id
  }
 
 # Allow ALB to accept tls internet traffic
  resource "aws_vpc_security_group_ingress_rule" "alb_https" {
+   security_group_id = aws_security_group.alb-sg.id
    from_port         = 443
    to_port           = 443
    ip_protocol       = "tcp"
    cidr_ipv4         = "0.0.0.0/0"
-   security_group_id = aws_security_group.alb-sg.id
  }
 
  # * ALB Egress * 
@@ -114,7 +114,6 @@ resource "aws_vpc_security_group_ingress_rule" "node_to_node" {
     security_group_id            = aws_security_group.nodegroup-sg.id
     from_port                    = 0
     to_port                      = 65535
-    cidr_ipv4                    = "0.0.0.0/0" 
     ip_protocol                  = "-1"
     referenced_security_group_id = aws_security_group.nodegroup-sg.id
     description                  = "Allow all incoming nodes to node traffic"
