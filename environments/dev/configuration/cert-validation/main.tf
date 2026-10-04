@@ -14,8 +14,7 @@ terraform {
 provider "cloudflare" {}
 
 module "dev_cert_validation" {
-  source     = "../../../../modules/dns/cloudflare-cert-validation"
-
+  source                   = "../../../../modules/dns/cloudflare-cert-validation"
   cert_validation_options  = data.terraform_remote_state.dev_certs.outputs.dev_acm_cert_validation_options
   domain_names             = data.terraform_remote_state.dev_certs.outputs.domain_names
   cert_arn                 = data.terraform_remote_state.dev_certs.outputs.dev_acm_cert_arn
