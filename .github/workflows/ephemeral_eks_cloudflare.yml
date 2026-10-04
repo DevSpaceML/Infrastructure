@@ -175,6 +175,7 @@ jobs:
     outputs:
       ctrlr_role_arn: ${{ steps.verify_cluster.outputs.ctrlr_role_arn }}
       k8_svc_acc: ${{ steps.verify_cluster.outputs.k8_svc_acc }}
+      alb_sec_group_id: ${{ steps.verify_cluster.outputs.albalb_sec_group_id }}
     needs: [configure-variables, deploy-network, deploy-iam]
     if: |
       always() && 
@@ -267,6 +268,7 @@ jobs:
             echo "setting outputs..."
             echo "ctrlr_role_arn=$(terraform output -raw controller_role_arn)" >> $GITHUB_OUTPUT
             echo "k8_svc_acc=$(terraform output -raw k8_svc_acc)" >> $GITHUB_OUTPUT
+            echo "alb_sec_group_id=$(terraform output -raw alb_sec_group_id)" >> $GITHUB_OUTPUT
             exit 0
           fi
           
@@ -591,6 +593,7 @@ jobs:
       HELM_CHART_PATH: "./helm-charts/gem-app/dev/ephmrl"
       HELM_NAMESPACE: "ns-${{ needs.configure-variables.outputs.projectname }}"
       target_group_arn: ${{ needs.configure-routing.outputs.target_group_arn }}
+      alb_sec_group_id: ${{ needs.deploy-cluster.outputs.alb_sec_group_id }}
       APP_VERSION: ${{ needs.configure-variables.outputs.appversion }}
 
     steps:  
@@ -634,7 +637,7 @@ jobs:
           IMAGE_TAG=$(aws ecr describe-images --repository-name dev/gemapp --region ${{ env.TF_VAR_region }} --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' --output text)
           echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
-          
+
       - name: Helm-Pre-flight-Check
         run: |
           echo "=== Helm template dry-run — checking for manifest errors ==="
@@ -644,6 +647,7 @@ jobs:
             --set image.repository=${{ env.TF_VAR_image_repository }} \
             --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
             --set targetGroupBinding.targetGroupArn=${{ env.target_group_arn }} \
+            --set networking.ingress[0].from[0].securityGroup.groupID=${{ env.alb_sec_group_id }} \
             --set environment=${{ env.ENVIRONMENT }} \
             --debug 2>&1 | tee /tmp/helm-template-output.txt
 
