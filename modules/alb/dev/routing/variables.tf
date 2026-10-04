@@ -35,3 +35,8 @@ variable "alb_name" {
   description = "alb name"
   type = string
 }
+
+variable "certificate_arn" {
+  description = "Arn of the alb certificate"
+  type = string
+}

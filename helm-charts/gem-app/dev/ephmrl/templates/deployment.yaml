@@ -44,3 +44,11 @@ spec:
     port: {{ .Values.app.port | int }}
   targetGroupARN: {{ .Values.targetGroupBinding.targetGroupArn }}
   targetType: ip
+  networking:
+    ingress:
+      - from:
+          - securityGroup:
+              groupID: {{ .Values.albSecurityGroupId | quote }}
+        ports:
+          - protocol: TCP
+            port: {{ .Values.containerPort }}   

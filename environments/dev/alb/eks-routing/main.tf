@@ -17,6 +17,7 @@ module "ephmrl_routing" {
   source               = "../../../../modules/alb/dev/routing"
   alb_arn              = var.alb_arn
   alb_name             = data.terraform_remote_state.eks_alb.outputs.alb_name
+  certificate_arn      = data.terraform_remote_state.eks_alb.outputs.acm_cert_arn
   vpc_id               = data.terraform_remote_state.cluster_network.outputs.vpc_id
   projectname          = data.terraform_remote_state.eks_cluster.outputs.projectname
   clustername          = data.terraform_remote_state.eks_cluster.outputs.cluster_name
