@@ -39,7 +39,7 @@ resource "aws_lb_listener" "http_redirect" {
 
 
 resource "aws_lb_listener" "https" {
-  load_balancer_arn = aws_lb.shared.arn          # your ALB resource name
+  load_balancer_arn = data.aws_lb.k8_shared.arn
   port              = 443
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
@@ -67,7 +67,7 @@ resource "aws_lb_target_group" "project" {
 }
 
 resource "aws_lb_listener_rule" "project" {
-  listener_arn = aws_lb_listener.http.arn 
+  listener_arn = aws_lb_listener.https.arn 
   priority     = 100
 
   action {
