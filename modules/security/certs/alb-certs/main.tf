@@ -17,7 +17,6 @@ data "cloudflare_zone" "this" {
 locals {
   subject_alternative_names = ["*.${var.appdomain}"]
   domain_names = distinct(concat([var.appdomain], local.subject_alternative_names))
-  
 }
 
 resource "aws_acm_certificate" "this" {
@@ -38,21 +37,24 @@ resource "aws_acm_certificate" "this" {
 	}
 }
 
-resource "cloudflare_record" "acm_cert_validation" {
+resource "cloudflare_dns_record" "acm_cert_validation" {
     for_each = {
-	  for dvo in aws_acaws_acm_certificate.this.domain_validation_options :
-	    dvo.domain_name => { name = dvo.resource_record_name, value = resource_record_value} 
+	  for dvo in aws_acm_certificate.this.domain_validation_options :
+	    replace(dvo.domain_name, "*.", "") => {
+          name  = dvo.resource_record_name
+          value = dvo.resource_record_value
+        }...
 	}
 
-	zone_id = data.cloudflare_zone.this.cloudflare_zone_id
-	name    = each.value.name
-	type    = CNAME
-	content = trimsuffix(each.value.value, ".")
+	zone_id = data.cloudflare_zone.this.zone_id
+	name    = trimsuffix(each.value[0].name, ".")
+	type    = "CNAME"
+	content = trimsuffix(each.value[0].value, ".")
 	ttl     = 60
 	proxied = false
 }
 
 resource "aws_acm_certificate_validation" "this" {
      certificate_arn         = aws_acm_certificate.this.arn
-	 validation_record_fqdns = [ for r in cloudflare_record.acm_cert_validation : r.hostname ]
+	 validation_record_fqdns = [ for r in cloudflare_dns_record.acm_cert_validation : r.name ]
 }

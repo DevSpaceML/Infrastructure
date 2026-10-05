@@ -647,7 +647,7 @@ jobs:
             --set image.repository=${{ env.TF_VAR_image_repository }} \
             --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
             --set targetGroupBinding.targetGroupArn=${{ env.target_group_arn }} \
-            --set networking.ingress[0].from[0].securityGroup.groupID=${{ env.alb_sec_group_id }} \
+            --set albSecurityGroupId=${{ env.alb_sec_group_id }} \
             --set environment=${{ env.ENVIRONMENT }} \
             --debug 2>&1 | tee /tmp/helm-template-output.txt
 
@@ -668,6 +668,7 @@ jobs:
             --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
             --set environment=${{ env.ENVIRONMENT }} \
             --set targetGroupBinding.targetGroupArn=${{ env.target_group_arn }} \
+            --set albSecurityGroupId=${{ env.alb_sec_group_id }} \
             --timeout 10m \
             --wait \
             --debug || {

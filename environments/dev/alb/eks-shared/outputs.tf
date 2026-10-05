@@ -1,5 +1,5 @@
-output alb_name {
-    value = module.eks-shared-alb.alb_name
+output "alb_name" {
+  value = module.eks-shared-alb.alb_name
 }
 
 output "acm_cert_arn" {
