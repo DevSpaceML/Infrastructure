@@ -629,7 +629,7 @@ jobs:
         run: |
           echo "Creating namespace ${{ env.HELM_NAMESPACE }} for app deployment"
           kubectl create namespace ${{ env.HELM_NAMESPACE }} || echo "Namespace ${{ env.HELM_NAMESPACE }} already exists"
-          
+
       - name: Get image tag
         id: get_image_tag
         run: |

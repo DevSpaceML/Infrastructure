@@ -51,4 +51,4 @@ spec:
               groupID: {{ .Values.albSecurityGroupId | quote }}
         ports:
           - protocol: TCP
-            port: {{ .Values.containerPort }}   
+            port: {{ .Values.app.targetPort | int }}

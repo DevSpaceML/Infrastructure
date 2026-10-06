@@ -61,8 +61,8 @@ resource "aws_security_group" "nodegroup-sg" {
  resource "aws_vpc_security_group_egress_rule" "alb_to_nodes" {
    security_group_id            = aws_security_group.alb-sg.id
    ip_protocol                  = "tcp"
-   from_port                    = 30000
-   to_port                      = 32767 
+   from_port                    = 8000
+   to_port                      = 8000 
    referenced_security_group_id = aws_security_group.nodegroup-sg.id
  }
 
