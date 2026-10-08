@@ -8,7 +8,6 @@ locals {
 }
 
 #     --- SECURITY GROUPS ---     #
-
 resource "aws_security_group" "alb-sg" {
   name_prefix        = "k8-shared-alb-sg-${var.environment}"
   description        = "ALB security group (${var.environment})"
@@ -35,6 +34,27 @@ resource "aws_security_group" "nodegroup-sg" {
   }
 }
 
+/* CLUSTER RULES  */
+
+# Cluster Ingress
+# Allow cluster to accept incoming worker node traffic
+resource "aws_vpc_security_group_ingress_rule" "cluster_ingress_from_nodegroup" {
+    security_group_id            = local.cluster_sg_id
+    from_port                    = 443
+    to_port                      = 443
+    ip_protocol                  = "tcp"
+    description                  = "Allow cluster to accept incoming worker node traffic"
+    referenced_security_group_id = aws_security_group.nodegroup-sg.id
+}
+
+resource "aws_vpc_security_group_ingress_rule" "cluster_from_alb" {
+    security_group_id            = local.cluster_sg_id
+    from_port                    = 8000
+    to_port                      = 8000
+    ip_protocol                  = "tcp"
+    referenced_security_group_id = aws_security_group.alb-sg.id
+}
+
 # --- ALB RULES --- #
 
 # * ALB Ingress * 
@@ -57,6 +77,16 @@ resource "aws_security_group" "nodegroup-sg" {
  }
 
  # * ALB Egress * 
+ # Allow ALB to send traffic to cluster
+
+ resource "aws_vpc_security_group_egress_rule" "alb_to_cluster" {
+    security_group_id = aws_security_group.alb-sg.id
+    from_port = 8000
+    to_port   = 8000
+    ip_protocol = "tcp"
+    referenced_security_group_id = local.cluster_sg_id
+ }
+
  # Allow ALB to send traffic to nodes
  resource "aws_vpc_security_group_egress_rule" "alb_to_nodes" {
    security_group_id            = aws_security_group.alb-sg.id
@@ -66,19 +96,7 @@ resource "aws_security_group" "nodegroup-sg" {
    referenced_security_group_id = aws_security_group.nodegroup-sg.id
  }
 
-# * Cluster (Control Plane) Ingress *
-# Allow cluster to accept incoming worker node traffic
-resource "aws_vpc_security_group_ingress_rule" "cluster_ingress_from_nodegroup" {
-    security_group_id            = local.cluster_sg_id
-    from_port                    = 443
-    to_port                      = 443
-    ip_protocol                  = "tcp"
-    description                  = "Allow cluster to accept incoming worker node traffic"
-    referenced_security_group_id = aws_security_group.nodegroup-sg.id
-}
-
 # * Nodegroup Ingress *
-
 # Allow ALB traffic into nodegroup
 resource "aws_vpc_security_group_ingress_rule" "nodes_from_alb" {
     security_group_id            = aws_security_group.nodegroup-sg.id

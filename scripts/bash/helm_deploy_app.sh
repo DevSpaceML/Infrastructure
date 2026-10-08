@@ -43,7 +43,6 @@ echo "=== Helm template dry-run — checking for manifest errors ==="
             --set environment=$env \
             --set targetGroupBinding.targetGroupArn=$target_group_arn \
             --set albSecurityGroupId=$alb_sec_group_id \
-            --set containerPort=8000 \
             --debug 2>&1 | tee /tmp/helm-template-output.txt
 
 # deploy app
@@ -56,7 +55,6 @@ echo "=== Helm template dry-run — checking for manifest errors ==="
             --set environment=$env \
             --set targetGroupBinding.targetGroupArn=$target_group_arn \
             --set albSecurityGroupId=$alb_sec_group_id \
-            --set containerPort=8000 \
             --timeout 10m \
             --wait \
             --debug || {
