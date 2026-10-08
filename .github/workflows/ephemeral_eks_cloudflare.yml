@@ -448,6 +448,7 @@ jobs:
       projectname: ${{ needs.configure-variables.outputs.projectname }}
       clustername: ${{ needs.configure-variables.outputs.clustername }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
       - name: checkout-code
         uses: actions/checkout@v4
@@ -465,6 +466,21 @@ jobs:
         with:
           terraform_version: ${{ env.TF_VERSION }}
           terraform_wrapper: false
+          
+      - name: Verify Cloudflare token
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is empty in this job"; exit 1
+          fi
+          echo "Token length: ${#CLOUDFLARE_API_TOKEN}"
+          http_code=$(curl -s -o response.json -w "%{http_code}" \
+          -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+          https://api.cloudflare.com/client/v4/user/tokens/verify)
+          echo "HTTP status: $http_code"
+          cat response.json
+          if [ "$http_code" -ne 200 ]; then
+            exit 1
+          fi      
       
       - name: Terraform Init
         working-directory: ./environments/dev/alb/eks-shared
