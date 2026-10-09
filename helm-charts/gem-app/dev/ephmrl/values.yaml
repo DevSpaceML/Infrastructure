@@ -6,10 +6,8 @@ app:
 image:
   repository: ~
   tag: ~
-ingressRoute:
+targetGroupBinding:
   enabled: true
-  entryPoints:
-    - websecure
-  host: ~
-  tls: {}
-  middlewares: []
+  targetGroupARN: ~
+  targetType: ip
+  securityGroupId: ~
