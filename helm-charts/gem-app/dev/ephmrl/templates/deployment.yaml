@@ -42,13 +42,13 @@ spec:
   serviceRef:
     name: {{ .Release.Name }}-service
     port: {{ .Values.app.port | int }}
-  targetGroupARN: {{ .Values.targetGroupBinding.targetGroupArn }}
+  targetGroupARN: {{ required "targetGroupBinding.targetGroupARN is required" .Values.targetGroupBinding.targetGroupArn | quote }}
   targetType: ip
   networking:
     ingress:
       - from:
           - securityGroup:
-              groupID: {{ .Values.albSecurityGroupId | quote }}
+              groupID: {{required "targetGroupBinding.securityGroupId is required" .Values.targetGroupBinding.securityGroupId | quote }}
         ports:
           - protocol: TCP
             port: {{ .Values.app.targetPort | int }}

@@ -56,10 +56,11 @@ resource "aws_lb_listener" "https" {
 
 resource "aws_lb_target_group" "project" {
   name        = "tg-${var.projectname}"
-  port        = 8000
+  port        = 8080
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
+  deregistration_delay = 30
 
   health_check {
     port                = "traffic-port"
