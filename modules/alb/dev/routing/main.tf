@@ -55,7 +55,7 @@ resource "aws_lb_listener" "https" {
 }
 
 resource "aws_lb_target_group" "project" {
-  name        = "tg-${var.projectname}"
+  name        = "tg-${var.projectname}-8080"
   port        = 8080
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
@@ -70,6 +70,10 @@ resource "aws_lb_target_group" "project" {
     interval            = 15
     healthy_threshold   = 2
     unhealthy_threshold = 3
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 
 }
