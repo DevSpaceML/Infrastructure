@@ -49,8 +49,8 @@ resource "aws_vpc_security_group_ingress_rule" "cluster_ingress_from_nodegroup" 
 
 resource "aws_vpc_security_group_ingress_rule" "cluster_from_alb" {
     security_group_id            = local.cluster_sg_id
-    from_port                    = 8000
-    to_port                      = 8000
+    from_port                    = 8080
+    to_port                      = 8080
     ip_protocol                  = "tcp"
     referenced_security_group_id = aws_security_group.alb-sg.id
 }
@@ -81,8 +81,8 @@ resource "aws_vpc_security_group_ingress_rule" "cluster_from_alb" {
 
  resource "aws_vpc_security_group_egress_rule" "alb_to_cluster" {
     security_group_id = aws_security_group.alb-sg.id
-    from_port = 8000
-    to_port   = 8000
+    from_port = 8080
+    to_port   = 8080
     ip_protocol = "tcp"
     referenced_security_group_id = local.cluster_sg_id
  }
@@ -91,8 +91,8 @@ resource "aws_vpc_security_group_ingress_rule" "cluster_from_alb" {
  resource "aws_vpc_security_group_egress_rule" "alb_to_nodes" {
    security_group_id            = aws_security_group.alb-sg.id
    ip_protocol                  = "tcp"
-   from_port                    = 8000
-   to_port                      = 8000 
+   from_port                    = 8080
+   to_port                      = 8080 
    referenced_security_group_id = aws_security_group.nodegroup-sg.id
  }
 
@@ -100,8 +100,8 @@ resource "aws_vpc_security_group_ingress_rule" "cluster_from_alb" {
 # Allow ALB traffic into nodegroup
 resource "aws_vpc_security_group_ingress_rule" "nodes_from_alb" {
     security_group_id            = aws_security_group.nodegroup-sg.id
-    from_port                    = 8000
-    to_port                      = 8000
+    from_port                    = 8080
+    to_port                      = 8080
     ip_protocol                  = "tcp"
     referenced_security_group_id = aws_security_group.alb-sg.id
     description                  = "Allow incoming alb traffic"
