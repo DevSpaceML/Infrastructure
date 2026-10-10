@@ -2,14 +2,12 @@ replicaCount: 2
 app:
   name: ""
   port: 8080
-  targetPort: 8000
+  targetPort: 8080
 image:
   repository: ~
   tag: ~
-ingressRoute:
+targetGroupBinding:
   enabled: true
-  entryPoints:
-    - websecure
-  host: ~
-  tls: {}
-  middlewares: []
+  targetGroupARN: ~
+  targetType: ip
+  securityGroupId: ~
