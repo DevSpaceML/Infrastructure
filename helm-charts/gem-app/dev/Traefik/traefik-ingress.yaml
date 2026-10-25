@@ -1,3 +1,7 @@
+{{- with .Values.projectname }}
+projectname: {{ .projectname | quote }}
+{{- end }}
+
 {{- if .Values.ingressRoute.enabled }}
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
@@ -23,7 +27,7 @@ spec:
     {{- toYaml .Values.ingressRoute.entryPoints | nindent 4 }}
   routes:
     kind: Rule
-    - match: "Host(`{{ .Values.ingressRoute.host }}`) && PathPrefix(`/{{ .Release.Name }}`)"
+    - match: "Host(`{{ .Values.ingressRoute.host }}`) && PathPrefix(`{{ .projectname }}/{{ .Release.Name }}`)"
       middlewares:
         - name: {{ .Release.Name }}-strip-prefix
           namespace: {{ .Release.Namespace }}
@@ -31,7 +35,7 @@ spec:
         - name: {{ .Release.Name }}-service
           port: {{ .Values.app.port }}
     kind: Rule
-    - match: "Host(`{{ .Values.ingressRoute.host }}`) && PathPrefix(`/monitoring/grafana`)"
+    - match: "Host(`{{ .Values.ingressRoute.host }}`) && PathPrefix(`{{ .projectname }}/monitoring/grafana`)"
       services:
         - name: grafana
           namespace: monitoring

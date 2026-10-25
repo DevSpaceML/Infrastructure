@@ -1,5 +1,4 @@
-# Default values for gem-app.
-
+# Default values
 replicaCount: 2
 image:
   repository: ""
@@ -36,7 +35,7 @@ ingress:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/healthcheck-path: /health
     alb.ingress.kubernetes.io/ssl-redirect: "443"
-    #empty for evnrionment values
+    #empty for environment values
     alb.ingress.kubernetes.io/certificate-arn: ""
     alb.ingress.kubernetes.io/subnets: ""
     alb.ingress.kubernetes.io/security-groups: ""

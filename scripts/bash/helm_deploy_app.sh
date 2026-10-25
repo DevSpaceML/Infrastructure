@@ -35,19 +35,19 @@ echo "target group arn: $target_group_arn"
 
 # set variables
 
-env="dev"
+env=$1
+app=$2
 region="us-east-1"
-image_repository="488347380548.dkr.ecr.us-east-1.amazonaws.com/dev/gemapp"
-helm_release_name="gemapp"
-projectname="gemapp"
+image_repository="488347380548.dkr.ecr.us-east-1.amazonaws.com/$env/$app"
+helm_release_name="$app"
+projectname="$app"
 helm_chart_path="$rootdir/helm-charts/gem-app/dev/ephmrl"
-helm_namespace="ns-gemapp"
+helm_namespace="ns-$app"
 aws_default_region="us-east-1"
 aws_region="us-east-1"
 appversion=$(get_img_tag $env $projectname)
 
 echo "app version: $appversion"
-
 
 # Update kube config and run preflight check
  aws eks update-kubeconfig --name $clustername --region $region
@@ -60,8 +60,8 @@ echo "app version: $appversion"
             --values $helm_chart_path/values.yaml \
             --set image.repository=$image_repository \
             --set image.tag=$appversion \
-            --set targetGroupBinding.targetGroupArn=$target_group_arn \
-            --set targetGroupBinding.securityGroupId=$alb_sec_group_id \
+            --set targetGroupBinding.targetGroupArn="$target_group_arn" \
+            --set targetGroupBinding.securityGroupId="$alb_sec_group_id" \
             --set environment=$env \
             --debug 2>&1 | tee /tmp/helm-template-output.txt
 
@@ -69,12 +69,12 @@ echo "app version: $appversion"
  helm upgrade --install $helm_release_name $helm_chart_path \
             --namespace $helm_namespace --create-namespace \
             --values $helm_chart_path/values.yaml \
-            --set image.repository=$image_repository \
-            --set app.name=$helm_release_name \
-            --set image.tag=$appversion \
-            --set environment=$env \
-            --set targetGroupBinding.targetGroupArn=$target_group_arn \
-            --set targetGroupBinding.securityGroupId=$alb_sec_group_id \
+            --set image.repository="$image_repository" \
+            --set app.name="$helm_release_name" \
+            --set image.tag="$appversion" \
+            --set environment="$env" \
+            --set targetGroupBinding.targetGroupArn="$target_group_arn" \
+            --set targetGroupBinding.securityGroupId="$alb_sec_group_id" \
             --timeout 10m \
             --wait \
             --debug || {

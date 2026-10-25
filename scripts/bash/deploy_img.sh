@@ -28,8 +28,8 @@ build_image (){
 
     docker image ls
 
-     ecr_login $ecr_home
-     docker push $destination
+    ecr_login $ecr_home
+    docker push $destination
 }
 
 build_image $1 $2

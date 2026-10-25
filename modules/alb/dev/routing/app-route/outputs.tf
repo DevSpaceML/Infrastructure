@@ -5,3 +5,5 @@ output "tgtgrp_arn" {
 output "cloudflare_dns_record" {
   value = cloudflare_dns_record.app.name 
 }
+
+output "hostname"         { value = local.fqdn }
