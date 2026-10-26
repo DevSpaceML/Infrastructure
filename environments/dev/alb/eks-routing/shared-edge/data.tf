@@ -1,0 +1,35 @@
+data "terraform_remote_state" "dev_network" {
+  backend = "s3"
+  config = {
+    bucket = "dev-tf-state-488347380548"
+    key = "dev/network/main/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
+data "terraform_remote_state" "cluster_network" {
+  backend = "s3"
+  config = {
+    bucket = "dev-tf-state-488347380548"
+    key = "dev/network/cluster/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
+data "terraform_remote_state" "eks_cluster" {
+  backend = "s3"  
+  config = {
+    bucket = "dev-tf-state-488347380548"  
+    key = "dev/compute/eks_cluster/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
+data "terraform_remote_state" "eks_alb" {
+  backend = "s3"
+  config = {
+    bucket = "dev-tf-state-488347380548"
+    key = "dev/alb/eks-shared-alb/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
