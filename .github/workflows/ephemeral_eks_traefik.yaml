@@ -678,6 +678,7 @@ jobs:
             --values ./helm-charts/gem-app/dev/traefik/values.yaml \
             --set "serviceAccountAnnotations.eks\.amazonaws\.com/role-arn=${{ env.Ctrlr_Role_Arn }}" \
             --set ingress.Route.hosts[0]=${{ env.INGRESS_HOST }} \
+            --set projectname=${{ needs.configure-variables.outputs.projectname }} \
             --timeout 10m \
             --wait \
             --debug || {
