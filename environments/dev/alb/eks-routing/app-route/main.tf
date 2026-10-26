@@ -14,7 +14,7 @@ terraform {
 provider "cloudflare" {}
 
 module "ephmrl_routing" {
-  source               = "../../../../modules/alb/dev/routing"
+  source               = "../../../../modules/alb/dev/routing/app-route"
   alb_arn              = var.alb_arn
   alb_name             = data.terraform_remote_state.eks_alb.outputs.alb_name
   certificate_arn      = data.terraform_remote_state.eks_alb.outputs.acm_cert_arn

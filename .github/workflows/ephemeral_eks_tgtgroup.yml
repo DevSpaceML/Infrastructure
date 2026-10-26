@@ -600,7 +600,7 @@ jobs:
       needs.deploy-cluster.result == 'success' && needs.configure-auth.result == 'success' &&
       needs.install-lbc.result == 'success' && needs.configure-routing.result == 'success'
     env:
-      ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
+      env: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
       TF_VAR_image_repository: 488347380548.dkr.ecr.us-east-1.amazonaws.com/dev/gemapp
@@ -650,7 +650,7 @@ jobs:
         id: get_image_tag
         run: |
           echo "Retrieving image tag for repository ${{ env.TF_VAR_image_repository }}"
-          IMAGE_TAG=$(aws ecr describe-images --repository-name dev/gemapp --region ${{ env.TF_VAR_region }} --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' --output text)
+          IMAGE_TAG=$(/bash/scripts/get_image_tag ${{env.env }} ${{ env.HELM_RELEASE_NAME }} ${{ env.TF_VAR_region }})
           echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
 

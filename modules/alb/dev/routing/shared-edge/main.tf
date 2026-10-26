@@ -11,15 +11,16 @@ terraform {
   }
 }
 
-data "aws_lb" "k8_shared" {
-  arn  = var.alb_arn
-  name = var.alb_name
+data "aws_lb_listener" "https" {
+  load_balancer_arn = var.alb_arn
+  port              = 443
 }
 
-data "cloudflare_zone" "this" {
-  filter = {
-    name = var.appdomain
-  }
+locals {
+  env_domain = var.environment == "prod" ? var.appdomain : "${var.environment}.${var.appdomain}"
+  label      = var.projinstance_id ? "${var.projinstance_id}-${var.environment}-${var.projectname}" : var.appdomain
+  fqdn       = "${var.projectname}.${local.env_domain}"
+  tg_name    = "tg-${substr(md5(local.fqdn), 0, 12)}"
 }
 
 resource "aws_lb_listener" "http_redirect" {
@@ -54,9 +55,9 @@ resource "aws_lb_listener" "https" {
   }
 }
 
-resource "aws_lb_target_group" "project" {
-  name        = "tg-${var.projectname}-8080"
-  port        = 8080
+resource "aws_lb_target_group" "traefik" {
+  name        = local.tg_name
+  port        = var.traefik_port
   protocol    = "HTTP"
   vpc_id      = var.vpc_id
   target_type = "ip"
@@ -76,6 +77,12 @@ resource "aws_lb_target_group" "project" {
     create_before_destroy = true
   }
 
+  tags = {
+    Name        = local.label
+    Environment = var.environment
+    hostname     = local.fqdn
+  }
+
 }
 
 resource "aws_lb_listener_rule" "project" {
@@ -89,16 +96,7 @@ resource "aws_lb_listener_rule" "project" {
 
   condition {
     host_header {
-      values = ["${var.projectname}.salientapps.com"]
+      values = [local.fqdn]
     }
   }
-}
-
-resource "cloudflare_dns_record" "app" {
-  zone_id =  data.cloudflare_zone.this.zone_id
-  name    =  var.projectname
-  type    =  "CNAME"
-  content =  data.aws_lb.k8_shared.dns_name
-  proxied =  true
-  ttl     =  1
 }
