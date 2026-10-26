@@ -18,13 +18,20 @@ ports:
     exposedPort: 80
   websecure:
     expose:
-      default: false   # ALB terminates TLS; set true only if re-encrypting
+      default: false
 
 providers:
   kubernetesIngress:
     enabled: true
   kubernetesCRD:
     enabled: true
+
+ingressRoute:
+  enabled: true
+  entryPoints: [web]
+  host: project.salientapps.com
+  tls:
+    enabled: false
 
 additionalArguments:
   - "--entryPoints.web.forwardedHeaders.trustedIPs=10.0.0.0/8"
