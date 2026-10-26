@@ -2,6 +2,7 @@ output "dev_vpc_id" {
   value = module.dev_network.dev_vpc_id
 }
 
+
 /** Public subnet IDs */
 
 output "public_subnet_id_list" {
