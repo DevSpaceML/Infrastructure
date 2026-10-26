@@ -123,16 +123,16 @@ jobs:
 
     
       - name: Deploy Network
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/main
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc
         run: |
           terraform init -upgrade
 
       - name: Terraform Validate
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/main
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc
         run: terraform validate 
 
       - name: Terraform Plan
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/main
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc
         run: |
           terraform plan -out=tfplan
           terraform show -json tfplan > tfplan.json
@@ -142,10 +142,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: network-tfplan
-          path: ./environments/${{ env.ENVIRONMENT }}/network/main/tfplan.json
+          path: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc/tfplan.json
 
       - name: Terraform Apply
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/main
+        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc
         run: terraform apply -auto-approve tfplan    
 
   # DEPLOY IAM      
@@ -581,7 +581,7 @@ jobs:
   install-crds:
     name: install-crds
     runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc]
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc,   configure-routing]
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
@@ -633,12 +633,13 @@ jobs:
   install-traefik:
     name: install-traefik
     runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc, install-crds]
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc, configure-routing, install-crds]
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
       Ctrlr_Role_Arn: ${{ needs.deploy-cluster.outputs.ctrlr_role_arn }}
+      INGRESS_HOST: ${{ needs.configure-routing.outputs.ingress_host }}
     steps:  
       - name: checkout-code
         uses: actions/checkout@v4
@@ -646,7 +647,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-              role-to-assume: arn:aws:iam::244141140224:role/gha_deploy
+              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
               role-session-name: GitHub-Actions-OIDC-Session
               aws-region: ${{ env.TF_VAR_region }}
               mask-aws-account-id: false
@@ -674,9 +675,9 @@ jobs:
           helm upgrade --install traefik traefik/traefik \
             --namespace traefik \
             --version 32.1.0 \
-            --values ./helm-charts/gem-app/dev/ephmrl/traefik-values.yaml \
+            --values ./helm-charts/gem-app/dev/traefik/values.yaml \
             --set "serviceAccountAnnotations.eks\.amazonaws\.com/role-arn=${{ env.Ctrlr_Role_Arn }}" \
-            --set ingress.Route.hosts[0]=${{ needs.configure-routing.outputs.ingress_host }} \
+            --set ingress.Route.hosts[0]=${{ env.INGRESS_HOST }} \
             --timeout 10m \
             --wait \
             --debug || {
@@ -703,7 +704,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-              role-to-assume: arn:aws:iam::244141140224:role/gha_deploy
+              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
               role-session-name: GitHub-Actions-OIDC-Session
               aws-region: ${{ env.TF_VAR_region }}
               mask-aws-account-id: false  
@@ -729,12 +730,12 @@ jobs:
   deploy-app:
     name: deploy-app
     runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc,install-crds,install-traefik, apply-clusterissuer]
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc,install-crds,install-traefik, apply-clusterissuer, configure-routing]
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
-      TF_VAR_image_repository: 244141140224.dkr.ecr.us-east-1.amazonaws.com/dev/gemapp
+      TF_VAR_image_repository: 488347380548.dkr.ecr.us-east-1.amazonaws.com/dev/gemapp
       HELM_RELEASE_NAME: ${{ needs.configure-variables.outputs.projectname }}
       INGRESS_HOST: ${{ needs.configure-routing.outputs.ingress_host }}
       HELM_CHART_PATH: "./helm-charts/gem-app/dev/ephmrl"
@@ -768,7 +769,7 @@ jobs:
         id: ecr-login
         run: |
           echo "Logging in to ECR for region ${{ env.TF_VAR_region }}"
-          aws ecr get-login-password --region ${{ env.TF_VAR_region }} | helm registry login --username AWS --password-stdin 244141140224.dkr.ecr.${{ env.TF_VAR_region }}.amazonaws.com    
+          aws ecr get-login-password --region ${{ env.TF_VAR_region }} | helm registry login --username AWS --password-stdin 488347380548.dkr.ecr.${{ env.TF_VAR_region }}.amazonaws.com    
 
       - name: Create Namespace
         run: |
