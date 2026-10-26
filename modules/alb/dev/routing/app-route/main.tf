@@ -19,7 +19,7 @@ data "aws_lb_listener" "https" {
 locals {
   env_domain = var.environment == "prod" ? var.appdomain : "${var.environment}.${var.appdomain}"
   label      = var.projinstance_id ? "${var.projinstance_id}-${var.environment}-${var.projectname}" : var.appdomain
-  fqdn       = "${var.projectname}.${local.env_domain}"
+  fqdn       = var.projinstance_id ? "${var.projinstance_id}-${var.environment}-${var.projectname}.${local.env_domain}" : var.appdomain
   tg_name    = "tg-${substr(md5(local.fqdn), 0, 12)}"
 }
 

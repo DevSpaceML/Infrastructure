@@ -8,7 +8,6 @@
 #   step. This would simplify the workflow and reduce the number of Terraform steps, while still achieving dynamic DNS management based on Kubernetes resources.
 
 name: ephmrl-eks-traefik
-
 on:
   repository_dispatch:
     types: [ephmrl-eks-traefik]
@@ -34,7 +33,8 @@ jobs:
       dev_cidr: ${{ steps.parse_vars.outputs.dev_cidr }}
       vpcname: ${{ steps.parse_vars.outputs.vpcname }}
       createvpc: ${{ steps.parse_vars.outputs.createvpc }}
-      existing_vpc_id: ${{ steps.parse_vars.outputs.existing_vpc_id }}
+      vpc_id: ${{ steps.parse_vars.outputs.vpc_id }}
+      deploy_alb: ${{ steps.parse_vars.outputs.deploy_alb }}
       public_subnet_cidr: ${{ steps.parse_vars.outputs.public_subnet_cidr }}
       private_subnet_cidr: ${{ steps.parse_vars.outputs.private_subnet_cidr }}
       rds_subnet_cidrs: ${{ steps.parse_vars.outputs.rds_subnet_cidrs }}
@@ -94,7 +94,7 @@ jobs:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
       TF_VAR_dev_cidr: ${{ needs.configure-variables.outputs.dev_cidr }}
-      TF_VAR_existing_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}
+      TF_VAR_vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
       TF_VAR_vpcname: ${{ needs.configure-variables.outputs.vpcname }}
       TF_VAR_createvpc: ${{ needs.configure-variables.outputs.createvpc }}
       TF_VAR_public_subnet_cidr_blocks: ${{ needs.configure-variables.outputs.public_subnet_cidr }}
@@ -202,7 +202,7 @@ jobs:
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
       TF_VAR_vpcname: ${{ needs.configure-variables.outputs.vpcname }}
       TF_VAR_createvpc: ${{ needs.configure-variables.outputs.createvpc }}
-      TF_VAR_existing_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}
+      TF_VAR_vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
       TF_VAR_projectname: ${{ needs.configure-variables.outputs.projectname }}  
 
     steps:  
@@ -374,7 +374,7 @@ jobs:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
-      TF_VAR_vpc_id: ${{ needs.configure-variables.outputs.existing_vpc_id }}
+      TF_VAR_vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
       Ctrlr_Role_Arn: ${{ needs.deploy-cluster.outputs.ctrlr_role_arn }}
       k8_svc_acc: ${{ needs.deploy-cluster.outputs.k8_svc_acc }}
 
@@ -418,6 +418,164 @@ jobs:
             --wait \
             --debug
           kubectl rollout status deployment/aws-load-balancer-controller -n kube-system
+
+  # Deploy ALB if necessary
+  deploy-alb:
+    name: deploy-alb
+    runs-on: ubuntu-latest
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc]
+    if: |
+      always() &&
+      needs.configure-variables.result == 'success' &&
+      needs.configure-variables.outputs.deploy_alb == 'true' &&
+      (needs.deploy-network.result == 'success' || needs.deploy-network.result == 'skipped') &&
+      needs.deploy-iam.result == 'success' &&
+      needs.deploy-cluster.result == 'success' && needs.configure-auth.result == 'success' &&
+      needs.install-lbc.result == 'success'
+    env:
+      projectname: ${{ needs.configure-variables.outputs.projectname }}
+      clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+      TF_VAR_vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4  
+        with:
+              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.TF_VAR_region }}
+              mask-aws-account-id: false
+
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+          
+      - name: Verify Cloudflare token
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is empty in this job"; exit 1
+          fi
+          echo "Token length: ${#CLOUDFLARE_API_TOKEN}"
+          http_code=$(curl -s -o response.json -w "%{http_code}" \
+          -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+          https://api.cloudflare.com/client/v4/user/tokens/verify)
+          echo "HTTP status: $http_code"
+          cat response.json
+          if [ "$http_code" -ne 200 ]; then
+            exit 1
+          fi      
+      
+      - name: Terraform Init
+        working-directory: ./environments/dev/alb/eks-shared
+        run: |
+          terraform init -upgrade
+      
+      - name: Terraform Validate
+        working-directory: ./environments/dev/alb/eks-shared
+        run: |
+          terraform validate
+
+      - name: Terraform Plan
+        working-directory:  ./environments/dev/alb/eks-shared
+        run: |
+          terraform plan -out=alb_tfplan
+          terraform show -json alb_tfplan > alb_tfplan.json
+          cat alb_tfplan.json
+      
+      - name: Terraform Apply
+        working-directory:  ./environments/dev/alb/eks-shared
+        run: |
+          terraform apply -auto-approve alb_tfplan
+  
+  # Configure Routing -- Create http listeners, rules, and target groups
+  configure-routing:
+    name: routing-config
+    runs-on: ubuntu-latest
+    outputs:
+      target_group_arn: ${{ steps.app-routing.outputs.target_group_arn }}
+      ingress_host: ${{ steps.app-routing.outputs.ingress_host }}
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc, deploy-alb]
+    if: |
+      always() && 
+      needs.configure-variables.result == 'success' && 
+      (needs.deploy-network.result == 'success' || needs.deploy-network.result == 'skipped') &&
+      needs.deploy-iam.result == 'success' &&
+      needs.deploy-cluster.result == 'success' && needs.configure-auth.result == 'success' &&
+      needs.install-lbc.result == 'success'
+    env:
+      projectname: ${{ needs.configure-variables.outputs.projectname }}
+      vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4  
+        with:
+              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.TF_VAR_region }}
+              mask-aws-account-id: false
+
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+
+      - name: Verify Cloudflare token
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is empty in this job"; exit 1
+          fi
+          echo "Token length: ${#CLOUDFLARE_API_TOKEN}"
+          http_code=$(curl -s -o response.json -w "%{http_code}" \
+          -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+          https://api.cloudflare.com/client/v4/user/tokens/verify)
+          echo "HTTP status: $http_code"
+          cat response.json
+          if [ "$http_code" -ne 200 ]; then
+            exit 1
+          fi  
+
+      - name: Terraform Init
+        working-directory: ./environments/dev/alb/eks-routing/app-route
+        run: |
+          terraform init -upgrade
+      
+      - name: Terraform Validate
+        working-directory: ./environments/dev/alb/eks-routing/app-route
+        run: |
+          terraform validate
+
+      - name: Terraform Plan
+        working-directory:  ./environments/dev/alb/eks-routing/app-route
+        run: |
+          terraform plan -out=routes_tfplan
+          terraform show -json routes_tfplan > routes_tfplan.json
+          cat routes_tfplan.json
+          
+      - name: Terraform Apply
+        working-directory: ./environments/dev/alb/eks-routing/app-route
+        run: |
+          terraform apply -auto-approve routes_tfplan
+          
+      - name: app-routing
+        id: app-routing
+        working-directory: ./environments/dev/alb/eks-routing/app-route
+        run: |
+          set -euo pipefail
+          arn="$(terraform output -raw tgtgrp_arn)"
+          [ -n "$arn" ] || { echo "tgtgrp_arn output is empty" >&2; exit 1; }
+          echo "target_group_arn=$arn" >> "$GITHUB_OUTPUT"
+          echo "ingress_host=$(terraform output -raw hostname)" >> "$GITHUB_OUTPUT"
 
   #INSTALL CRDs for Traefik Ingress Controller
   install-crds:
@@ -476,14 +634,11 @@ jobs:
     name: install-traefik
     runs-on: ubuntu-latest
     needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc, install-crds]
-    outputs:
-      nlb_hostname: ${{ steps.nlb_hostname.outputs.nlb_hostname }}
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
       Ctrlr_Role_Arn: ${{ needs.deploy-cluster.outputs.ctrlr_role_arn }}
-
     steps:  
       - name: checkout-code
         uses: actions/checkout@v4
@@ -491,7 +646,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+              role-to-assume: arn:aws:iam::244141140224:role/gha_deploy
               role-session-name: GitHub-Actions-OIDC-Session
               aws-region: ${{ env.TF_VAR_region }}
               mask-aws-account-id: false
@@ -521,6 +676,7 @@ jobs:
             --version 32.1.0 \
             --values ./helm-charts/gem-app/dev/ephmrl/traefik-values.yaml \
             --set "serviceAccountAnnotations.eks\.amazonaws\.com/role-arn=${{ env.Ctrlr_Role_Arn }}" \
+            --set ingress.Route.hosts[0]=${{ needs.configure-routing.outputs.ingress_host }} \
             --timeout 10m \
             --wait \
             --debug || {
@@ -530,38 +686,6 @@ jobs:
               exit 1
             }
           kubectl rollout status deployment/traefik -n traefik
-
-      - name: Resolve NLB Hostname and write Cname record to Cloudflare DNS
-        id: nlb_hostname
-        run: |
-          set -euo pipefail
-
-          TIMEOUT=300
-          INTERVAL=30
-         
-          echo "Waiting for Traefik NLB hostname (timeout: ${TIMEOUT}s)..."   
-          DEADLINE=$(( $(date +%s) + TIMEOUT ))
-          NLB_HOSTNAME="" 
-          while (( $(date +%s) < DEADLINE )); do
-            NLB_HOSTNAME=$(kubectl get svc traefik -n traefik \
-              -o jsonpath='{.status.loadBalancer.ingress[0].hostname}' 2>/dev/null || true)
-            
-            if [[ -n "$NLB_HOSTNAME" ]]; then
-              echo "Found NLB hostname: $NLB_HOSTNAME"
-              break
-            fi
-            
-            echo "**>>> hostname not yet assigned, retrying in ${INTERVAL}s..."
-            sleep "$INTERVAL"
-          done
-
-          [[ -n "$NLB_HOSTNAME" ]] || { echo "ERROR: NLB hostname not assigned after ${TIMEOUT}s."; exit 1; }
-          echo "Found hostname: $NLB_HOSTNAME"
-
-          # Write Cname record to Cloudflare DNS
-          
-
-          echo "nlb_hostname=${NLB_HOSTNAME}" >> "$GITHUB_OUTPUT"
 
   # Apply ClusterIssuer for cert-manager
   apply-clusterissuer:
@@ -579,7 +703,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+              role-to-assume: arn:aws:iam::244141140224:role/gha_deploy
               role-session-name: GitHub-Actions-OIDC-Session
               aws-region: ${{ env.TF_VAR_region }}
               mask-aws-account-id: false  
@@ -610,9 +734,9 @@ jobs:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
-      TF_VAR_image_repository: 586098609239.dkr.ecr.us-east-1.amazonaws.com/gem/gemapp
+      TF_VAR_image_repository: 244141140224.dkr.ecr.us-east-1.amazonaws.com/dev/gemapp
       HELM_RELEASE_NAME: ${{ needs.configure-variables.outputs.projectname }}
-      INGRESS_HOST: ${{ needs.install-traefik.outputs.nlb_hostname }}
+      INGRESS_HOST: ${{ needs.configure-routing.outputs.ingress_host }}
       HELM_CHART_PATH: "./helm-charts/gem-app/dev/ephmrl"
       HELM_NAMESPACE: "ns-${{ needs.configure-variables.outputs.projectname }}"
       APP_VERSION: ${{ needs.configure-variables.outputs.appversion }}
@@ -644,7 +768,7 @@ jobs:
         id: ecr-login
         run: |
           echo "Logging in to ECR for region ${{ env.TF_VAR_region }}"
-          aws ecr get-login-password --region ${{ env.TF_VAR_region }} | helm registry login --username AWS --password-stdin 586098609239.dkr.ecr.${{ env.TF_VAR_region }}.amazonaws.com    
+          aws ecr get-login-password --region ${{ env.TF_VAR_region }} | helm registry login --username AWS --password-stdin 244141140224.dkr.ecr.${{ env.TF_VAR_region }}.amazonaws.com    
 
       - name: Create Namespace
         run: |
@@ -655,7 +779,7 @@ jobs:
         id: get_image_tag
         run: |
           echo "Retrieving image tag for repository ${{ env.TF_VAR_image_repository }}"
-          IMAGE_TAG=$(aws ecr describe-images --repository-name gem/gemapp --region ${{ env.TF_VAR_region }} --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' --output text)
+          IMAGE_TAG=$(aws ecr describe-images --repository-name dev/gemapp --region ${{ env.TF_VAR_region }} --query 'sort_by(imageDetails,& imagePushedAt)[-1].imageTags[0]' --output text)
           echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           cat $GITHUB_OUTPUT
           
