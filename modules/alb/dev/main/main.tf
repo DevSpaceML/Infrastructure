@@ -1,6 +1,25 @@
 
 /* Persistent Dev Environment ALB, target-groups,listeners */
 
+terraform {
+  required_providers {
+    aws = {
+            source  = "hashicorp/aws"
+            version = "~> 5.0"
+      }
+      cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.26.0"
+    }
+  }
+}
+
+data "cloudflare_zone" "this" {
+  filter = {
+    name = var.domain_name
+  }
+}
+
 resource "aws_lb" "dev_alb" {
   name               = "dev-shared-alb"
   internal           = false
@@ -71,7 +90,6 @@ resource "aws_lb_listener" "slfsvc-listener" {
 
 resource "aws_lb_listener_rule" "slfsrv-listener-rule" {
   listener_arn = aws_lb_listener.slfsvc-listener.arn
-  priority     = 100
 
   action {
     type             = "forward"
@@ -83,4 +101,13 @@ resource "aws_lb_listener_rule" "slfsrv-listener-rule" {
       values = [var.domain_name]
     }
   }
+}
+
+resource "cloudflare_dns_record" "app" {
+  zone_id =  data.cloudflare_zone.this.zone_id
+  name    =  "dev-${var.domain_name}"
+  type    = "CNAME"
+  content =  aws_lb.dev_alb.dns_name
+  proxied = true
+  ttl     = 1
 }

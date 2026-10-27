@@ -17,10 +17,10 @@ data "aws_lb_listener" "https" {
 }
 
 locals {
-  env_domain = var.environment == "prod" ? var.appdomain : "${var.environment}.${var.appdomain}"
-  label      = var.projinstance_id ? "${var.projinstance_id}-${var.environment}-${var.projectname}" : var.appdomain
-  fqdn       = var.projinstance_id ? "${var.projinstance_id}-${var.environment}-${var.projectname}.${local.env_domain}" : var.appdomain
-  tg_name    = "tg-${substr(md5(local.fqdn), 0, 12)}"
+  env_domain     = var.environment == "prod" ? var.appdomain : "${var.environment}.${var.appdomain}"
+  projlabel      = var.projinstance_id ? "${var.projinstance_id}-${var.environment}-${var.projectname}" : var.appdomain
+  fqdn           = var.projinstance_id ? "${var.projinstance_id}-${var.environment}-${var.projectname}.${local.env_domain}" : var.appdomain
+  tg_name        = "tg-${substr(md5(local.fqdn), 0, 12)}"
 }
 
 resource "aws_lb_listener" "http_redirect" {
@@ -78,8 +78,8 @@ resource "aws_lb_target_group" "traefik" {
   }
 
   tags = {
-    Name        = local.label
-    Environment = var.environment
+    Name         = local.projlabel
+    Environment  = var.environment
     hostname     = local.fqdn
   }
 
