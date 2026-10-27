@@ -4,10 +4,10 @@ variable "root_domain" {
   default     = "salientapps.com"
 }
 
-variable "persistent_domains" {
-  description = " permanent domains needing Cloudflare CNAME records at infra creation time"
-  type        = list(string)
-  default     = ["*.dev.salientapps.com", "*.staging.salientapps.com", "www.salientapps.com"]
+variable "environment" {
+  description = "The environment name (e.g., dev, staging, prod)"
+  type        = string
+  default     = "dev"
 }
 
 variable "aws_alb_dns" {
