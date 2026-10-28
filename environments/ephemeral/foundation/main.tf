@@ -1,5 +1,5 @@
 # Ephemeral Clusters
-
+# Foundation - Networking, Cluster, Addons, Nodes
 
 module "eph_cluster" {
   source                 = "../../modules/compute/eks/cluster"
