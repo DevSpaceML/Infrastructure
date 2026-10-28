@@ -74,6 +74,7 @@ module "dev_cluster" {
                               })
 }
 
+# Move to Routing ?
 module "eks_security_groups" {
   depends_on            = [ module.dev_cluster ]
   source                = "../../../../modules/network/eks/eks-security-groups"
@@ -116,6 +117,7 @@ module "coredns" {
   clustername = module.dev_cluster.cluster_name
 }
 
+# Move to app deployment
 module "prometheus" {
   depends_on = [ module.dev_cluster, module.oidc_auth ]
   source = "../../../../modules/monitoring/prometheus"

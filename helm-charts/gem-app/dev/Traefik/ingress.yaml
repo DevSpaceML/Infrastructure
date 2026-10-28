@@ -30,3 +30,21 @@ spec:
     secretName: {{ .Release.Name }}-tls
   {{- end }}
 {{- end }}
+---
+# Binds to AWS TargetGroup via targetGroupArn and securityGroupID
+apiVersion: elbv2.k8s.aws/v1beta1
+kind: TargetGroupBinding
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  serviceRef: { name: traefik, port: 80 }
+  targetGroupARN: {{ required "targetGroupBinding.targetGroupARN is required" .Values.targetGroupBinding.targetGroupArn | quote }}
+  targetType: ip
+  networking:
+    ingress:
+      - from:
+          - securityGroup: { groupID: {{ required "targetGroupBinding.securityGroupID is required" .Values.targetGroupBinding.securityGroupId | quote }} }
+        ports:
+          - { protocol: TCP, port: 80 }
+          - { protocol: TCP, port: 8080 }   # health check port
