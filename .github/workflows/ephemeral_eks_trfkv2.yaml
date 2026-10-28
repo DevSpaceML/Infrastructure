@@ -224,19 +224,19 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
+        working-directory: ./environments/ephemeral/compute/eks_cluster
         run: |
           terraform init -upgrade
             
       - name: Terraform Validate
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
+        working-directory: ./environments/ephemeral/compute/eks_cluster
         run: |
           terraform validate
             
       - name: Terraform Plan
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
+        working-directory: ./environments/ephemeral/compute/eks_cluster
         run: |
-          echo "Running terraform plan for cluster ${TF_VAR_clustername} in environment ${ENVIRONMENT}"
+          echo "Running terraform plan for cluster ${TF_VAR_clustername} in environment ephemeral"
           terraform plan -out=tfplan
           terraform show -json tfplan > tfplan.json
           cat tfplan.json 
@@ -244,17 +244,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cluster-tfplan
-          path: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster/tfplan.json
+          path: ./environments/ephemeral/compute/eks_cluster/tfplan.json
           
       - name: Terraform Apply
         id: tf_apply
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
+        working-directory: ./environments/ephemeral/compute/eks_cluster
         run: terraform apply -auto-approve tfplan
         continue-on-error: true
 
       - name: Roll back on Failure
         if: steps.tf_apply.outcome == 'failure'
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
+        working-directory: ./environments/ephemeral/compute/eks_cluster
         run: |
           echo "Cluster deployment failed, rolling back changes"
           terraform destroy -auto-approve
@@ -262,7 +262,7 @@ jobs:
 
       - name: Verify Cluster Deployment
         id: verify_cluster
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/compute/eks_cluster
+        working-directory: ./environments/ephemeral/compute/eks_cluster
         run: |
           echo "Verifying EKS Cluster Creation"
           CLUSTER_NAME="${{ env.TF_VAR_clustername }}"
