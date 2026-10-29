@@ -71,14 +71,8 @@ data "aws_security_group" "default_sec_group" {
   } 
 }
 
-data "aws_subnets" "eks_subnets" {
-	filter {
-			name = "vpc-id"
-			values = [local.vpc_id]
-	}
-}
-
 resource "aws_vpc_dhcp_options" "eks_dhcp_options" {
+	count = var.createvpc ? 1 : 0
 	domain_name_servers = ["AmazonProvidedDNS"]
 	domain_name         = var.region == "us-east-1" ? "ec2.internal" : "${var.region}.compute.internal"
 	
@@ -89,8 +83,9 @@ resource "aws_vpc_dhcp_options" "eks_dhcp_options" {
 }
 
 resource "aws_vpc_dhcp_options_association" "eks_dhcp_options_association" {
+	count = var.createvpc ? 1 : 0
 	vpc_id = local.vpc_id
-	dhcp_options_id = aws_vpc_dhcp_options.eks_dhcp_options.id
+	dhcp_options_id = aws_vpc_dhcp_options.eks_dhcp_options[0].id
 
 	depends_on = [ aws_vpc_dhcp_options.eks_dhcp_options ]	 
 }
@@ -103,7 +98,7 @@ resource "aws_internet_gateway" "igw_public_eks" {
 	vpc_id = local.vpc_id
 
 	tags = {
-		Name = "${var.igw_name}"
+		Name = "${var.vpcname}-igw"
 	}
 }
 
@@ -206,7 +201,6 @@ resource "aws_subnet" "rds_private_subnet" {
 	tags = {
 		Name = "rds-private-subnet-${each.key}"
 		"kubernetes.io/cluster/${var.clustername}" = "shared"
-		"kubernetes.io/role/internal-elb" = "1"
 		availability_zone = each.key
 	}	
 }
@@ -228,7 +222,6 @@ resource "aws_subnet" "nodegroup_private_subnet" {
 	tags = {
 		Name = "nodegroup-private-subnet-${each.key}"
 		"kubernetes.io/cluster/${var.clustername}" = "shared"
-		"kubernetes.io/role/internal-elb" = "1"
 		availability_zone = each.key
 	}	
   
@@ -252,6 +245,17 @@ resource "aws_route_table_association" "nodegroup_private_route_association" {
   for_each       = aws_subnet.nodegroup_private_subnet
   subnet_id      = each.value.id
   route_table_id = aws_route_table.nodegroup_private_routetable[each.key].id
+}
+
+resource "aws_route_table" "rds_private" {
+  vpc_id = local.vpc_id
+  tags   = { Name = "${var.vpcname}-rds-rt" }
+}
+
+resource "aws_route_table_association" "rds_private" {
+  for_each       = aws_subnet.rds_private_subnet
+  subnet_id      = each.value.id
+  route_table_id = aws_route_table.rds_private.id
 }
 
 /* VPC Flow Logs 

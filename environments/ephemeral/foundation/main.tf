@@ -55,7 +55,6 @@ provider "helm" {
 }
 
 module "network" {
-  count = var.createvpc ? 1 : 0
   source = "../../../modules/network/eks/vpc"
   cidr                               = var.cidr
   vpcname                            = var.vpcname
@@ -66,13 +65,13 @@ module "network" {
 }
 
 module "iam" {
-  source = "../../../modules/iam/eks"
+  source = "../../../modules/security/iam/eks"
 }
 
 
 locals {
-  network = module.network.outputs
-  iam     = module.iam.outputs
+  network = module.network
+  iam     = module.iam
 }
 
 module "eph_cluster" {
