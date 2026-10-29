@@ -69,23 +69,29 @@ module "iam" {
   source = "../../../modules/iam/eks"
 }
 
+
+locals {
+  network = module.network.outputs
+  iam     = module.iam.outputs
+}
+
 module "eph_cluster" {
   source                 = "../../../modules/compute/eks/cluster"
   clustername            = var.clustername
   region                 = var.region
-  vpcId                  = var.createvpc ? module.network.vpc_id : var.vpc_id
-  public_subnet_ids      = var.createvpc ? module.network.public_subnet_id_list : []
-  private_subnet_ids     = var.createvpc ? module.network.private_subnet_id_list : []
-  cluster_role_arn       = module.iam.outputs.cluster-role-arn
-  node_role_arn          = module.iam.outputs.node-mgr-arn
-  devops_admin_arn       = module.iam.outputs.DevOpsAdminSre-arn
-  access_entries         = merge(module.iam.outputs.access-entries-map, {
+  vpcId                  = local.network.vpc_id
+  public_subnet_ids      = local.network.public_subnet_id_list
+  private_subnet_ids     = local.network.private_subnet_id_list
+  cluster_role_arn       = local.iam.cluster-role-arn
+  node_role_arn          = local.iam.node-mgr-arn
+  devops_admin_arn       = local.iam.DevOpsAdminSre-arn
+  access_entries         = merge(local.iam.access-entries-map, {
                                   "github_actions" = {
-                                     principal_arn     = module.iam.outputs.github-actions-arn
+                                     principal_arn     = local.iam.github-actions-arn
                                      policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
                                     },
                                     "devops_admin" = {
-                                      principal_arn = module.iam.outputs.DevOpsAdminSre-arn
+                                      principal_arn = local.iam.DevOpsAdminSre-arn
                                       policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
                                     }
                               })
@@ -94,7 +100,7 @@ module "eph_cluster" {
 module "eks_security_groups" {
   depends_on            = [ module.eph_cluster ]
   source                = "../../../modules/network/eks/eks-security-groups"
-  vpc_id                = var.createvpc ? module.network.vpc_id : var.vpc_id
+  vpc_id                = local.network.vpc_id
   clustername           = module.eph_cluster.cluster_name
 }
 
@@ -103,19 +109,19 @@ module "k8_auth" {
   source           = "../../../modules/security/auth"
   clustername      = module.eph_cluster.outputs.cluster_name
   cluster_cert     = module.eph_cluster.outputs.cluster_cert
-  noderolearn      = module.iam.outputs.node-mgr-arn
-  clusteradminrole = module.iam.outputs.cluster-role-arn
-  DevOpsAdminSre   = module.iam.outputs.DevOpsAdminSre-arn
-  techlead         = module.iam.outputs.techlead-arn
+  noderolearn      = local.iam.node-mgr-arn
+  clusteradminrole = local.iam.cluster-role-arn
+  DevOpsAdminSre   = local.iam.DevOpsAdminSre-arn
+  techlead         = local.iam.techlead-arn
   hosturl          = module.eph_cluster.outputs.cluster_endpoint
-  region           = var.createvpc ? module.network.outputs.region : var.region
+  region           = local.network.region
 }
 
 module "vpc_cni" {
   depends_on  = [ module.eph_cluster, module.eks_security_groups ]
   source      = "../../../modules/compute/eks/addons/vpc-cni"
   clustername = module.eph_cluster.cluster_name
-  rolearn     = module.iam.outputs.node-mgr-arn
+  rolearn     = local.iam.node-mgr-arn
 }
 
 module "kube_proxy" {
@@ -133,7 +139,7 @@ module "oidc_auth" {
 module "eph_nodes" {
   depends_on = [ module.eph_cluster, module.oidc_auth ]
   source                       = "../../../modules/compute/eks/nodegroups"
-  node_group_mgr_arn           = module.iam.outputs.node-mgr-arn
+  node_group_mgr_arn           = local.iam.node-mgr-arn
   nodegroupname                = "${module.eph_cluster.cluster_name}-nodegroup"
   clustername                  = module.eph_cluster.cluster_name
   instancetype                 = var.instancetype
