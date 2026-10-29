@@ -356,78 +356,6 @@ jobs:
             --debug
           kubectl rollout status deployment/aws-load-balancer-controller -n kube-system
 
-  # Deploy ALB if necessary
-  deploy-alb:
-    name: deploy-alb
-    runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, install-lbc]
-    if: |
-      always() &&
-      needs.configure-variables.result == 'success' &&
-      needs.configure-variables.outputs.deploy_alb == 'true' &&
-      (needs.deploy-network.result == 'success' || needs.deploy-network.result == 'skipped') &&
-      needs.deploy-iam.result == 'success' &&
-      needs.deploy-cluster.result == 'success' &&
-      needs.install-lbc.result == 'success'
-    env:
-      projectname: ${{ needs.configure-variables.outputs.projectname }}
-      clustername: ${{ needs.configure-variables.outputs.clustername }}
-      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
-      TF_VAR_vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
-    steps:
-      - name: checkout-code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4  
-        with:
-              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
-              role-session-name: GitHub-Actions-OIDC-Session
-              aws-region: ${{ env.TF_VAR_region }}
-              mask-aws-account-id: false
-
-      - name: Prepare Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TF_VERSION }}
-          terraform_wrapper: false
-          
-      - name: Verify Cloudflare token
-        run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
-            echo "::error::CLOUDFLARE_API_TOKEN is empty in this job"; exit 1
-          fi
-          echo "Token length: ${#CLOUDFLARE_API_TOKEN}"
-          http_code=$(curl -s -o response.json -w "%{http_code}" \
-          -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-          https://api.cloudflare.com/client/v4/user/tokens/verify)
-          echo "HTTP status: $http_code"
-          cat response.json
-          if [ "$http_code" -ne 200 ]; then
-            exit 1
-          fi      
-      
-      - name: Terraform Init
-        working-directory: ./environments/dev/alb/eks-shared
-        run: |
-          terraform init -upgrade
-      
-      - name: Terraform Validate
-        working-directory: ./environments/dev/alb/eks-shared
-        run: |
-          terraform validate
-
-      - name: Terraform Plan
-        working-directory:  ./environments/dev/alb/eks-shared
-        run: |
-          terraform plan -out=alb_tfplan
-          terraform show -json alb_tfplan > alb_tfplan.json
-          cat alb_tfplan.json
-      
-      - name: Terraform Apply
-        working-directory:  ./environments/dev/alb/eks-shared
-        run: |
-          terraform apply -auto-approve alb_tfplan
   
   # Configure Routing -- Create http listeners, rules, and target groups
   configure-routing:
@@ -436,14 +364,15 @@ jobs:
     outputs:
       target_group_arn: ${{ steps.app-routing.outputs.target_group_arn }}
       ingress_host: ${{ steps.app-routing.outputs.ingress_host }}
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc, deploy-alb]
+    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, install-lbc, deploy-alb]
     if: |
       always() && 
       needs.configure-variables.result == 'success' && 
       (needs.deploy-network.result == 'success' || needs.deploy-network.result == 'skipped') &&
       needs.deploy-iam.result == 'success' &&
-      needs.deploy-cluster.result == 'success' && needs.configure-auth.result == 'success' &&
-      needs.install-lbc.result == 'success'
+      needs.deploy-cluster.result == 'success' &&
+      needs.install-lbc.result == 'success' &&
+      needs.deploy-alb.result == 'success'
     env:
       projectname: ${{ needs.configure-variables.outputs.projectname }}
       vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
