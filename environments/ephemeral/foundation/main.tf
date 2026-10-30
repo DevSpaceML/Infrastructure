@@ -68,7 +68,6 @@ module "iam" {
   source = "../../../modules/security/iam/eks"
 }
 
-
 locals {
   network = module.network
   iam     = module.iam

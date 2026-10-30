@@ -22,6 +22,12 @@ variable "appdomain" {
   default = "salientapps.com"
 }
 
+variable "create_vpc" {
+  description = "Dedicated vpc for cluster"
+  type = bool
+  default = false
+}
+
 variable "vpc_id" {
   description = "vpc project will deploy to"
   type = string

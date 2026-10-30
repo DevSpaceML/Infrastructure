@@ -11,6 +11,11 @@ terraform {
   }
 }
 
+data "aws_lb" "shared_alb" {
+  count = var.create_vpc ? 1 : 0
+  arn = var.alb_arn
+}
+
 data "aws_lb_listener" "https" {
   load_balancer_arn = var.alb_arn
   port              = 443
@@ -21,10 +26,11 @@ locals {
   label      = var.projinstance_id ? "${var.projinstance_id}-${var.environment}-${var.projectname}" : var.appdomain
   fqdn       = "${var.projectname}.${local.env_domain}"
   tg_name    = "tg-${substr(md5(local.fqdn), 0, 12)}"
+  alb_arn    = var.create_vpc ? data.aws_lb.shared_alb[0].arn : var.alb_arn
 }
 
 resource "aws_lb_listener" "http_redirect" {
-  load_balancer_arn = data.aws_lb.k8_shared.arn
+  load_balancer_arn = local.alb_arn
   port              = 80
   protocol          = "HTTP"
 
@@ -39,7 +45,7 @@ resource "aws_lb_listener" "http_redirect" {
 }
 
 resource "aws_lb_listener" "https" {
-  load_balancer_arn = data.aws_lb.k8_shared.arn
+  load_balancer_arn = local.alb_arn
   port              = 443
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
@@ -56,6 +62,7 @@ resource "aws_lb_listener" "https" {
 }
 
 resource "aws_lb_target_group" "traefik" {
+  count = var.create_vpc ? 1 : 0
   name        = local.tg_name
   port        = var.traefik_port
   protocol    = "HTTP"
@@ -86,12 +93,13 @@ resource "aws_lb_target_group" "traefik" {
 }
 
 resource "aws_lb_listener_rule" "project" {
-  listener_arn = aws_lb_listener.https.arn 
+  listener_arn = aws_lb_listener.https.arn
+  count = var.create_vpc ? 1 : 0
   priority     = 100
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.project.arn
+    target_group_arn = aws_lb_target_group.traefik[0].arn
   }
 
   condition {
