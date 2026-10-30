@@ -20,8 +20,8 @@ locals {
 }
 
 module "ephmrl_routing" {
-  source               = "../../../../modules/alb/dev/routing/shared-edge"
-  alb_arn              = var.alb_arn
+  source               = "../../../modules/alb/dev/routing/shared-edge"
+  alb_arn              = local.cluster.alb_arn
   alb_name             = local.cluster.alb_name
   certificate_arn      = local.cluster.acm_cert_arn
   vpc_id               = local.network.vpc_id
