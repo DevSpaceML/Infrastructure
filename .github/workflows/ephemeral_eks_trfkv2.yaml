@@ -1,6 +1,6 @@
 # Deployment sequence for ephemeral eks cluster
 #   1. Configure TF_Vars, 2. Deploy Network, 3. Deploy IAM, 4. Deploy Cluster, enable control-plane logging with Cloudwatch
-#  5. Configure Cluster Authentication
+#   5. Configure Cluster Authentication
 #    step1 --> configure aws-auth ConfigMap for role mappings
 #    step2 --> configure OIDC provider for IRSA (IAM Roles for Service Accounts)
 #   6. Nodegroup, 7. Certs, 8. Database, 9. Helm App+ingress Deployment, 10.DNS (Route53 etc)
@@ -84,7 +84,7 @@ jobs:
             end
           ' >> "$GITHUB_OUTPUT"
           cat $GITHUB_OUTPUT
-            
+
   # DEPLOY NETWORK
   deploy-vpc:
     runs-on: ubuntu-latest
@@ -123,16 +123,16 @@ jobs:
 
     
       - name: Deploy Network
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc
+        working-directory: ./environments/ephemeral/foundation  
         run: |
           terraform init -upgrade
 
       - name: Terraform Validate
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc
+        working-directory: ./environments/ephemeral/foundation
         run: terraform validate 
 
       - name: Terraform Plan
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc
+        working-directory: ./environments/ephemeral/foundation
         run: |
           terraform plan -out=tfplan
           terraform show -json tfplan > tfplan.json
@@ -142,17 +142,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: network-tfplan
-          path: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc/tfplan.json
+          path: ./environments/ephemeral/foundation/tfplan.json
 
       - name: Terraform Apply
-        working-directory: ./environments/${{ env.ENVIRONMENT }}/network/cluster_vpc
+        working-directory: ./environments/ephemeral/foundation
         run: terraform apply -auto-approve tfplan    
 
   # DEPLOY IAM      
   deploy-iam:
     name: deploy-iam
     runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network]
+    needs: [configure-variables, deploy-vpc]
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
@@ -187,7 +187,7 @@ jobs:
       - name: Terraform Apply
         working-directory: ./environments/${{ env.ENVIRONMENT }}/iam
         run: terraform apply -auto-approve 
-           
+          
   # DEPLOY CLUSTER
   deploy-cluster:
     name: deploy-eks-cluster
@@ -195,7 +195,7 @@ jobs:
     outputs:
       ctrlr_role_arn: ${{ steps.verify_cluster.outputs.ctrlr_role_arn }}
       k8_svc_acc: ${{ steps.verify_cluster.outputs.k8_svc_acc }}
-    needs: [configure-variables, deploy-network, deploy-iam]
+    needs: [configure-variables, deploy-vpc, deploy-iam]
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment }}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
@@ -224,7 +224,7 @@ jobs:
           terraform_wrapper: false
 
       - name: Terraform Init
-        working-directory: ./environments/ephemeral/compute/eks_cluster
+        working-directory: ./environments/ephemeral/foundation/compute/eks_cluster
         run: |
           terraform init -upgrade
             
@@ -300,13 +300,86 @@ jobs:
         run: |
           echo "Verifying kubectl access to EKS Cluster"
           aws eks update-kubeconfig --name ${{ env.TF_VAR_clustername }} --region ${{ env.TF_VAR_region }}
-          kubectl get nodes    
+          kubectl get nodes
+
+   # Deploy ALB if necessary
+  deploy-alb:
+    name: deploy-alb
+    runs-on: ubuntu-latest
+    needs: [configure-variables, deploy-vpc, deploy-iam, deploy-cluster, install-lbc]
+    if: | 
+      always() &&
+      needs.configure-variables.result == 'success' &&
+      needs.configure-variables.outputs.deploy_alb == 'true' &&
+      (needs.deploy-vpc.result == 'success' || needs.deploy-vpc.result == 'skipped') &&
+      needs.deploy-iam.result == 'success' &&
+      needs.deploy-cluster.result == 'success' &&
+      needs.install-lbc.result == 'success'
+    env:
+      projectname: ${{ needs.configure-variables.outputs.projectname }}
+      clustername: ${{ needs.configure-variables.outputs.clustername }}
+      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+      TF_VAR_vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4  
+        with:
+              role-to-assume: arn:aws:iam::488347380548:role/gha_deploy
+              role-session-name: GitHub-Actions-OIDC-Session
+              aws-region: ${{ env.TF_VAR_region }}
+              mask-aws-account-id: false
+
+      - name: Prepare Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+          
+      - name: Verify Cloudflare token
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::CLOUDFLARE_API_TOKEN is empty in this job"; exit 1
+          fi
+          echo "Token length: ${#CLOUDFLARE_API_TOKEN}"
+          http_code=$(curl -s -o response.json -w "%{http_code}" \
+          -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+          https://api.cloudflare.com/client/v4/user/tokens/verify)
+          echo "HTTP status: $http_code"
+          cat response.json
+          if [ "$http_code" -ne 200 ]; then
+            exit 1
+          fi      
+      
+      - name: Terraform Init
+        working-directory: ./environments/dev/alb/eks-shared
+        run: |
+          terraform init -upgrade
+      
+      - name: Terraform Validate
+        working-directory: ./environments/dev/alb/eks-shared
+        run: |
+          terraform validate
+
+      - name: Terraform Plan
+        working-directory:  ./environments/dev/alb/eks-shared
+        run: |
+          terraform plan -out=alb_tfplan
+          terraform show -json alb_tfplan > alb_tfplan.json
+          cat alb_tfplan.json
+      
+      - name: Terraform Apply
+        working-directory:  ./environments/dev/alb/eks-shared
+        run: |
+          terraform apply -auto-approve alb_tfplan          
   
   #INSTALL LBC CONTROLLER WITH HELM
   install-lbc:
     name: install-lbc
     runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster]
+    needs: [configure-variables, deploy-vpc, deploy-iam, deploy-cluster]
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
@@ -364,11 +437,11 @@ jobs:
     outputs:
       target_group_arn: ${{ steps.app-routing.outputs.target_group_arn }}
       ingress_host: ${{ steps.app-routing.outputs.ingress_host }}
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, install-lbc, deploy-alb]
+    needs: [configure-variables, deploy-vpc, deploy-iam, deploy-cluster, install-lbc, deploy-alb]
     if: |
       always() && 
       needs.configure-variables.result == 'success' && 
-      (needs.deploy-network.result == 'success' || needs.deploy-network.result == 'skipped') &&
+      (needs.deploy-vpc.result == 'success' || needs.deploy-vpc.result == 'skipped') &&
       needs.deploy-iam.result == 'success' &&
       needs.deploy-cluster.result == 'success' &&
       needs.install-lbc.result == 'success' &&
@@ -447,7 +520,7 @@ jobs:
   install-traefik:
     name: install-traefik
     runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc, configure-routing]
+    needs: [configure-variables, deploy-vpc, deploy-iam, deploy-cluster, configure-routing, install-lbc ]
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
@@ -503,12 +576,11 @@ jobs:
             }
           kubectl rollout status deployment/traefik -n traefik
 
-
   # DEPLOY APPLICATION WITH HELM
   deploy-app:
     name: deploy-app
     runs-on: ubuntu-latest
-    needs: [configure-variables, deploy-network, deploy-iam, deploy-cluster, configure-auth, install-lbc, install-traefik, configure-routing]
+    needs: [configure-variables, deploy-vpc, deploy-iam, deploy-cluster, install-lbc, install-traefik, configure-routing]
     env:
       ENVIRONMENT: ${{ needs.configure-variables.outputs.environment}}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}

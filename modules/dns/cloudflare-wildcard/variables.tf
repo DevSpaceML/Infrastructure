@@ -1,7 +1,13 @@
-variable "root_domain" {
+variable "apexdomain" {
   description = "The root domain for which to manage DNS records in Cloudflare"
   type        = string
   default     = "salientapps.com"
+}
+
+variable "manage_apex" {
+  description = "Whether to manage the apex domain DNS record"
+  type        = bool
+  default     = false
 }
 
 variable "environment" {
@@ -10,12 +16,7 @@ variable "environment" {
   default     = "dev"
 }
 
-variable "aws_alb_dns" {
-  description = "The DNS name of the AWS ALB for the persistent domains"
-  type        = string
-}
-
-variable "cluster_alb_dns" {
-  description = "The DNS name of the cluster ALB"
+variable "alb_dns" {
+  description = "The DNS name of the ALB"
   type        = string
 }

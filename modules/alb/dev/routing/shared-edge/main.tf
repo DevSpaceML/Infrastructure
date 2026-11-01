@@ -24,7 +24,7 @@ data "aws_lb_listener" "https" {
 locals {
   env_domain = var.environment == "prod" ? var.appdomain : "${var.environment}.${var.appdomain}"
   label      = var.projinstance_id ? "${var.projinstance_id}-${var.environment}-${var.projectname}" : var.appdomain
-  fqdn       = "${var.projectname}.${local.env_domain}"
+  fqdn       = var.environment == "prod" ? var.appdomain : "${local.label}.${local.env_domain}"
   tg_name    = "tg-${substr(md5(local.fqdn), 0, 12)}"
   alb_arn    = var.create_vpc ? data.aws_lb.shared_alb[0].arn : var.alb_arn
 }
@@ -62,7 +62,7 @@ resource "aws_lb_listener" "https" {
 }
 
 resource "aws_lb_target_group" "traefik" {
-  count = var.create_vpc ? 1 : 0
+  count       = var.create_vpc ? 1 : 0
   name        = local.tg_name
   port        = var.traefik_port
   protocol    = "HTTP"
@@ -93,8 +93,8 @@ resource "aws_lb_target_group" "traefik" {
 }
 
 resource "aws_lb_listener_rule" "project" {
-  listener_arn = aws_lb_listener.https.arn
   count = var.create_vpc ? 1 : 0
+  listener_arn = aws_lb_listener.https.arn
   priority     = 100
 
   action {

@@ -8,17 +8,30 @@ terraform {
 }
 
 locals {
-  env_domain = var.environment == "Prod" ? var.root_domain : "${var.environment}.${var.root_domain}"
+  env_domain = var.environment == "Prod" ? var.apexdomain : "${var.environment}.${var.apexdomain}"
+  env_names  = toset(local.env_domain, "*.${local.env_domain}")
 }
 
 data "cloudflare_zone" "main" {
-  name = var.root_domain
+  name = var.apexdomain   
+}
+
+resource "cloudflare_dns_record" "apex" {
+  count   = var.manage_apex ? 1 : 0
+
+  zone_id = data.cloudflare_zone.main.id
+  name    = var.apexdomain
+  type    = "CNAME"
+  content = var.alb_dns
+  ttl     = 300
 }
 
 resource "cloudflare_dns_record" "wildcard" {
+  for_each = local.env_names
+
   zone_id = data.cloudflare_zone.main.id
-  name    = "*.${local.env_domain}"
+  name    = each.value
   type    = "CNAME"
-  content = var.cluster_alb_dns
+  content = var.alb_dns
   ttl     = 300
 }

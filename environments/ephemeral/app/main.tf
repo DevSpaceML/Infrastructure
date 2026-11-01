@@ -19,6 +19,14 @@ locals {
   network = data.terraform_remote_state.network.outputs
 }
 
+module "cloudflare_dns" {
+  source = "../../../modules/dns/cloudflare-wildcard"
+  apexdomain        = var.apexdomain
+  environment       = var.environment
+  alb_dns           = var.alb_dns_name
+  manage_apex       = var.manage_apex
+}
+
 module "ephmrl_routing" {
   source               = "../../../modules/alb/dev/routing/shared-edge"
   alb_arn              = local.cluster.alb_arn
@@ -29,4 +37,6 @@ module "ephmrl_routing" {
   clustername          = local.cluster.cluster_name
   alb_securitygroup_id = local.cluster.alb_sec_group_id
 }
+
+
 
