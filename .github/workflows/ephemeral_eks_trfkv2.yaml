@@ -86,7 +86,7 @@ jobs:
           cat $GITHUB_OUTPUT
 
   # DEPLOY EPHEMERAL FOUNDATION
-  # Network, Iam, Cluster, Cluster Addons, Nodgroupe, Security Groups, Certs etc
+  # Network, Iam, Cluster, Cluster Addons, Nodgroup, Security Groups, Certs etc
 
   deploy-foundation:
     runs-on: ubuntu-latest
