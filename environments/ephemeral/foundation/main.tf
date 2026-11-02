@@ -69,18 +69,18 @@ module "iam" {
 }
 
 locals {
-  vpc_id = module.network.vpc_id
-  public_subnet_id_list = module.network.public_subnet_id_list
-  private_subnet_id_list = module.network.private_subnet_id_list
-  nodegroup_subnet_id_list = module.network.nodegroup_subnet_id_list
+  vpc_id = module.network.outputs.vpc_id
+  public_subnet_id_list = module.network.outputs.public_subnet_id_list
+  private_subnet_id_list = module.network.outputs.private_subnet_id_list
+  nodegroup_subnet_id_list = module.network.outputs.nodegroup_subnet_id_list
   clustername = var.clustername
   region = var.region
-  cluster_role_arn = module.iam.cluster-role-arn
-  node_role_arn = module.iam.node-mgr-arn
-  DevOpsAdminSre_arn = module.iam.DevOpsAdminSre-arn
-  techlead_arn = module.iam.techlead-arn
-  access_entries_map = module.iam.access-entries-map
-  github_actions_arn = module.iam.github-actions-arn
+  cluster_role_arn = module.iam.outputs.cluster-role-arn
+  node_role_arn = module.iam.outputs.node-mgr-arn
+  DevOpsAdminSre_arn = module.iam.outputs.DevOpsAdminSre-arn
+  techlead_arn = module.iam.outputs.techlead-arn
+  access_entries_map = module.iam.outputs.access-entries-map
+  github_actions_arn = module.iam.outputs.github-actions-arn
 }
 
 module "eph_cluster" {
