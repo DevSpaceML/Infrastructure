@@ -7,10 +7,10 @@
 #   Consider using external-dns as a Helm chart in step 9 to automate Route53 record management, rather than managing it as a separate Terraform 
 #   step. This would simplify the workflow and reduce the number of Terraform steps, while still achieving dynamic DNS management based on Kubernetes resources.
 
-name: ephemeral-eks-v2
+name: ephemeral-trfkv2
 on:
   repository_dispatch:
-    types: [ephemeral-eks-v2]
+    types: [ephemeral-trfkv2]
 env:
   TF_VERSION: "1.8.5"
   ENVIRONMENT: ${{ github.event.client_payload.config.environment }}
@@ -103,6 +103,9 @@ jobs:
       TF_VAR_rds_private_subnet_cidr_blocks: ${{ needs.configure-variables.outputs.rds_subnet_cidrs }}
       TF_VAR_nodegroup_pvt_subnet_cidr_blocks: ${{ needs.configure-variables.outputs.nodegroup_subnet_cidrs }}
       TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+    outputs:
+      ctrlr_role_arn: ${{ steps.export.outputs.ctrlr_role_arn }}
+      k8_svc_acc: ${{ steps.export.outputs.k8_svc_acc }}  
 
     steps:
       - name: Checkout Repo
@@ -147,10 +150,16 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ./environments/ephemeral/foundation
-        run: terraform apply -auto-approve tfplan    
+        run: terraform apply -auto-approve tfplan
+        
+      - name: Export Outputs
+        id: export
+        working-directory: ./environments/ephemeral/foundation
+        run: |
+            echo "ctrlr_role_arn=$(terraform output -raw ctrlr_role_arn)" >> "$GITHUB_OUTPUT"
+            echo "k8_svc_acc=$(terraform output -raw k8_svc_acc)" >> "$GITHUB_OUTPUT"  
 
-
-   # Deploy ALB if necessary
+  # Deploy ALB if necessary
   deploy-alb:
     name: deploy-alb
     runs-on: ubuntu-latest
