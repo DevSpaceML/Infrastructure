@@ -72,7 +72,7 @@ locals {
   vpc_id = module.network.vpc_id
   public_subnet_id_list = module.network.public_subnet_id_list
   private_subnet_id_list = module.network.private_subnet_id_list
-  clustername = module.eph_cluster.cluster_name
+  clustername = var.clustername
   region = var.region
   cluster_role_arn = module.iam.cluster-role-arn
   node_role_arn = module.iam.node-mgr-arn
@@ -108,20 +108,20 @@ module "eks_security_groups" {
   depends_on            = [ module.eph_cluster ]
   source                = "../../../modules/network/eks/eks-security-groups"
   vpc_id                = local.network.vpc_id
-  clustername           = module.eph_cluster.cluster_name
+  clustername           = local.clustername
 }
 
 module "k8_auth" {
   depends_on = [ module.iam, module.eph_cluster ]
   source           = "../../../modules/security/auth"
-  clustername      = module.eph_cluster.outputs.cluster_name
-  cluster_cert     = module.eph_cluster.outputs.cluster_cert
+  clustername      = local.clustername
   noderolearn      = local.node_role_arn
   clusteradminrole = local.cluster_role_arn
   DevOpsAdminSre   = local.DevOpsAdminSre_arn
   techlead         = local.techlead_arn
   hosturl          = module.eph_cluster.outputs.cluster_endpoint
-  region           = local.network.region
+  cluster_cert     = module.eph_cluster.outputs.cluster_cert
+  region           = local.region
 }
 
 module "vpc_cni" {
@@ -134,20 +134,20 @@ module "vpc_cni" {
 module "kube_proxy" {
   depends_on = [ module.eph_cluster, module.vpc_cni ]
   source = "../../../modules/compute/eks/addons/kube_proxy"
-  clustername = module.eph_cluster.cluster_name
+  clustername = local.clustername
 }
 
 module "oidc_auth" {
   depends_on = [ module.eph_cluster, module.vpc_cni, module.kube_proxy ]
   source = "../../../modules/compute/eks/addons/oidc"
-  clustername = module.eph_cluster.cluster_name
+  clustername = local.clustername
 }
 
 module "eph_nodes" {
   depends_on = [ module.eph_cluster, module.oidc_auth ]
   source                       = "../../../modules/compute/eks/nodegroups"
   node_group_mgr_arn           = local.node_role_arn
-  nodegroupname                = "${module.eph_cluster.cluster_name}-nodegroup"
+  nodegroupname                = "${local.clustername}-nodegroup"
   clustername                  = local.clustername
   instancetype                 = var.instancetype
   nodegroup_pvt_subnet_id_list = var.createvpc ? module.network.nodegroup_subnet_id_list : []
