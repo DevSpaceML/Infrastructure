@@ -69,37 +69,28 @@ module "iam" {
 }
 
 locals {
-  vpc_id = module.network.outputs.vpc_id
-  public_subnet_id_list = module.network.outputs.public_subnet_id_list
-  private_subnet_id_list = module.network.outputs.private_subnet_id_list
-  nodegroup_subnet_id_list = module.network.outputs.nodegroup_subnet_id_list
-  clustername = var.clustername
-  region = var.region
-  cluster_role_arn = module.iam.outputs.cluster-role-arn
-  node_role_arn = module.iam.outputs.node-mgr-arn
-  DevOpsAdminSre_arn = module.iam.outputs.DevOpsAdminSre-arn
-  techlead_arn = module.iam.outputs.techlead-arn
-  access_entries_map = module.iam.outputs.access-entries-map
-  github_actions_arn = module.iam.outputs.github-actions-arn
+  network = data.terraform_remote_state.network.outputs
+  cluster = data.terraform_remote_state.cluster.outputs
+  iam     = data.terraform_remote_state.iam.outputs
 }
 
 module "eph_cluster" {
   source                 = "../../../modules/compute/eks/cluster"
-  clustername            = local.clustername
-  region                 = local.region
-  vpcId                  = local.vpc_id
-  public_subnet_ids      = local.public_subnet_id_list
-  private_subnet_ids     = local.private_subnet_id_list
-  cluster_role_arn       = local.cluster_role_arn
-  node_role_arn          = local.node_role_arn
-  devops_admin_arn       = local.DevOpsAdminSre_arn
-  access_entries         = merge(local.access_entries_map, {
+  clustername            = local.cluster.cluster_name
+  region                 = var.region
+  vpcId                  = local.network.vpc_id
+  public_subnet_ids      = local.network.public_subnet_id_list
+  private_subnet_ids     = local.network.private_subnet_id_list
+  cluster_role_arn       = local.iam.cluster-role-arn
+  node_role_arn          = local.iam.node-mgr-arn
+  devops_admin_arn       = local.iam.DevOpsAdminSre-arn
+  access_entries         = merge(local.iam.access-entries-map, {
                                   "github_actions" = {
-                                     principal_arn     = local.github_actions_arn
+                                     principal_arn     = local.iam.github-actions-arn
                                      policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
                                     },
                                     "devops_admin" = {
-                                      principal_arn = local.DevOpsAdminSre_arn
+                                      principal_arn = local.iam.DevOpsAdminSre-arn
                                       policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
                                     }
                               })
@@ -108,54 +99,54 @@ module "eph_cluster" {
 module "eks_security_groups" {
   depends_on            = [ module.eph_cluster ]
   source                = "../../../modules/network/eks/eks-security-groups"
-  vpc_id                = local.vpc_id
-  clustername           = local.clustername
+  vpc_id                = local.network.vpc_id
+  clustername           = local.cluster.cluster_name
 }
 
 module "k8_auth" {
   depends_on = [ module.iam, module.eph_cluster ]
   source           = "../../../modules/security/auth"
-  clustername      = local.clustername
-  noderolearn      = local.node_role_arn
-  clusteradminrole = local.cluster_role_arn
-  DevOpsAdminSre   = local.DevOpsAdminSre_arn
-  techlead         = local.techlead_arn
+  clustername      = local.cluster.cluster_name
+  noderolearn      = local.iam.node-mgr-arn
+  clusteradminrole = local.iam.cluster-role-arn
+  DevOpsAdminSre   = local.iam.DevOpsAdminSre-arn
+  techlead         = local.iam.techlead-arn
   hosturl          = module.eph_cluster.outputs.cluster_endpoint
   cluster_cert     = module.eph_cluster.outputs.cluster_cert
-  region           = local.region
+  region           = var.region
 }
 
 module "vpc_cni" {
   depends_on  = [ module.eph_cluster, module.eks_security_groups ]
   source      = "../../../modules/compute/eks/addons/vpc-cni"
-  clustername = local.clustername
-  rolearn     = local.node_role_arn
+  clustername = local.cluster.cluster_name
+  rolearn     = local.iam.node-mgr-arn
 }
 
 module "kube_proxy" {
   depends_on = [ module.eph_cluster, module.vpc_cni ]
   source = "../../../modules/compute/eks/addons/kube_proxy"
-  clustername = local.clustername
+  clustername = local.cluster.cluster_name
 }
 
 module "oidc_auth" {
   depends_on = [ module.eph_cluster, module.vpc_cni, module.kube_proxy ]
   source = "../../../modules/compute/eks/addons/oidc"
-  clustername = local.clustername
+  clustername = local.cluster.cluster_name
 }
 
 module "eph_nodes" {
   depends_on = [ module.eph_cluster, module.oidc_auth ]
   source                       = "../../../modules/compute/eks/nodegroups"
-  node_group_mgr_arn           = local.node_role_arn
-  nodegroupname                = "${local.clustername}-nodegroup"
-  clustername                  = local.clustername
+  node_group_mgr_arn           = local.iam.node-mgr-arn
+  nodegroupname                = "${local.cluster.cluster_name}-nodegroup"
+  clustername                  = local.cluster.cluster_name
   instancetype                 = var.instancetype
-  nodegroup_pvt_subnet_id_list = var.createvpc ? local.nodegroup_subnet_id_list : []
+  nodegroup_pvt_subnet_id_list = var.createvpc ? local.network.private_subnet_id_list : []
 }
 
 module "coredns" {
   depends_on = [module.eph_cluster, module.eph_nodes, module.oidc_auth ]
   source = "../../../modules/compute/eks/addons/coredns"
-  clustername = local.clustername
+  clustername = local.cluster.cluster_name
 }
