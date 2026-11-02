@@ -61,32 +61,27 @@ jobs:
           PAYLOAD=$(printf '%s' '${{ tojson(github.event.client_payload.config) }}')
           echo "Current Payload: $PAYLOAD"
 
-          # ── Loop over all top-level scalar fields dynamically ──────────────────
-          while IFS='=' read -r key value; do
-            echo "${key}=${value}" >> "$GITHUB_OUTPUT"
-          done < <(
-            echo "$PAYLOAD" | jq -r '
-              to_entries[]
-              | select(.key != "network")
-              | select(.value | type == "string")
-              | "\(.key)=\(.value)"
-            '
-          )
-          # ── Network block: special split logic per subnet role ──────────────────
           echo "$PAYLOAD" | jq -r '
-            .network | to_entries[] |
-            if   .key == "eks"  then
-              "public_subnet_cidr="  + (.value[:2]  | tojson),
-              "private_subnet_cidr=" + (.value[2:4] | tojson)
-            elif .key == "db"   then "rds_subnet_cidrs="       + (.value | tojson)
-            elif .key == "node" then "nodegroup_subnet_cidrs=" + (.value | tojson)
-            else                     "\(.key)="                + (.value | tojson)
-            end
-          ' >> "$GITHUB_OUTPUT"
-          cat $GITHUB_OUTPUT
+          # ── Top-level scalar (string) fields ──────────────────────────────────
+          ( to_entries[]
+            | select(.key != "network")
+            | select(.value | type == "string")
+            | "\(.key)=\(.value)" ),
+
+          # ── Network block: only runs if .network is a non-empty object ────────
+          ( .network | objects | to_entries[]
+            | if   .key == "eks"  then
+               "public_subnet_cidr="  + (.value[:2]  | tojson),
+               "private_subnet_cidr=" + (.value[2:4] | tojson)
+              elif .key == "db"   then "rds_subnet_cidrs="       + (.value | tojson)
+              elif .key == "node" then "nodegroup_subnet_cidrs=" + (.value | tojson)
+              else                     "\(.key)="                + (.value | tojson)
+              end )
+            ' >> "$GITHUB_OUTPUT"
+            cat "$GITHUB_OUTPUT"
 
   # DEPLOY EPHEMERAL FOUNDATION
-  # Network, Iam, Cluster, Cluster Addons, Nodgroup, Security Groups, Certs etc
+  # Network, Iam, Cluster, Cluster Addons, Nodgroupe, Security Groups, Certs etc
 
   deploy-foundation:
     runs-on: ubuntu-latest
