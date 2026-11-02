@@ -23,7 +23,7 @@ provider "aws" {
 }
 
 data "aws_eks_cluster_auth" "eph_cluster" {
-  name = module.eph_cluster.cluster_name
+  name = var.clustername
 }
 
 provider "kubernetes" {
@@ -33,7 +33,7 @@ provider "kubernetes" {
    exec {
     api_version = "client.authentication.k8s.io/v1beta1"
     command     = "aws"
-    args        = ["eks", "get-token", "--cluster-name", module.eph_cluster.cluster_name, "--region", var.region]
+    args        = ["eks", "get-token", "--cluster-name", var.clustername, "--region", var.region]
   }
 }
 
@@ -47,7 +47,7 @@ provider "helm" {
       command     = "aws"
       args = [
         "eks", "get-token",
-        "--cluster-name", module.eph_cluster.cluster_name,
+        "--cluster-name", var.clustername,
         "--region",       var.region
       ]
     }
@@ -72,6 +72,7 @@ locals {
   vpc_id = module.network.vpc_id
   public_subnet_id_list = module.network.public_subnet_id_list
   private_subnet_id_list = module.network.private_subnet_id_list
+  nodegroup_subnet_id_list = module.network.nodegroup_subnet_id_list
   clustername = var.clustername
   region = var.region
   cluster_role_arn = module.iam.cluster-role-arn
@@ -86,9 +87,9 @@ module "eph_cluster" {
   source                 = "../../../modules/compute/eks/cluster"
   clustername            = local.clustername
   region                 = local.region
-  vpcId                  = local.network.vpc_id
-  public_subnet_ids      = local.network.public_subnet_id_list
-  private_subnet_ids     = local.network.private_subnet_id_list
+  vpcId                  = local.vpc_id
+  public_subnet_ids      = local.public_subnet_id_list
+  private_subnet_ids     = local.private_subnet_id_list
   cluster_role_arn       = local.cluster_role_arn
   node_role_arn          = local.node_role_arn
   devops_admin_arn       = local.DevOpsAdminSre_arn
@@ -107,7 +108,7 @@ module "eph_cluster" {
 module "eks_security_groups" {
   depends_on            = [ module.eph_cluster ]
   source                = "../../../modules/network/eks/eks-security-groups"
-  vpc_id                = local.network.vpc_id
+  vpc_id                = local.vpc_id
   clustername           = local.clustername
 }
 
@@ -150,7 +151,7 @@ module "eph_nodes" {
   nodegroupname                = "${local.clustername}-nodegroup"
   clustername                  = local.clustername
   instancetype                 = var.instancetype
-  nodegroup_pvt_subnet_id_list = var.createvpc ? module.network.nodegroup_subnet_id_list : []
+  nodegroup_pvt_subnet_id_list = var.createvpc ? local.nodegroup_subnet_id_list : []
 }
 
 module "coredns" {
