@@ -7,24 +7,31 @@ terraform {
   }
 }
 
-data "cloudflare_zone" "main" {
-  name = var.root_domain
+locals {
+  env_domain = var.environment == "Prod" ? var.apexdomain : "${var.environment}.${var.apexdomain}"
+  env_names  = toset(local.env_domain, "*.${local.env_domain}")
 }
 
-resource "cloudflare_dns_record" "main" {
-  for_each = var.persistent_domains
+data "cloudflare_zone" "main" {
+  name = var.apexdomain   
+}
 
-  zone_id = cloudflare_zone.main.id
-  name    = each.value
+resource "cloudflare_dns_record" "apex" {
+  count   = var.manage_apex ? 1 : 0
+
+  zone_id = data.cloudflare_zone.main.id
+  name    = var.apexdomain
   type    = "CNAME"
-  content = var.aws_alb_dns 
+  content = var.alb_dns
   ttl     = 300
 }
 
 resource "cloudflare_dns_record" "wildcard" {
+  for_each = local.env_names
+
   zone_id = data.cloudflare_zone.main.id
-  name    = "*.ephemeral.salientapps.com"
+  name    = each.value
   type    = "CNAME"
-  content = var.cluster_alb_dns
+  content = var.alb_dns
   ttl     = 300
 }
