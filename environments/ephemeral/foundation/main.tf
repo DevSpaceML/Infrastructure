@@ -139,7 +139,7 @@ module "oidc_auth" {
   clustername = module.cluster.cluster_name
 }
 
-module "eph_nodes" {
+module "nodes" {
   depends_on = [ module.cluster, module.oidc_auth ]
   source                       = "../../../modules/compute/eks/nodegroups"
   node_group_mgr_arn           = module.iam.node_manager_role_arn
@@ -150,7 +150,7 @@ module "eph_nodes" {
 }
 
 module "coredns" {
-  depends_on = [module.cluster, module.eph_nodes, module.oidc_auth ]
+  depends_on = [module.cluster, module.nodes, module.oidc_auth ]
   source = "../../../modules/compute/eks/addons/coredns"
   clustername = module.cluster.cluster_name
 }
