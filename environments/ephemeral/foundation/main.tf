@@ -28,7 +28,7 @@ data "aws_eks_cluster_auth" "eph_cluster" {
 
 provider "kubernetes" {
    host = module.cluster.cluster_endpoint
-   cluster_ca_certificate = module.cluster.cluster_certificate
+   cluster_ca_certificate = module.cluster.cluster_certificateificate
 
    exec {
     api_version = "client.authentication.k8s.io/v1beta1"
@@ -40,7 +40,7 @@ provider "kubernetes" {
 provider "helm" {
   kubernetes = {
     host                   = module.cluster.cluster_endpoint
-    cluster_ca_certificate = module.cluster.cluster_certificate
+    cluster_ca_certificate = module.cluster.cluster_certificateificate
 
     exec = {
       api_version = "client.authentication.k8s.io/v1beta1"
@@ -107,10 +107,10 @@ module "k8_auth" {
   clustername      = module.cluster.cluster_name
   noderolearn      = module.iam.node_manager_role_arn
   clusteradminrole = module.iam.cluster_role_arn
-  DevOpsAdminSre   = module.iam.devops_admin_role_arn
-  techlead         = module.iam.techlead_role_arn
+  DevOpsAdminSre   = module.iam.DevOps-SRE-Admin
+  techlead         = module.iam.techlead_developer_arn
   hosturl          = module.cluster.cluster_endpoint
-  cluster_cert     = module.cluster.cluster_cert
+  cluster_cert     = module.cluster.cluster_certificate
   region           = var.region
 }
 
