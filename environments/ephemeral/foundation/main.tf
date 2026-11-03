@@ -140,7 +140,7 @@ module "nodes" {
   nodegroupname                = "${module.cluster.cluster_name}-nodegroup"
   clustername                  = module.cluster.cluster_name
   instancetype                 = var.instancetype
-  nodegroup_pvt_subnet_id_list = var.createvpc ? module.network.private_subnet_id_list : []
+  nodegroup_pvt_subnet_id_list = module.network.nodegroup_pvt_subnet_id_list
 }
 
 module "coredns" {
