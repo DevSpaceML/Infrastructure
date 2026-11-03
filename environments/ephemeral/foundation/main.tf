@@ -70,12 +70,6 @@ module "iam" {
   source = "../../../modules/security/iam/eks"
 }
 
-locals {
-  network = data.terraform_remote_state.network.outputs
-  cluster = data.terraform_remote_state.cluster.outputs
-  iam     = data.terraform_remote_state.iam.outputs
-}
-
 module "cluster" {
   depends_on = [ module.network, module.iam ]
 
