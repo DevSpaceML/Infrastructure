@@ -27,8 +27,8 @@ data "aws_eks_cluster_auth" "eph_cluster" {
 }
 
 provider "kubernetes" {
-   host = module.eph_cluster.cluster_endpoint
-   cluster_ca_certificate = module.eph_cluster.cluster_certificate
+   host = module.cluster.cluster_endpoint
+   cluster_ca_certificate = module.cluster.cluster_certificate
 
    exec {
     api_version = "client.authentication.k8s.io/v1beta1"
@@ -39,8 +39,8 @@ provider "kubernetes" {
 
 provider "helm" {
   kubernetes = {
-    host                   = module.eph_cluster.cluster_endpoint
-    cluster_ca_certificate = module.eph_cluster.cluster_certificate
+    host                   = module.cluster.cluster_endpoint
+    cluster_ca_certificate = module.cluster.cluster_certificate
 
     exec = {
       api_version = "client.authentication.k8s.io/v1beta1"
@@ -81,14 +81,14 @@ module "cluster" {
   private_subnet_ids     = module.network.private_subnet_id_list
   cluster_role_arn       = module.iam.cluster_role_arn
   node_role_arn          = module.iam.node_manager_role_arn
-  devops_admin_arn       = module.iam.devops_admin_role_arn
-  access_entries         = merge(module.iam.access-entries-map, {
+  devops_admin_arn       = module.iam.DevOps-SRE-Admin
+  access_entries         = merge(module.iam.access_entries, {
                                   "github_actions" = {
                                      principal_arn     = module.iam.github_actions_role_arn
                                      policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
                                     },
                                     "devops_admin" = {
-                                      principal_arn = module.iam.devops_admin_role_arn
+                                      principal_arn = module.iam.DevOps-SRE-Admin
                                       policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
                                     }
                               })
