@@ -79,16 +79,16 @@ module "cluster" {
   vpcId                  = module.network.vpc_id
   public_subnet_ids      = module.network.public_subnet_id_list
   private_subnet_ids     = module.network.private_subnet_id_list
-  cluster_role_arn       = module.iam.cluster-role-arn
-  node_role_arn          = module.iam.node-mgr-arn
-  devops_admin_arn       = module.iam.DevOpsAdminSre-arn
+  cluster_role_arn       = module.iam.cluster_role_arn
+  node_role_arn          = module.iam.node_manager_role_arn
+  devops_admin_arn       = module.iam.devops_admin_role_arn
   access_entries         = merge(module.iam.access-entries-map, {
                                   "github_actions" = {
-                                     principal_arn     = module.iam.github-actions-arn
+                                     principal_arn     = module.iam.github_actions_role_arn
                                      policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
                                     },
                                     "devops_admin" = {
-                                      principal_arn = module.iam.DevOpsAdminSre-arn
+                                      principal_arn = module.iam.devops_admin_role_arn
                                       policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
                                     }
                               })
@@ -105,10 +105,10 @@ module "k8_auth" {
   depends_on = [ module.iam, module.cluster ]
   source           = "../../../modules/security/auth"
   clustername      = module.cluster.cluster_name
-  noderolearn      = module.iam.node-mgr-arn
-  clusteradminrole = module.iam.cluster-role-arn
-  DevOpsAdminSre   = module.iam.DevOpsAdminSre-arn
-  techlead         = module.iam.techlead-arn
+  noderolearn      = module.iam.node_manager_role_arn
+  clusteradminrole = module.iam.cluster_role_arn
+  DevOpsAdminSre   = module.iam.devops_admin_role_arn
+  techlead         = module.iam.techlead_role_arn
   hosturl          = module.cluster.cluster_endpoint
   cluster_cert     = module.cluster.cluster_cert
   region           = var.region
@@ -118,7 +118,7 @@ module "vpc_cni" {
   depends_on  = [ module.cluster, module.eks_security_groups ]
   source      = "../../../modules/compute/eks/addons/vpc-cni"
   clustername = module.cluster.cluster_name
-  rolearn     = module.iam.node-mgr-arn
+  rolearn     = module.iam.node_manager_role_arn
 }
 
 module "kube_proxy" {
