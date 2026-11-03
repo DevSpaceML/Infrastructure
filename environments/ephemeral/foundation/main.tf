@@ -81,14 +81,14 @@ module "cluster" {
   private_subnet_ids     = module.network.private_subnet_id_list
   cluster_role_arn       = module.iam.cluster_role_arn
   node_role_arn          = module.iam.node_manager_role_arn
-  devops_admin_arn       = module.iam.DevOps-SRE-Admin
+  devops_admin_arn       = module.iam.devops_admin_arn
   access_entries         = merge(module.iam.access_entries, {
                                   "github_actions" = {
                                      principal_arn     = module.iam.github_actions_role_arn
                                      policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
                                     },
                                     "devops_admin" = {
-                                      principal_arn = module.iam.DevOps-SRE-Admin
+                                      principal_arn = module.iam.devops_admin_arn
                                       policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
                                     }
                               })
