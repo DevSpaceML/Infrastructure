@@ -107,7 +107,7 @@ module "k8_auth" {
   clustername      = module.cluster.cluster_name
   noderolearn      = module.iam.node_manager_role_arn
   clusteradminrole = module.iam.cluster_role_arn
-  DevOpsAdminSre   = module.iam.DevOps-SRE-Admin
+  DevOpsAdminSre   = module.iam.devops_admin_arn
   techlead         = module.iam.techlead_developer_arn
   hosturl          = module.cluster.cluster_endpoint
   cluster_cert     = module.cluster.cluster_certificate
