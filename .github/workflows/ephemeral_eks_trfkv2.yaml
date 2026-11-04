@@ -284,7 +284,7 @@ jobs:
     outputs:
       target_group_arn: ${{ steps.app-routing.outputs.target_group_arn }}
       ingress_host: ${{ steps.app-routing.outputs.ingress_host }}
-    needs: [configure-variables, deploy-foundation, deploy-alb]
+    needs: [configure-variables, deploy-foundation, deploy-alb, install-lbc]
     if: |
       always() && 
       needs.configure-variables.result == 'success' && 
