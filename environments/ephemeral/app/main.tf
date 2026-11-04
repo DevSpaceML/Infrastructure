@@ -39,6 +39,3 @@ module "ephmrl_routing" {
   clustername          = local.cluster.cluster_name
   alb_securitygroup_id = local.cluster.alb_sec_group_id
 }
-
-
-
