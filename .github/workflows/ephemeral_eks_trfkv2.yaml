@@ -65,7 +65,7 @@ jobs:
           # ── Top-level scalar (string) fields ──────────────────────────────────
           ( to_entries[]
             | select(.key != "network")
-            | select(.value | type == "string")
+            | select(.value | type == "string" or type == "boolean" or type == "number")
             | "\(.key)=\(.value)" ),
 
           # ── Network block: only runs if .network is a non-empty object ────────
