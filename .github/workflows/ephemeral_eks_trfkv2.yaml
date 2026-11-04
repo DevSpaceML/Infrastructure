@@ -168,6 +168,7 @@ jobs:
       clustername: ${{ needs.configure-variables.outputs.clustername }}
       TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
       TF_VAR_vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
       - name: checkout-code
         uses: actions/checkout@v4
@@ -235,7 +236,6 @@ jobs:
       TF_VAR_vpc_id: ${{ needs.configure-variables.outputs.vpc_id }}
       Ctrlr_Role_Arn: ${{ needs.deploy-foundation.outputs.ctrlr_role_arn }}
       k8_svc_acc: ${{ needs.deploy-foundation.outputs.k8_svc_acc }}
-
     steps:  
       - name: checkout-code
         uses: actions/checkout@v4
@@ -435,7 +435,6 @@ jobs:
       HELM_CHART_PATH: "./helm-charts/gem-app/dev/ephmrl"
       HELM_NAMESPACE: "ns-${{ needs.configure-variables.outputs.projectname }}"
       APP_VERSION: ${{ needs.configure-variables.outputs.appversion }}
-
     steps:  
       - name: Checkout Helm Repository
         uses: actions/checkout@v4
