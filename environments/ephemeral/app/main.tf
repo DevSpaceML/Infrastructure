@@ -21,14 +21,16 @@ locals {
 
 module "cloudflare_dns" {
   source = "../../../modules/dns/cloudflare-wildcard"
+
   apexdomain        = var.apexdomain
   environment       = var.environment
-  alb_dns           = var.alb_dns_name
+  alb_dns           = local.cluster.alb_dns_name
   manage_apex       = var.manage_apex
 }
 
 module "ephmrl_routing" {
   source               = "../../../modules/alb/dev/routing/shared-edge"
+
   alb_arn              = local.cluster.alb_arn
   alb_name             = local.cluster.alb_name
   certificate_arn      = local.cluster.acm_cert_arn

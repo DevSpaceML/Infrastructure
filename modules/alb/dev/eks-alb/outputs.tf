@@ -5,3 +5,7 @@ output "alb_arn" {
 output "alb_name" {
   value = aws_lb.k8_shared.name
 }
+
+output "alb_dns_name" {
+  value = aws_lb.k8_shared.dns_name
+}

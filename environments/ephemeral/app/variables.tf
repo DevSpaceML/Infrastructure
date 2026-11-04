@@ -1,6 +1,7 @@
 variable "apexdomain" {
   description = "apex domain name"
-  type        = string 
+  type        = string
+  default     = "salientapps.com"
 }
 
 variable "alb_dns_name" {
