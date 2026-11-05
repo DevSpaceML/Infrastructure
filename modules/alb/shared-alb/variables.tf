@@ -8,3 +8,9 @@ variable "alb_securitygroup_id" {
   description = "ID of the security group for the ALB"
   type = string
 }
+
+variable "environment" {
+  description = "Name of the ALB"
+  type = string
+  default = "dev"
+}
