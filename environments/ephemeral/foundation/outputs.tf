@@ -3,15 +3,19 @@ output "cluster_name" {
 }
 
 output "cluster_endpoint" {
-    value  = module.eks_cluster.cluster_endpoint
+    value  = module.cluster.cluster_endpoint
 }
 
-output "private_subnet_ids" {
-    value  = module.network.private_subnet_ids
+output "eks_security_group_id" {
+    value  = module.network.eks_security_group_id
 }
 
-output "public_subnet_ids" {
-    value  = module.network.public_subnet_ids
+output "private_subnet_id_list" {
+    value  = module.network.private_subnet_id_list
+}
+
+output "public_subnet_id_list" {
+    value  = module.network.public_subnet_id_list
 }
 
 output "nodegroup_pvt_subnet_id_list" {
@@ -20,10 +24,6 @@ output "nodegroup_pvt_subnet_id_list" {
 
 output "vpc_id" {
     value  = module.network.vpc_id
-}
-
-output "alb_securitygroup_id" {
-    value  = module.cluster.alb_securitygroup_id
 }
 
 output "k8_svc_acc" {
