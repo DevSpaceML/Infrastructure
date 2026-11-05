@@ -14,7 +14,7 @@ terraform {
 provider "cloudflare" {}
 
 module "shared-k8-alb" {
-  source               = "../../../modules/alb/shared-alb"
+  source               = "../../../modules/alb/shared-k8-alb"
   alb_securitygroup_id = data.terraform_remote_state.cluster.outputs.alb_securitygroup_id
 }
 
