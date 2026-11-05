@@ -105,7 +105,7 @@ resource "aws_lb_listener_rule" "slfsrv-listener-rule" {
 
 resource "cloudflare_dns_record" "app" {
   zone_id = data.cloudflare_zone.this.zone_id
-  name    = "dev-${var.domain_name}"
+  name    = "${var.domain_name}"
   type    = "CNAME"
   content = aws_lb.dev_alb.dns_name
   proxied = true
