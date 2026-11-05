@@ -223,7 +223,7 @@ jobs:
         working-directory:  ./environments/alb/shared
         run: |
           terraform apply -auto-approve alb_tfplan          
-  
+
   #INSTALL LBC CONTROLLER WITH HELM
   install-lbc:
     name: install-lbc
