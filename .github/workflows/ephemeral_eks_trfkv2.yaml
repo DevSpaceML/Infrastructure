@@ -203,24 +203,24 @@ jobs:
           fi      
       
       - name: Terraform Init
-        working-directory: ./environments/dev/alb/eks-shared
+        working-directory: ./environments/alb/shared
         run: |
           terraform init -upgrade
       
       - name: Terraform Validate
-        working-directory: ./environments/dev/alb/eks-shared
+        working-directory: ./environments/alb/shared
         run: |
           terraform validate
 
       - name: Terraform Plan
-        working-directory:  ./environments/dev/alb/eks-shared
+        working-directory:  ./environments/alb/shared
         run: |
           terraform plan -out=alb_tfplan
           terraform show -json alb_tfplan > alb_tfplan.json
           cat alb_tfplan.json
       
       - name: Terraform Apply
-        working-directory:  ./environments/dev/alb/eks-shared
+        working-directory:  ./environments/alb/shared
         run: |
           terraform apply -auto-approve alb_tfplan          
   
