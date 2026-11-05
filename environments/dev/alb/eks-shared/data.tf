@@ -24,3 +24,12 @@ data "terraform_remote_state" "dev_cluster" {
     region = "us-east-1"
   }
 }
+
+data "terraform_remote_state" "ephemeral_cluster" {
+  backend = "s3"
+  config = {
+    bucket = "dev-tf-state-488347380548"
+    key    = "dev/compute/ephemeral/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
