@@ -16,7 +16,7 @@ provider "cloudflare" {}
 
 locals {
   cluster = data.terraform_remote_state.cluster.outputs
-  network = data.terraform_remote_state.network.outputs
+  alb     = data.terraform_remote_state.alb.outputs
 }
 
 module "cloudflare_dns" {
@@ -31,10 +31,10 @@ module "cloudflare_dns" {
 module "ephmrl_routing" {
   source               = "../../../modules/alb/dev/routing/shared-edge"
 
-  alb_arn              = local.cluster.alb_arn
-  alb_name             = local.cluster.alb_name
-  certificate_arn      = local.cluster.acm_cert_arn
-  vpc_id               = local.network.vpc_id
+  alb_arn              = local.alb.alb_arn
+  alb_dns_name         = local.alb.alb_dns_name
+  certificate_arn      = local.alb.acm_cert_arn
+  vpc_id               = local.cluster.vpc_id
   projectname          = local.cluster.projectname
   clustername          = local.cluster.cluster_name
   alb_securitygroup_id = local.cluster.alb_securitygroup_id

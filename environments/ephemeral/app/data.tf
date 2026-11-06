@@ -16,3 +16,12 @@ data "terraform_remote_state" "network" {
     region = "us-east-1"
   }
 }
+
+data "terraform_remote_state" "alb" {
+  backend = "s3"
+  config = {
+    bucket = "dev-tf-state-488347380548"
+    key = "dev/alb/eks-shared-alb/terraform.tfstate"
+    region = "us-east-1"
+  }
+}

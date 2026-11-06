@@ -49,7 +49,7 @@ resource "aws_lb_listener" "https" {
   port              = 443
   protocol          = "HTTPS"
   ssl_policy        = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-  certificate_arn   = var.certificate_arn        # per-env ACM cert
+  certificate_arn   = var.certificate_arn 
 
   default_action {
     type = "fixed-response"
@@ -62,7 +62,6 @@ resource "aws_lb_listener" "https" {
 }
 
 resource "aws_lb_target_group" "traefik" {
-  count       = var.create_vpc ? 1 : 0
   name        = local.tg_name
   port        = var.traefik_port
   protocol    = "HTTP"
@@ -93,7 +92,6 @@ resource "aws_lb_target_group" "traefik" {
 }
 
 resource "aws_lb_listener_rule" "project" {
-  count = var.create_vpc ? 1 : 0
   listener_arn = aws_lb_listener.https.arn
   priority     = 100
 
