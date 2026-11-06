@@ -24,15 +24,16 @@ module "cloudflare_dns" {
 
   apexdomain        = var.apexdomain
   environment       = var.environment
-  alb_dns           = local.cluster.alb_dns_name
+  alb_dns           = local.alb.alb_dns_name
   manage_apex       = var.manage_apex
 }
 
 module "ephmrl_routing" {
-  source               = "../../../modules/alb/dev/routing/shared-edge"
-
+  source               = "../../../modules/alb/routing/shared-edge"
+  environment          = var.environment
+  appdomain            = var.apexdomain
+  alb_name             = local.alb.alb_name
   alb_arn              = local.alb.alb_arn
-  alb_dns_name         = local.alb.alb_dns_name
   certificate_arn      = local.alb.acm_cert_arn
   vpc_id               = local.cluster.vpc_id
   projectname          = local.cluster.projectname

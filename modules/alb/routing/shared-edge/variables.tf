@@ -22,8 +22,8 @@ variable "appdomain" {
   default = "salientapps.com"
 }
 
-variable "create_vpc" {
-  description = "Dedicated vpc for cluster"
+variable "deploy_alb" {
+  description = "Whether to deploy the ALB"
   type = bool
   default = false
 }
