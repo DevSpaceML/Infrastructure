@@ -1,4 +1,3 @@
-
 variable "appdomain" {
   description = "domain cert applies to"
   type = string
@@ -8,7 +7,7 @@ variable "appdomain" {
 variable "subj_alt_names" {
   description = "subject alternative names for the cert"
   type = list(string)
-  default = []
+  default = ["*.dev.salientapps.com", "*.qa.salientapps.com", "*.stg.salientapps.com"]
 }
 
 variable "target" {

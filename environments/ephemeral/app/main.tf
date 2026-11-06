@@ -37,5 +37,5 @@ module "ephmrl_routing" {
   vpc_id               = local.network.vpc_id
   projectname          = local.cluster.projectname
   clustername          = local.cluster.cluster_name
-  alb_securitygroup_id = local.cluster.alb_sec_group_id
+  alb_securitygroup_id = local.cluster.alb_securitygroup_id
 }
