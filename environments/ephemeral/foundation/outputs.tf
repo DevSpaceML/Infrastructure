@@ -33,3 +33,7 @@ output "k8_svc_acc" {
 output "ctrlr_role_arn" {
     value  = module.oidc_auth.aws_iam_role_lb_controller_arn
 }
+
+output "alb_securitygroup_id" {
+    value  = module.eks_security_groups.alb_sg_id
+}
