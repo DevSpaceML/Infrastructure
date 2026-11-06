@@ -12,7 +12,7 @@ terraform {
 }
 
 data "aws_lb" "shared_alb" {
-  count = var.create_vpc ? 1 : 0
+  count = var.deploy_alb ? 1 : 0
   arn = var.alb_arn
 }
 
@@ -26,7 +26,7 @@ locals {
   label      = var.projinstance_id ? "${var.projinstance_id}-${var.environment}-${var.projectname}" : var.appdomain
   fqdn       = var.environment == "prod" ? var.appdomain : "${local.label}.${local.env_domain}"
   tg_name    = "tg-${substr(md5(local.fqdn), 0, 12)}"
-  alb_arn    = var.create_vpc ? data.aws_lb.shared_alb[0].arn : var.alb_arn
+  alb_arn    = var.deploy_alb ? data.aws_lb.shared_alb[0].arn : var.alb_arn
 }
 
 resource "aws_lb_listener" "http_redirect" {
@@ -97,7 +97,7 @@ resource "aws_lb_listener_rule" "project" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.traefik[0].arn
+    target_group_arn = aws_lb_target_group.traefik.arn
   }
 
   condition {

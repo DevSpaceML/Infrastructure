@@ -7,7 +7,6 @@ data "terraform_remote_state" "cluster" {
   }
 }
 
-
 data "terraform_remote_state" "network" {
   backend = "s3"
   config = {

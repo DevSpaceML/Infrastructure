@@ -7,7 +7,7 @@ variable "apexdomain" {
 variable "manage_apex" {
   description = "Whether to manage the apex domain DNS record"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "environment" {
