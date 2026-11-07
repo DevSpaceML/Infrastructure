@@ -16,11 +16,6 @@ data "aws_lb" "shared_alb" {
   arn = var.alb_arn
 }
 
-data "aws_lb_listener" "https" {
-  load_balancer_arn = var.alb_arn
-  port              = 443
-}
-
 locals {
   env_domain = var.environment == "prod" ? var.appdomain : "${var.environment}.${var.appdomain}"
   label      = var.projinstance_id ? "${var.projinstance_id}-${var.environment}-${var.projectname}" : var.appdomain

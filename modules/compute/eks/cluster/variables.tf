@@ -32,7 +32,7 @@ variable "namespace" {
 variable "projectname" {
 	description = "Project running on cluster"
 	type = string
-	default = "development project"
+  default = "gemapp"
 }
 
 variable "vpcId" {
