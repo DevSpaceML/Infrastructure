@@ -17,9 +17,12 @@ data "aws_lb" "shared_alb" {
 }
 
 locals {
-  env_domain = var.environment == "prod" ? var.appdomain : "${var.environment}.${var.appdomain}"
-  label      = var.projinstance_id ? "${var.projinstance_id}-${var.environment}-${var.projectname}" : var.appdomain
-  fqdn       = var.environment == "prod" ? var.appdomain : "${local.label}.${local.env_domain}"
+  is_prod = var.environment == "prod"
+  is_pr_instance = var.projinstance_id != null && var.projinstance_id != ""
+  env_domain = local.is_prod ? var.appdomain : "${var.environment}.${var.appdomain}"
+
+  label      = local.is_pr_instance ? "${var.projinstance_id}-${var.projectname}" : null
+  fqdn       = local.label == null ? local.env_domain : "${local.label}.${local.env_domain}"
   tg_name    = "tg-${substr(md5(local.fqdn), 0, 12)}"
   alb_arn    = var.deploy_alb ? data.aws_lb.shared_alb[0].arn : var.alb_arn
 }
@@ -81,7 +84,7 @@ resource "aws_lb_target_group" "traefik" {
   tags = {
     Name        = local.label
     Environment = var.environment
-    hostname     = local.fqdn
+    hostname     = local.label
   }
 
 }
