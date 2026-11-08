@@ -13,7 +13,7 @@ variable "projectname" {
 variable "projinstance_id" {
   description = "EKS project instance. e.g pull request id"
   type = string
-  default = ""
+  default = null
 }
 
 variable "appdomain" {
