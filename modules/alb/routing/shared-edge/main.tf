@@ -79,12 +79,16 @@ resource "aws_lb_target_group" "traefik" {
 
   lifecycle {
     create_before_destroy = true
+    precondition {
+      condition     = !local.is_pr_instance || contains(var.allowed_pr_envs, var.environment)
+      error_message = "PR instances (projinstance_id=${coalesce(var.projinstance_id, "")}) are only allowed in: ${join(", ", var.allowed_pr_envs)}. Got environment=${var.environment}."
+    }
   }
 
   tags = {
-    Name        = local.label
+    Name        = local.fqdn
     Environment = var.environment
-    hostname     = local.label
+    hostname     = local.fqdn
   }
 
 }
