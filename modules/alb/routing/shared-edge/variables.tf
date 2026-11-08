@@ -4,6 +4,12 @@ variable "environment" {
   default = ""
 }
 
+variable "allowed_pr_envs" {
+  description = "List of allowed environments for PR deployments"
+  type        = list(string)
+  default     = ["dev", "qa"]
+}
+
 variable "projectname" {
   description = "EKS project name"
   type = string
