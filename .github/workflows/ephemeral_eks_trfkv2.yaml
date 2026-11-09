@@ -413,7 +413,7 @@ jobs:
             --timeout 10m \
             --wait \
             --debug || {
-              echo "=== Helm failed — dumping pod logs ==="
+              echo "=== *** Helm failed — dumping pod logs *** ==="
               kubectl describe pod -n traefik -l app.kubernetes.io/name=traefik
               kubectl logs -n traefik -l app.kubernetes.io/name=traefik --previous 2>/dev/null || true
               exit 1
