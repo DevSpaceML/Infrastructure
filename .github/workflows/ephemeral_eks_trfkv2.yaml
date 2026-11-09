@@ -432,6 +432,7 @@ jobs:
       TF_VAR_image_repository: 488347380548.dkr.ecr.us-east-1.amazonaws.com/dev/gemapp
       HELM_RELEASE_NAME: ${{ needs.configure-variables.outputs.projectname }}
       INGRESS_HOST: ${{ needs.configure-routing.outputs.ingress_host }}
+      target_group_arn: ${{ needs.configure-routing.outputs.target_group_arn }}
       HELM_CHART_PATH: "./helm-charts/gem-app/dev/ephmrl"
       HELM_NAMESPACE: "ns-${{ needs.configure-variables.outputs.projectname }}"
       APP_VERSION: ${{ needs.configure-variables.outputs.appversion }}
@@ -446,7 +447,7 @@ jobs:
               role-session-name: GitHub-Actions-OIDC-Session
               aws-region: ${{ env.TF_VAR_region }}
               mask-aws-account-id: false
-      
+
       - name: Update kubeconfig
         run: |
           echo "Updating kubeconfig for cluster ${{ env.TF_VAR_clustername }} in environment ${{ env.ENVIRONMENT }}"
@@ -468,7 +469,7 @@ jobs:
         run: |
           echo "Creating namespace ${{ env.HELM_NAMESPACE }} for app deployment"
           kubectl create namespace ${{ env.HELM_NAMESPACE }} || echo "Namespace ${{ env.HELM_NAMESPACE }} already exists"
-          
+
       - name: Get image tag
         id: get_image_tag
         run: |
@@ -484,9 +485,10 @@ jobs:
             --namespace ${{ env.HELM_NAMESPACE }} \
             --values ${{ env.HELM_CHART_PATH }}/values.yaml \
             --set image.repository=${{ env.TF_VAR_image_repository }} \
-            --set ingressRoute.host=${{ env.INGRESS_HOST }} \
-            --set app.name=${{ env.HELM_RELEASE_NAME }} \
             --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
+            --set ingressRoute.host=${{ env.INGRESS_HOST }} \
+            --set targetGroupBinding.targetGroupArn=${{ env.target_group_arn }} \
+            --set app.name=${{ env.HELM_RELEASE_NAME }} \
             --set environment=${{ env.ENVIRONMENT }} \
             --debug 2>&1 | tee /tmp/helm-template-output.txt
 
@@ -503,9 +505,10 @@ jobs:
             --namespace ${{ env.HELM_NAMESPACE }} --create-namespace \
             --values ${{ env.HELM_CHART_PATH }}/values.yaml \
             --set image.repository=${{ env.TF_VAR_image_repository }} \
-            --set ingressRoute.host=${{ env.INGRESS_HOST }} \
-            --set app.name=${{ env.HELM_RELEASE_NAME }} \
             --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
+            --set ingressRoute.host=${{ env.INGRESS_HOST }} \
+            --set targetGroupBinding.targetGroupArn=${{ env.target_group_arn }} \
+            --set app.name=${{ env.HELM_RELEASE_NAME }} \
             --set environment=${{ env.ENVIRONMENT }} \
             --timeout 10m \
             --wait \

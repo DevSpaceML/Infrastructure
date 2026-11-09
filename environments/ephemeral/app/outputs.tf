@@ -1,3 +1,8 @@
+# routing
+output tgtgrp_arn {
+  value = module.ephmrl_routing.tgtgrp_arn
+}
 
-# routing 
-
+output "hostname" {
+  value = module.ephmrl_routing.hostname
+}
