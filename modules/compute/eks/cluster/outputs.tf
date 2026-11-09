@@ -18,7 +18,7 @@ output "cluster_certificate" {
 }
 
 output "projectname" {
-  value = "${var.environment}-${var.projectname}"
+  value = "${var.projectname}"
 }
 
 output "environment" {
