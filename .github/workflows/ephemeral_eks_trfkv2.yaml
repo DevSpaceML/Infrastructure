@@ -331,7 +331,7 @@ jobs:
       - name: Terraform Init
         working-directory: ./environments/ephemeral/app
         run: |
-          terraform init -upgrade
+          terraform init 
       
       - name: Terraform Validate
         working-directory: ./environments/ephemeral/app
