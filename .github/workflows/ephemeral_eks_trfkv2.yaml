@@ -413,7 +413,6 @@ jobs:
             --set "serviceAccountAnnotations.eks\.amazonaws\.com/role-arn=${{ env.Ctrlr_Role_Arn }}" \
             --set-string tgb.targetGroupArn=${{ env.target_group_arn }} \
             --set-string tgb.securityGroupId=${{ env.security_group_id }} \
-            --set ingressRoute.host=${{ env.INGRESS_HOST }} \
             --timeout 10m \
             --wait \
             --debug || {
@@ -511,9 +510,8 @@ jobs:
             --values ${{ env.HELM_CHART_PATH }}/values.yaml \
             --set image.repository=${{ env.TF_VAR_image_repository }} \
             --set image.tag=${{ steps.get_image_tag.outputs.image_tag }} \
-            --set ingressRoute.host=${{ env.INGRESS_HOST }} \
-            --set targetGroupBinding.targetGroupArn=${{ env.target_group_arn }} \
             --set app.name=${{ env.HELM_RELEASE_NAME }} \
+            --set ingressRoute.host=${{ env.INGRESS_HOST }} \
             --set environment=${{ env.ENVIRONMENT }} \
             --timeout 10m \
             --wait \
