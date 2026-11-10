@@ -39,7 +39,7 @@ extraObjects:
             - { port: 8080, protocol: TCP } 
 providers:
   kubernetesIngress:
-    enabled: true
+    enabled: false
   kubernetesCRD:
     enabled: true
 logs:
