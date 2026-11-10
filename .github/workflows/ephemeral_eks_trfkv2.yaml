@@ -101,7 +101,7 @@ jobs:
     outputs:
       ctrlr_role_arn: ${{ steps.export.outputs.ctrlr_role_arn }}
       k8_svc_acc: ${{ steps.export.outputs.k8_svc_acc }}  
-      security_group_id: ${{ steps.export.outputs.security_group_id }}
+      alb_securitygroup_id: ${{ steps.export.outputs.alb_securitygroup_id }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -152,7 +152,7 @@ jobs:
         run: |
             echo "ctrlr_role_arn=$(terraform output -raw ctrlr_role_arn)" >> "$GITHUB_OUTPUT"
             echo "k8_svc_acc=$(terraform output -raw k8_svc_acc)" >> "$GITHUB_OUTPUT"
-            echo "security_group_id=$(terraform output -raw security_group_id)" >> "$GITHUB_OUTPUT"
+            echo "alb_securitygroup_id=$(terraform output -raw alb_securitygroup_id)" >> "$GITHUB_OUTPUT"
 
   # Deploy ALB if necessary
   deploy-alb:
@@ -373,8 +373,8 @@ jobs:
       Ctrlr_Role_Arn: ${{ needs.deploy-foundation.outputs.ctrlr_role_arn }}
       INGRESS_HOST: ${{ needs.configure-routing.outputs.ingress_host }}
       target_group_arn: ${{ needs.configure-routing.outputs.target_group_arn }}
-      security_group_id: ${{ needs.deploy-foundation.outputs.security_group_id }}
-    steps:  
+      security_group_id: ${{ needs.deploy-foundation.outputs.alb_securitygroup_id }}
+    steps:
       - name: checkout-code
         uses: actions/checkout@v4
 
@@ -436,7 +436,6 @@ jobs:
       HELM_RELEASE_NAME: ${{ needs.configure-variables.outputs.projectname }}
       INGRESS_HOST: ${{ needs.configure-routing.outputs.ingress_host }}
       target_group_arn: ${{ needs.configure-routing.outputs.target_group_arn }}
-      security_group_id: ${{ needs.deploy-foundation.outputs.security_group_id }}
       HELM_CHART_PATH: "./helm-charts/gem-app/dev/ephmrl"
       HELM_NAMESPACE: "ns-${{ needs.configure-variables.outputs.projectname }}"
       APP_VERSION: ${{ needs.configure-variables.outputs.appversion }}
