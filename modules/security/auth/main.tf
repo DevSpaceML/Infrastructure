@@ -10,8 +10,38 @@ terraform {
   }
 }
 
+# Check deployment role access to the cluster
+resource "terraform_data" "verify_access" {
+  triggers_replace = {
+	clustername     = var.clustername
+	region          = var.region
+	deployment_role = var.deployment_role
+  }
+
+  provisioner "local-exec" {
+	interpreter = ["/bin/bash", "-c"]
+	command     =  <<-EOT
+	KubeCfg=$(mktemp)
+	"aws eks update-kubeconfig --name ${var.clustername} --region ${var.region} --role-arn ${var.deployment_role} --kubeconfig $KubeCfg"
+    for i in $(seq 1 36); do
+	  if KUBECONFIG="$KubeCfg" kubectl aith can-i create role -n default | grep -q "yes" && \
+         KUBECONFIG="$KubeCfg" kubectl aith can-i create rolebindings -n default | grep -q "yes"; then
+		echo "Access verified to the cluster"
+		rm -f "$KubeCfg";exit 0
+	  else
+		echo "Waiting for access to the cluster..."
+		sleep 5
+	  fi
+	done
+	rm -f "$KubeCfg"; echo "access verification failed after 3 minutes"; exit 1
+	EOT
+  }
+
+}
+
 # ClusterRole and Binding
 resource "kubernetes_cluster_role_v1" "k8_cluster_role" {
+	depends_on = [ terraform_data.verify_access ]
 	metadata {
 	  name = "K8ClusterAdminRole"	  
 	}
@@ -46,6 +76,7 @@ resource "kubernetes_cluster_role_binding_v1" "k8_cluster_role_Binding" {
 
 # Developer Role and RoleBinding
 resource "kubernetes_role_v1" "Developer" {
+  depends_on = [ terraform_data.verify_access ]	
 
   metadata {
 	name = "app-developer"
@@ -104,6 +135,7 @@ resource "kubernetes_role_binding_v1" "Developer_Role_Binding" {
 
 # DevOps-SRE Role and RoleBinding
 resource "kubernetes_role_v1" "Devops-SRE" {
+  depends_on = [ terraform_data.verify_access ]
   metadata {
 	name = "DevopsSRE"
   }
@@ -167,6 +199,8 @@ resource "kubernetes_role_binding_v1" "DevOps_SRE_Role_Binding" {
 
 # Monitoring Role and RoleBinding
 resource "kubernetes_cluster_role_v1" "k8monitor" {
+  depends_on = [ terraform_data.verify_access ]
+
   metadata {
 	name = "k8_monitor"
   }

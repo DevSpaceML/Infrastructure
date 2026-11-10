@@ -1,5 +1,13 @@
+output "deployment_role_arn" {
+    value  = module.iam.deployment_role_arn
+}
+
 output "cluster_name" {
     value  = module.cluster.cluster_name
+}
+
+output "cluster_certificate" {
+    value  = module.cluster.cluster_certificate
 }
 
 output "projectname" {

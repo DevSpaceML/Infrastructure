@@ -102,9 +102,10 @@ module "eks_security_groups" {
 }
 
 module "k8_auth" {
-  depends_on = [ module.iam, module.cluster ]
+  depends_on = [ module.iam, module.cluster, module.eks_security_groups ]
   source           = "../../../modules/security/auth"
   clustername      = module.cluster.cluster_name
+  deployment_role  = module.iam.deployment_role_arn
   noderolearn      = module.iam.node_manager_role_arn
   clusteradminrole = module.iam.cluster_role_arn
   DevOpsAdminSre   = module.iam.devops_admin_arn

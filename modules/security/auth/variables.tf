@@ -18,6 +18,11 @@ variable "hosturl" {
   type = string
 }
 
+variable "deployment_role" {
+  description = "deployment role"
+  type        = string  
+}
+
 variable "noderolearn" {
   description = "eks node role"
   type        = string  
