@@ -6,8 +6,9 @@ app:
 image:
   repository: ~
   tag: ~
-targetGroupBinding:
+IngressRoute:
   enabled: true
-  targetGroupARN: ~
-  targetType: ip
-  securityGroupId: ~
+  entryPoints: [web]
+  host: ~
+  tls:
+    enabled: false

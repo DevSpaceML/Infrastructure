@@ -33,22 +33,16 @@ spec:
       port: {{ .Values.app.port | int }}
       targetPort: {{ .Values.app.targetPort | int }}
 ---
-apiVersion: elbv2.k8s.aws/v1beta1
-kind: TargetGroupBinding
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
 metadata:
-  name: {{ .Values.app.name }}
+  name: {{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
 spec:
-  serviceRef:
-    name: {{ .Release.Name }}-service
-    port: {{ .Values.app.port | int }}
-  targetGroupARN: {{ required "targetGroupBinding.targetGroupARN is required" .Values.targetGroupBinding.targetGroupArn | quote }}
-  targetType: ip
-  networking:
-    ingress:
-      - from:
-          - securityGroup:
-              groupID: {{required "targetGroupBinding.securityGroupId is required" .Values.targetGroupBinding.securityGroupId | quote }}
-        ports:
-          - protocol: TCP
-            port: {{ .Values.app.targetPort | int }}
+  entryPoints: [web]
+  routes:
+    - kind: Rule
+      match: Host(`{{ required "app.host is required" .Values.app.host }}`)
+      services:
+        - name: {{ .Release.Name }}-service
+          port: {{ .Values.app.port | int }}

@@ -1,41 +1,47 @@
 # TRAEFIK values.yaml
 deployment:
   replicas: 2
-
 resources:
   requests:
     cpu: 100m
     memory: 128Mi
   limits:
     memory: 256Mi
-
 service:
   type: ClusterIP
-
 ports:
   web:
+    forwardedHeaders:
+      trustedIPs: ["10.0.0.0/16"]
     port: 8000
     exposedPort: 80
   websecure:
     expose:
       default: false
-
+extraObjects:
+  - apiVersion: elbv2.k8s.aws/v1beta1
+    kind: TargetGroupBinding
+    metadata:
+      name: traefik
+      namespace: traefik
+    spec:
+      serviceRef:
+        name: traefik
+        port: web
+      targetGroupARN: '{{ required "tgb.targetGroupArn is required" .Values.tgb.targetGroupArn }}'  
+      targetType: ip
+      networking:
+        ingress:
+          - from:
+            securityGroupId: '{{ required "tgb.securityGroupId is required" .Values.tgb.securityGroupId }}'
+          - ports:
+            - { port: 8000, protocol: TCP }
+            - { port: 8080, protocol: TCP } 
 providers:
   kubernetesIngress:
     enabled: true
   kubernetesCRD:
     enabled: true
-
-ingressRoute:
-  enabled: true
-  entryPoints: [web]
-  host: project.salientapps.com
-  tls:
-    enabled: false
-
-additionalArguments:
-  - "--entryPoints.web.forwardedHeaders.trustedIPs=10.0.0.0/8"
-
 logs:
   general:
     level: INFO
