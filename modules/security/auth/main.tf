@@ -23,7 +23,7 @@ resource "terraform_data" "verify_access" {
 	command     =  <<-EOT
 	set -euo pipefail
 	KubeCfg=$(mktemp)
-	"aws eks update-kubeconfig --name ${var.clustername} --region ${var.region} --role-arn ${var.deployment_role} --kubeconfig $KubeCfg"
+	aws eks update-kubeconfig --name ${var.clustername} --region ${var.region}  --kubeconfig $KubeCfg
     for i in $(seq 1 36); do
 	  if KUBECONFIG="$KubeCfg" kubectl auth can-i create role -n default | grep -q "yes" && \
          KUBECONFIG="$KubeCfg" kubectl auth can-i create rolebindings -n default | grep -q "yes"; then
