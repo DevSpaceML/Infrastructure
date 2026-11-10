@@ -1,5 +1,5 @@
 output "deployment_role_arn" {
-    value  = module.iam.deployment_role_arn
+    value  = module.iam.github_actions_role_arn
 }
 
 output "cluster_name" {
