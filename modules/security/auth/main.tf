@@ -21,11 +21,12 @@ resource "terraform_data" "verify_access" {
   provisioner "local-exec" {
 	interpreter = ["/bin/bash", "-c"]
 	command     =  <<-EOT
+	set -euo pipefail
 	KubeCfg=$(mktemp)
 	"aws eks update-kubeconfig --name ${var.clustername} --region ${var.region} --role-arn ${var.deployment_role} --kubeconfig $KubeCfg"
     for i in $(seq 1 36); do
-	  if KUBECONFIG="$KubeCfg" kubectl aith can-i create role -n default | grep -q "yes" && \
-         KUBECONFIG="$KubeCfg" kubectl aith can-i create rolebindings -n default | grep -q "yes"; then
+	  if KUBECONFIG="$KubeCfg" kubectl auth can-i create role -n default | grep -q "yes" && \
+         KUBECONFIG="$KubeCfg" kubectl auth can-i create rolebindings -n default | grep -q "yes"; then
 		echo "Access verified to the cluster"
 		rm -f "$KubeCfg";exit 0
 	  else
