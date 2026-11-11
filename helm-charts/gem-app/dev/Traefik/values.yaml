@@ -12,7 +12,7 @@ service:
 ports:
   web:
     forwardedHeaders:
-      trustedIPs: ["10.0.0.0/16"]
+      trustedIPs: ["10.0.0.0/16", "172.31.0.0/16"]
     port: 8000
     exposedPort: 80
   websecure:
@@ -34,7 +34,7 @@ extraObjects:
         ingress:
           - from:
               - securityGroup: 
-                   groupID: '{{ required "tgb.securityGroupId is required" .Values.tgb.securityGroupId }}'
+                  groupID: '{{ required "tgb.securityGroupId is required" .Values.tgb.securityGroupId }}'
             ports:
               - port: 8000
                 protocol: TCP
