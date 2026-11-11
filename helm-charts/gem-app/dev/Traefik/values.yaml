@@ -33,10 +33,13 @@ extraObjects:
       networking:
         ingress:
           - from:
-            securityGroupId: '{{ required "tgb.securityGroupId is required" .Values.tgb.securityGroupId }}'
-          - ports:
-            - { port: 8000, protocol: TCP }
-            - { port: 8080, protocol: TCP } 
+              - securityGroup: 
+                   groupID: '{{ required "tgb.securityGroupId is required" .Values.tgb.securityGroupId }}'
+            ports:
+              - port: 8000
+                protocol: TCP
+              - port: 8080
+                protocol: TCP
 providers:
   kubernetesIngress:
     enabled: false
