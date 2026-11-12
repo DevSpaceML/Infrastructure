@@ -21,8 +21,8 @@ locals {
   is_pr_instance = var.projinstance_id != null && var.projinstance_id != ""
   env_domain = local.is_prod ? var.appdomain : "${var.environment}.${var.appdomain}"
 
-  label      = local.is_pr_instance ? "${var.projinstance_id}-${var.projectname}" : null
-  fqdn       = local.label == null ? local.env_domain : "${local.label}.${local.env_domain}"
+  label      = local.is_pr_instance ? "${var.projinstance_id}-${var.projectname}" : "${var.projectname}"
+  fqdn       = local.is_prod ? local.env_domain : "${local.label}.${local.env_domain}"
   tg_name    = "tg-${substr(md5(local.fqdn), 0, 12)}"
   alb_arn    = var.deploy_alb ? data.aws_lb.shared_alb[0].arn : var.alb_arn
 }
