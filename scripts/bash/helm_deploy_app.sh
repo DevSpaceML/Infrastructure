@@ -1,10 +1,11 @@
 #!/bin/bash
 
 # Gather output values
-rootdir="/opt/homebrew/var/deploy/infrastructure"
-cluster_dir="$rootdir/environments/dev/compute/eks_cluster"
-eks_rtng_dir="$rootdir/environments/dev/alb/eks-routing"
 
+rootdir="/opt/homebrew/var/deploy/infrastructure"
+cluster_dir="$rootdir/environments/ephemeral/foundation"
+eks_rtng_dir="$rootdir/environments/ephemeral/app"
+  
 echo "gathering outputs for variables >>>"
 
 get_img_tag()(
@@ -26,7 +27,7 @@ get_img_tag()(
 )
 
 clustername=$(terraform -chdir=$cluster_dir output -raw cluster_name | cut -d'=' -f2-)
-alb_sec_group_id=$(terraform -chdir=$cluster_dir output -raw alb_sec_group_id | cut -d'=' -f2-)
+alb_sec_group_id=$(terraform -chdir=$cluster_dir output -raw alb_security_group_id | cut -d'=' -f2-)
 target_group_arn=$(terraform -chdir=$eks_rtng_dir output -raw tgtgrp_arn | cut -d'=' -f2-)
 
 echo "cluster name: $clustername"
@@ -52,18 +53,17 @@ echo "app version: $appversion"
 # Update kube config and run preflight check
  aws eks update-kubeconfig --name $clustername --region $region
 
-      - name: Helm-Pre-flight-Check
-        run: |
-          echo "=== Helm template dry-run — checking for manifest errors ==="
-          helm template $helm_release_name $helm_chart_path \
-            --namespace $helm_namespace \
-            --values $helm_chart_path/values.yaml \
-            --set image.repository=$image_repository \
-            --set image.tag=$appversion \
-            --set targetGroupBinding.targetGroupArn="$target_group_arn" \
-            --set targetGroupBinding.securityGroupId="$alb_sec_group_id" \
-            --set environment=$env \
-            --debug 2>&1 | tee /tmp/helm-template-output.txt
+
+echo "=== Helm template dry-run — checking for manifest errors ==="
+helm template $helm_release_name $helm_chart_path \
+  --namespace $helm_namespace \
+  --values $helm_chart_path/values.yaml \
+  --set image.repository=$image_repository \
+  --set image.tag=$appversion \
+  --set targetGroupBinding.targetGroupArn="$target_group_arn" \
+  --set targetGroupBinding.securityGroupId="$alb_sec_group_id" \
+  --set environment=$env \
+  --debug 2>&1 | tee /tmp/helm-template-output.txt
 
 # deploy app
  helm upgrade --install $helm_release_name $helm_chart_path \

@@ -13,3 +13,7 @@ output "alb_arn" {
 output "acm_cert_arn" {
   value = module.alb-certs.acm_cert_arn
 }
+
+output "alb_security_groups" {
+  value = module.shared-k8-alb.alb_security_group_ids
+}
