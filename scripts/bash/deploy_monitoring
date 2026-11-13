@@ -1,0 +1,32 @@
+# Deploy monitoring
+
+$repohome="$(git rev-parse --show-toplevel)"
+echo "repo home: $repohome"
+
+yamldir="$repohome/infra-core/monitoring/grafana/grafana.yaml"
+echo "yaml dir: $yamldir"
+
+echo " === Deploying monitoring stack === "
+clustername=$1
+region=$2
+
+# Update Kubeconfig for cluster access
+aws eks update-kubeconfig --name $clustername --region $region
+# Create namespace for monitoring
+kubectl create namespace monitoring --dry-run=client -o yaml 
+
+# helm install Grafana
+helm search repo grafana-community/grafana --version 6.17.4
+
+helm upgrade --install grafana grafana-community/grafana \
+  --namespace monitoring \
+  --version 6.17.4 \
+  --set adminPassword='admin' \
+  --set service.type=LoadBalancer
+
+helm upgrade --install prometheus prometheus-community/prometheus \
+  --namespace monitoring \
+
+
+
+
