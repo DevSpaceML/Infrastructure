@@ -522,42 +522,25 @@ jobs:
 
       - name: Verify App Deployment
         run: |
-          echo "Verifying app deployment in namespace ${{ env.HELM_NAMESPACE }}"
-          echo "Looking for release: ${{ env.HELM_RELEASE_NAME }}"
+            NS="${{ env.HELM_NAMESPACE }}"
+            REL="${{ env.HELM_RELEASE_NAME }}"
 
-          # Dump all deployments + their labels first — helps debug selector mismatches
-          echo "--- All deployments in namespace ---"
-          kubectl get deployments -n ${{ env.HELM_NAMESPACE }} --show-labels
+            echo "--- All deployments in namespace ---"
+            kubectl get deployments -n "$NS" --show-labels
 
-          # Use --ignore-not-found so an empty result is "" rather than a jsonpath crash
-          DEPLOYMENT=$(kubectl get deployment \
-            -n ${{ env.HELM_NAMESPACE }} \
-            -l "app.kubernetes.io/instance=${{ env.HELM_RELEASE_NAME }}" \
-            --ignore-not-found \
-            -o jsonpath='{.items[0].metadata.name}')
+            DEPLOYMENT=$(kubectl get deployment -n "$NS" \
+              -l "app.kubernetes.io/instance=$REL" -o name | head -n1)
 
-          if [ -z "$DEPLOYMENT" ]; then
-            echo "ERROR: No deployment found matching label app.kubernetes.io/instance=${{ env.HELM_RELEASE_NAME }}"
-            echo "--- Helm release status ---"
-            helm status ${{ env.HELM_RELEASE_NAME }} -n ${{ env.HELM_NAMESPACE }} || true
-            exit 1
-          fi
+            if [ -z "$DEPLOYMENT" ]; then
+              DEPLOYMENT=$(kubectl get deployment -n "$NS" -l "app=$REL" -o name | head -n1)
+            fi
 
-          echo "Found deployment: $DEPLOYMENT"
-          kubectl rollout status deployment/$DEPLOYMENT \
-          -n ${{ env.HELM_NAMESPACE }} \
-           --timeout=5m
+            if [ -z "$DEPLOYMENT" ]; then
+              echo "ERROR: no deployment found for release $REL"
+              helm status "$REL" -n "$NS" || true
+              exit 1
+            fi
 
-          kubectl get all -n ${{ env.HELM_NAMESPACE }}
-
-      - name: Verify Ingress and ALB
-        run: |
-          echo "Verifying Ingress and ALB for the deployed app"
-          kubectl get ingressroute -n ${{ env.HELM_NAMESPACE }} -o wide
-          kubectl describe ingressroute -n ${{ env.HELM_NAMESPACE }}
-          echo "app url: http://${{ env.INGRESS_HOST }}"
-      
-      - name: Show deployed resources
-        run: |
-          echo "Showing all resources in namespace ${{ env.HELM_NAMESPACE }}"
-          kubectl get all -n ${{ env.HELM_NAMESPACE }} -o wide
+            echo "Found: $DEPLOYMENT"
+            kubectl rollout status "$DEPLOYMENT" -n "$NS" --timeout=5m
+            kubectl get all -n "$NS"

@@ -1,0 +1,115 @@
+# Base values.yaml w/ shared kube-prometheus-stack values for environment
+crds:
+  enabled: true
+
+# ------------------------------------------------------
+# Disable scraping of unreachable EKS managed resources
+# ------------------------------------------------------
+
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeProxy:
+  enabled: false
+
+defaultRules:
+  create: true
+  rules:
+    etcd: false
+    kubeControllerManager: false
+    kubeSchedulerAlerting: false
+    kubeSchedulerRecording: false
+    kubeProxy: false
+
+# Prometheus Operator Resource Limit Settings
+prometheus:
+  prometheusSpec:
+    replicas: 1
+    retention: 7d
+    retentionSize: 40GB
+    walCompression: true
+
+    serviceMonitorSelectorNilUsesHelmValues: false          
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    SelectorNilUsesHelmValues: false
+
+    externalLables:
+      cluster: # passed in per environment ?
+      environment: # passed in per environment ?
+    resources:
+      requests: {cpu: 250m, memory: 1Gi}
+      limits: {memory: 2Gi}
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3  # ?? requires EBS CSI driver + gp3 StorageClass
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 50Gi
+
+grafana:
+  enabled: true
+  defaultDashboardsTimeZone: UTC
+
+  # Secret must exist in the monitoring namespace BEFORE install
+  admin:
+    existingSecret: # grafana-admin ?? passed in ?
+    userKey: # username ?? passed in ?  
+  persistence:
+    enabled: true
+    type: pvc
+    storageClassName: gp3
+    accessModes: ["ReadWriteOnce"]
+    size: 10Gi
+  # Auto-load dashboards and datasources from labelled ConfigMaps in any namespace.
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      searchNamespace: ALL
+    datasources:
+      enabled: true
+      label: grafana_datasource
+      searchNamespaces: ALL
+
+  resources:
+    requests: { cpu:100m, memory: 256Mi }
+    limits:   { memory: 512Mi }
+  service:
+    type: ClusterIp
+
+  # Host set per environment in overlay, e.g grafana.dev.salientapps.com
+  ingress:
+    enabled: true
+    ingressClassName: trafik
+    hosts: []
+    path: /
+
+  grafana.ini:
+    server:
+      root_url: "%(protocol)s://%(domain)s/"
+    users:
+      auto_assign_org_role: Viewer
+    auth.anonymous:
+      enabled: false
+    analytics:
+      check_for_updates: false
+      reporting_enabled: false
+
+# Exporters
+kube-state-metrics:
+  resources:
+    requests: { cpu: 10M, memory: 64Mi}
+    limits: { memory: 128Mi}
+prometheus-node-exporter:
+  resources:
+    requests: { cpu: 10M, memory: 64Mi}
+    limits:   { memory: 64Mi }
+
+
+
