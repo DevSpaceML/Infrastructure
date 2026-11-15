@@ -1,0 +1,20 @@
+prometheus:
+  enabled: false
+alertManager:
+  enabled: false
+grafana:
+  enabled: false
+  defaultDashboardEnabled: false
+  forceDeployDashboards: flase
+defaultRules:
+  create: false
+kubelet:
+  enabled: true
+kubeApiServer:
+  enabled: true
+coreDNS:
+  enabled: true
+prometheusOperator:
+  resources:
+    requests: { cpu: 25m, memory: 64i }
+    limits: { memory: 128Mi }
