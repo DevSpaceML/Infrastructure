@@ -1,0 +1,35 @@
+# dev only values, overriding base_values.yaml
+prometheus:
+  prometheusSpec:
+    retention: 3d
+    retensionSize: 16GB
+    externalLabels:
+      cluster: ${CLUSTER_NAME}
+      environment: dev
+    resources:
+      requests: { cpu: 100m, memory: 512Mi }
+       limits:   { memory: 1Gi }
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 20Gi
+grafana:
+  defaultDashboardsTimezone: America/NewYork
+  ingress:
+    hosts:
+    - grafana.dev.salientapps.com
+alertmanager:
+  alertmanagerSpec:
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: gp3
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 1Gi
+                                

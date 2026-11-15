@@ -86,7 +86,7 @@ grafana:
   # Host set per environment in overlay, e.g grafana.dev.salientapps.com
   ingress:
     enabled: true
-    ingressClassName: trafik
+    ingressClassName: traefik
     hosts: []
     path: /
 
