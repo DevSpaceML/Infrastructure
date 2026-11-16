@@ -149,3 +149,24 @@ module "coredns" {
   source = "../../../modules/compute/eks/addons/coredns"
   clustername = module.cluster.cluster_name
 }
+
+module "ebs_csi" {
+  depends_on   = [ module.cluster, module.nodes ]
+  source       = "../../../modules/compute/eks/addons/ebs_csi"
+  cluster_name = module.cluster.cluster_name
+  oidc_arn     = module.oidc_auth.oidc_arn
+}
+
+module "prometheus" {
+  depends_on  = [ module.cluster, module.oidc_auth, module.coredns, module.ebs_csi ]
+  source      = "../../../modules/monitoring/prometheus"
+  clustername = module.cluster.cluster_name
+  oidc_arn    = module.oidc_auth.oidc_arn
+  environment = module.cluster.environment
+}
+
+module "grafana" {
+  depends_on = [ module.cluster, module.oidc_auth, module.coredns, module.ebs_csi, module.prometheus ]
+  source     = "../../../modules/monitoring/grafana"
+  prometheus_workspace_url = module.prometheus.amp_arn
+}
