@@ -197,25 +197,3 @@ resource "kubernetes_role_binding_v1" "DevOps_SRE_Role_Binding" {
 	api_group = "rbac.authorization.k8s.io"
   }
 }
-
-# Monitoring Role and RoleBinding
-resource "kubernetes_cluster_role_v1" "k8monitor" {
-  depends_on = [ terraform_data.verify_access ]
-
-  metadata {
-	name = "k8_monitor"
-  }
-
-  rule {
-	api_groups = [""]
-	resources = ["nodes","nodes/metrics","nodes/stats","nodes/proxy","pods","services","endpoints"]
-	verbs = ["get","list","watch"]
-  }
-
-  rule {
-	api_groups = ["apps"]
-	resources = ["deployments","statefulsets","daemonsets"]
-	verbs = ["get","list","watch"]
-  }
-
-}

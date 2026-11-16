@@ -2,9 +2,7 @@
 crds:
   enabled: true
 
-# ------------------------------------------------------
 # Disable scraping of unreachable EKS managed resources
-# ------------------------------------------------------
 
 kubeEtcd:
   enabled: false

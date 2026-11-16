@@ -23,6 +23,10 @@ helm repo update
 # Create namespace for monitoring
 kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
 
+kubectl -n monitoring create secret generic grafana-admin-credentials \
+  --from-literal=admin-user=admin \
+  --from-literal=admin-password="$GRAFANA_ADMIN_PASSWORD" \
+  --dry-run=client -o yaml | kubectl apply -f -
 
 helm upgrade --install grafana grafana-community/grafana \
   --namespace monitoring \

@@ -57,7 +57,7 @@ module "irsa_prometheus" {
  
 }
 
-resource "kubernetes_service_account_v1" "prometheus_agent" {
+resource "kubernetes_service_account_v1" "prometheus" {
   metadata {
     name        = "prometheus-agent-svc-acc"
     namespace   = kubernetes_namespace_v1.monitoring.metadata[0].name
@@ -65,4 +65,46 @@ resource "kubernetes_service_account_v1" "prometheus_agent" {
         "eks.amazonaws.com/role-arn" = module.irsa_prometheus.arn
     }
   }
+}
+
+
+# Monitoring Role and RoleBinding
+resource "kubernetes_cluster_role_v1" "k8monitor" {
+  depends_on = [ terraform_data.verify_access ]
+
+  metadata {
+	name = "k8monitor"
+  }
+
+  rule {
+	api_groups = [""]
+	resources = ["nodes","nodes/metrics","nodes/stats","nodes/proxy","pods","services","endpoints"]
+	verbs = ["get","list","watch"]
+  }
+
+  rule {
+	api_groups = ["apps"]
+	resources = ["deployments","statefulsets","daemonsets"]
+	verbs = ["get","list","watch"]
+  }
+
+}
+
+resource "kubernetes_role_binding_v1" "k8monitor_role_binding" {
+	depends_on = [ kubernetes_cluster_role_v1.k8monitor ]
+	metadata {
+	  name = "k8monitor-binding"
+	}
+
+	role_ref {
+	  api_group    = "rbac.authorization.k8s.io"
+	  kind         = "Role"
+	  name         = kubernetes_cluster_role_v1.metadata[0].name
+	}
+
+	subject {
+	  kind = "ServiceAccount"
+	  name = kubernetes_service_account_v1.prometheus.metadata[0].name
+    namespace = kubernetes_service_account_v1.prometheus.metadata[0].namespace
+	}
 }
