@@ -15,6 +15,10 @@ terraform {
       source  = "hashicorp/helm"
       version = ">= 2.0.0"
     }
+    grafana = {
+      source = "grafana/grafana"
+      version = "~> 4.0"
+    }
   }
 }
 
@@ -169,4 +173,5 @@ module "grafana" {
   depends_on = [ module.cluster, module.oidc_auth, module.coredns, module.ebs_csi, module.prometheus ]
   source     = "../../../modules/monitoring/grafana"
   prometheus_workspace_url = module.prometheus.amp_arn
+  clustername = module.cluster.cluster_name
 }

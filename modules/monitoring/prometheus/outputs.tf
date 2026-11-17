@@ -1,7 +1,3 @@
-output "amp_url" {
-  value = aws_prometheus_workspace.this.arn
-}
-
 output "amp_arn" {
   value = aws_prometheus_workspace.this.arn
 }
@@ -19,7 +15,7 @@ output "irsa_role_arn" {
 }
 
 output "prometheus_svc_acc" {
-  value = kubernetes_service_account_v1.prometheus_agent.metadata[0].name
+  value = kubernetes_service_account_v1.prometheus.metadata[0].name
 }
 
 
