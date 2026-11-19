@@ -544,3 +544,15 @@ jobs:
             echo "Found: $DEPLOYMENT"
             kubectl rollout status "$DEPLOYMENT" -n "$NS" --timeout=5m
             kubectl get all -n "$NS"
+
+#  deploy-monitoring:
+#    name: deploy-app
+#    runs-on: ubuntu-latest
+#    needs: [ configure-variables, deploy-foundation, install-traefik, configure-routing, deploy-app ]
+#    env:
+#      TF_VAR_clustername: ${{ needs.configure-variables.outputs.clustername }}
+#      TF_VAR_region: ${{ needs.configure-variables.outputs.region }}
+#      public_subnet_cidr: ${{ needs.configure-variables.outputs.public_subnet_cidr }}
+
+        
+
