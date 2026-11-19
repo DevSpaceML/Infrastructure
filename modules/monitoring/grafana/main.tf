@@ -10,8 +10,9 @@ terraform {
 }
 
 data "aws_region" "current" {}
+data "aws_iam_user" "SteveB_Devops" {}
 
-resource "grafana_workspace" "this" {
+resource "aws_grafana_workspace" "this" {
   name = "salient-${var.env}"
   account_access_type = "CURRENT_ACCOUNT"
   authentication_providers = ["AWS_SSO"]
@@ -24,6 +25,7 @@ data "aws_ssoadmin_instances" "this" {}
 
 locals {
   identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
+  grafana_admin_id     = data.aws_iam_user.SteveB_Devops.id 
   grafana_viewers   = "grafana-viewers"
 }
 
@@ -46,7 +48,7 @@ resource "aws_grafana_role_association" "viewers" {
 resource "aws_grafana_role_association" "gf_admins" {
   workspace_id = aws_grafana_workspace.this.id
   role = "ADMIN"
-  user_ids = [var.admin_sso_user_id]
+  user_ids = [local.grafana_admin_id]
 }
 
 resource "grafana_data_source" "grafana" {
