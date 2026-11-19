@@ -10,7 +10,10 @@ terraform {
 }
 
 data "aws_region" "current" {}
-data "aws_iam_user" "SteveB_Devops" {}
+
+data "aws_iam_user" "devops_admin" {
+  user_name = var.devops_user
+}
 
 resource "aws_grafana_workspace" "this" {
   name = "salient-${var.env}"
@@ -25,7 +28,7 @@ data "aws_ssoadmin_instances" "this" {}
 
 locals {
   identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
-  grafana_admin_id     = data.aws_iam_user.SteveB_Devops.id 
+  grafana_admin_id     = data.aws_iam_user.devops_admin.id 
   grafana_viewers   = "grafana-viewers"
 }
 
