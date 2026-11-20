@@ -45,16 +45,16 @@ data "aws_ssoadmin_instances" "this" {}
 
 locals {
   identity_store_id = tolist(data.aws_ssoadmin_instances.this.identity_store_ids)[0]
-  grafana_admin_id     = data.aws_iam_user.devops_admin.id 
+  grafana_admin_group = "grafana-admins"
   grafana_viewers   = "grafana-viewers"
 }
 
-data "aws_identitystore_group" "gf_viewers" {
+data "aws_identitystore_group" "gf_admins" {
   identity_store_id = local.identity_store_id
   alternate_identifier {
     unique_attribute {
       attribute_path = "DisplayName"
-      attribute_value = local.grafana_viewers
+      attribute_value = "grafana-admins"
     }
   }
 }
@@ -67,9 +67,10 @@ resource "aws_grafana_role_association" "viewers" {
 resource "aws_grafana_role_association" "gf_admins" {
   workspace_id = aws_grafana_workspace.this.id
   role = "ADMIN"
+  group_ids = [data.aws_identitystore_group.gf_admins.group_id]
 }
 
-resource "grafana_data_source" "grafana" {
+resource "grafana_data_source" "prometheus" {
   type = "prometheus"
   name = "amp-${var.env}"
   uid  = "amp-${var.env}"
