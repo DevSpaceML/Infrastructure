@@ -7,6 +7,7 @@ variable "clustername" {
 variable "env" {
   description = "deployment environment"
   type        = string
+  default     = "dev"
 }
 
 variable "prometheus_workspace_url" {

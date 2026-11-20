@@ -36,3 +36,8 @@ variable "instancetype" {
   type        = string
   default     = "t4g.small"
 }
+
+variable "env" {
+  description = "deployment environment"
+  type        = string
+}

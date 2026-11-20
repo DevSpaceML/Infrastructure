@@ -15,11 +15,28 @@ data "aws_iam_user" "devops_admin" {
   user_name = var.devops_user
 }
 
+resource "aws_iam_role" "grafana_role" {
+  name = "gf-assume-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Service = "grafana.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
 resource "aws_grafana_workspace" "this" {
   name = "salient-${var.env}"
   account_access_type = "CURRENT_ACCOUNT"
   authentication_providers = ["AWS_SSO"]
-  permission_type = ["SERVICE_MANAGED"]
+  permission_type = "SERVICE_MANAGED"
   data_sources = ["PROMETHEUS"]
   grafana_version = "10.4"
 }
@@ -45,13 +62,11 @@ data "aws_identitystore_group" "gf_viewers" {
 resource "aws_grafana_role_association" "viewers" {
   workspace_id = aws_grafana_workspace.this.id
   role = "VIEWER"
-  group_ids = [data.aws_identitystore_group.gf_viewers.group_id]
 }
 
 resource "aws_grafana_role_association" "gf_admins" {
   workspace_id = aws_grafana_workspace.this.id
   role = "ADMIN"
-  user_ids = [local.grafana_admin_id]
 }
 
 resource "grafana_data_source" "grafana" {
@@ -71,9 +86,9 @@ resource "grafana_folder" "k8monitor" {
   title = "k8monitor"
 }
 
-resource "grafana_dashboard" "k8 Overview" {
+resource "grafana_dashboard" "k8_Overview" {
   folder = grafana_folder.k8monitor.id
-  config_json = file("${path.module}/dashboards/cluster_overview.json")
+  config_json = file("${path.module}/../dashboards/cluster_overview.json")
 }
 
 

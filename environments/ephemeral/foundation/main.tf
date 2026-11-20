@@ -174,4 +174,5 @@ module "grafana" {
   source     = "../../../modules/monitoring/grafana"
   prometheus_workspace_url = module.prometheus.amp_arn
   clustername = module.cluster.cluster_name
+  env         = module.cluster.environment
 }
