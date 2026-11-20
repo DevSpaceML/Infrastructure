@@ -40,4 +40,5 @@ variable "instancetype" {
 variable "env" {
   description = "deployment environment"
   type        = string
+  default = "dev"
 }
